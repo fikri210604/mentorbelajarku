@@ -183,25 +183,29 @@ export default function BimbelTypesPage({ initialBimbelTypes = [] }: BimbelTypes
                     <td className="px-4 py-3">
                       <StatusBadge status={bt.status} />
                     </td>
-                    <td className="px-4 py-3 text-right space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(bt)}
-                        className="h-8 px-3 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 dark:text-blue-400 dark:border-blue-900/50 dark:hover:bg-blue-950/50"
-                      >
-                        <Edit2 className="w-3.5 h-3.5 mr-1.5" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setDeletingType(bt)}
-                        className="h-8 px-3 text-xs text-destructive hover:bg-destructive/10 border-destructive/30"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                        Hapus
-                      </Button>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(bt)}
+                          className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/50"
+                          title="Edit Jenis Bimbel"
+                          aria-label="Edit Jenis Bimbel"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeletingType(bt)}
+                          className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                          title="Hapus Jenis Bimbel"
+                          aria-label="Hapus Jenis Bimbel"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))

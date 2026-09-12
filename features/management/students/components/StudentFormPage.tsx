@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { studentSchema, StudentInput } from "../schemas/student.schema";
 import { createStudent, updateStudent } from "../actions/student.actions";
 import { StudentWithPrograms } from "../types";
+import { toast } from "sonner";
 
 interface StudentFormPageProps {
   initialData?: StudentWithPrograms | null;
@@ -54,9 +55,11 @@ export default function StudentFormPage({ initialData, isEdit = false }: Student
         const res = await updateStudent(initialData.id, data);
         if (res && !res.success) {
           setSubmitError(res.error || "Gagal memperbarui data murid.");
+          toast.error(res.error || "Gagal memperbarui data murid.");
           return;
         }
         setSubmitSuccess("Data murid berhasil diperbarui!");
+        toast.success("Data murid berhasil diperbarui!");
         setTimeout(() => {
           router.push(`/management/students/${initialData.id}`);
           router.refresh();
@@ -65,9 +68,11 @@ export default function StudentFormPage({ initialData, isEdit = false }: Student
         const res = await createStudent(data);
         if (res && !res.success) {
           setSubmitError(res.error || "Gagal menambahkan murid baru.");
+          toast.error(res.error || "Gagal menambahkan murid baru.");
           return;
         }
         setSubmitSuccess("Murid baru berhasil ditambahkan!");
+        toast.success("Murid baru berhasil ditambahkan!");
         setTimeout(() => {
           router.push("/management/students");
           router.refresh();
@@ -76,6 +81,7 @@ export default function StudentFormPage({ initialData, isEdit = false }: Student
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Terjadi kesalahan sistem saat menyimpan data.";
       setSubmitError(msg);
+      toast.error(msg);
       console.error("Error saving student:", err);
     }
   };

@@ -1,4 +1,10 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mentor Belajarku
+
+<p align="center">
+  <img src="public/logo.svg" alt="Mentor Belajarku Logo" width="100" />
+</p>
+
+Sistem Manajemen & Presensi Bimbingan Belajar (Bimbel) terpadu: pengelolaan jadwal, pencatatan absensi multi-tutor dan multi-murid, histori sesi, konfigurasi tarif, dan payroll otomatis.
 
 ## Getting Started
 

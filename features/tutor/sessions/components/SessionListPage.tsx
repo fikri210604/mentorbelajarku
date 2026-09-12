@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Clock } from "lucide-react";
+import { Clock, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -63,8 +63,17 @@ export default function SessionListPage({ initialSessions = [] }: SessionListPag
                       <StatusBadge status={session.status} />
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/management/sessions/${session.id}`}>Detail</Link>
+                      <Button
+                        asChild
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        title="Lihat Detail Sesi"
+                        aria-label="Lihat Detail Sesi"
+                      >
+                        <Link href={`/tutor/sessions/${session.id}`}>
+                          <Eye className="w-4 h-4" />
+                        </Link>
                       </Button>
                     </td>
                   </tr>

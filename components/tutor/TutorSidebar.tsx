@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -84,12 +85,21 @@ export function TutorSidebar({ isManagement }: TutorSidebarProps = {}) {
         <div className="space-y-6">
           <div className="flex items-center justify-between px-2 py-1">
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold shadow-sm">
-                <GraduationCap className="h-5 w-5" />
+              <div className="h-9 w-9 rounded-lg bg-white border border-border flex items-center justify-center p-1 shadow-xs shrink-0 overflow-hidden">
+                <Image
+                  src="/logo.jpg"
+                  alt="Mentor Belajarku Logo"
+                  width={28}
+                  height={28}
+                  className="object-contain"
+                  priority
+                />
               </div>
               <div className="min-w-0">
-                <h1 className="font-semibold text-base leading-none truncate">Bimbel Tutor</h1>
-                <span className="text-[11px] font-medium text-emerald-600 uppercase tracking-wider">
+                <h1 className="font-bold text-sm leading-tight truncate text-foreground">
+                  Mentor Belajarku
+                </h1>
+                <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">
                   Tutor Portal
                 </span>
               </div>

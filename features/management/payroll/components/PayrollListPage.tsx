@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CreditCard, Calculator } from "lucide-react";
+import { CreditCard, Calculator, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -64,8 +64,17 @@ export default function PayrollListPage({ initialPayrolls = [] }: PayrollListPag
                       <StatusBadge status={payroll.status} />
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/management/payroll/${payroll.id}`}>Rincian</Link>
+                      <Button
+                        asChild
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        title="Lihat Rincian Payroll"
+                        aria-label="Lihat Rincian Payroll"
+                      >
+                        <Link href={`/management/payroll/${payroll.id}`}>
+                          <Eye className="w-4 h-4" />
+                        </Link>
                       </Button>
                     </td>
                   </tr>

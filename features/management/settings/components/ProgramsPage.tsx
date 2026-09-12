@@ -212,25 +212,29 @@ export default function ProgramsPage({ initialPrograms = [] }: ProgramsPageProps
                     <td className="px-4 py-3">
                       <StatusBadge status={prog.status} />
                     </td>
-                    <td className="px-4 py-3 text-right space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(prog)}
-                        className="h-8 px-3 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 dark:text-blue-400 dark:border-blue-900/50 dark:hover:bg-blue-950/50"
-                      >
-                        <Edit2 className="w-3.5 h-3.5 mr-1.5" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setDeletingProgram(prog)}
-                        className="h-8 px-3 text-xs text-destructive hover:bg-destructive/10 border-destructive/30"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                        Hapus
-                      </Button>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(prog)}
+                          className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/50"
+                          title="Edit Mata Pelajaran"
+                          aria-label="Edit Mata Pelajaran"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeletingProgram(prog)}
+                          className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                          title="Hapus Mata Pelajaran"
+                          aria-label="Hapus Mata Pelajaran"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))

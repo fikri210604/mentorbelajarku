@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authClient } from '@/lib/auth/client';
 import { loginWithSyntheticUser } from '@/features/auth/actions/auth.actions';
@@ -143,12 +144,21 @@ function LoginFormContent() {
     <div className="container mx-auto flex min-h-[calc(100vh-12rem)] max-w-lg items-center justify-center px-4 py-10">
       <Card className="w-full shadow-lg border">
         <CardHeader className="space-y-2 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm mb-2">
-            <GraduationCap className="h-6 w-6" />
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white border border-border shadow-xs p-2 mb-2 overflow-hidden">
+            <Image
+              src="/logo.jpg"
+              alt="Mentor Belajarku Logo"
+              width={52}
+              height={52}
+              className="object-contain"
+              priority
+            />
           </div>
-          <CardTitle className="text-2xl font-bold">Masuk ke Portal Bimbel</CardTitle>
-          <CardDescription>
-            Silakan masuk dengan kredensial akun Better Auth atau gunakan mode demo untuk pengujian.
+          <CardTitle className="text-2xl font-black tracking-tight text-foreground">
+            Mentor Belajarku
+          </CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
+            Portal Manajemen & Sistem Presensi Bimbingan Belajar
           </CardDescription>
 
           {/* Tab Switcher */}

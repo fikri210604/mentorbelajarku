@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +22,17 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-6">
+          <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white border border-border shadow-md p-3.5 mb-1 overflow-hidden">
+            <Image
+              src="/logo.jpg"
+              alt="Mentor Belajarku Logo"
+              width={64}
+              height={64}
+              className="object-contain"
+              priority
+            />
+          </div>
+
           <Badge variant="outline" className="px-3.5 py-1 text-sm font-medium gap-1.5 border-primary/30 bg-primary/5 text-primary">
             <Sparkles className="h-3.5 w-3.5" />
             Sistem Manajemen & Absensi Bimbel Modern

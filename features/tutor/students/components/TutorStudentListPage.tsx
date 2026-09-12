@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, User } from "lucide-react";
+import { Search, User, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/shared/page-header";
@@ -102,8 +102,17 @@ export default function TutorStudentListPage({ initialStudents = [] }: TutorStud
                         <StatusBadge status={student.status} />
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Button asChild variant="ghost" size="sm">
-                          <Link href={`/tutor/students/${student.id}`}>Detail</Link>
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          title="Lihat Detail Murid"
+                          aria-label="Lihat Detail Murid"
+                        >
+                          <Link href={`/tutor/students/${student.id}`}>
+                            <Eye className="w-4 h-4" />
+                          </Link>
                         </Button>
                       </td>
                     </tr>

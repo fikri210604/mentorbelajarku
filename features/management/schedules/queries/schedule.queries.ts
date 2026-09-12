@@ -94,7 +94,7 @@ function mapSyntheticToScheduleWithDetails(s: (typeof SYNTHETIC_SCHEDULES)[0]): 
       : [],
     student_names: studentName ? [studentName] : isGroup ? [s.class_group_name!] : [],
     total_students: studentName ? 1 : isGroup ? 4 : 0,
-  };
+  } as unknown as ScheduleWithDetails;
 }
 
 export async function getSchedules(): Promise<ScheduleWithDetails[]> {

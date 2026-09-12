@@ -197,13 +197,14 @@ function CalendarDayButton({
 
   const hasSchedule = Boolean(modifiers.hasSchedule)
   const isSelected = Boolean(modifiers.selected)
+  const dateIsoDay = `${day.date.getFullYear()}-${String(day.date.getMonth() + 1).padStart(2, "0")}-${String(day.date.getDate()).padStart(2, "0")}`
 
   return (
     <Button
       ref={ref}
       variant="ghost"
       size="icon"
-      data-day={day.date.toLocaleDateString(locale?.code)}
+      data-day={dateIsoDay}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&

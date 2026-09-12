@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -65,8 +65,17 @@ export default function AttendanceListPage({ initialAttendances = [] }: Attendan
                       <StatusBadge status={att.verification_status} />
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/management/attendance/${att.id}`}>Detail</Link>
+                      <Button
+                        asChild
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        title="Lihat Detail Presensi"
+                        aria-label="Lihat Detail Presensi"
+                      >
+                        <Link href={`/management/attendance/${att.id}`}>
+                          <Eye className="w-4 h-4" />
+                        </Link>
                       </Button>
                     </td>
                   </tr>

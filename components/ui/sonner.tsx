@@ -5,12 +5,23 @@ import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+  let theme: ToasterProps["theme"] = "system"
+  try {
+    const themeContext = useTheme()
+    if (themeContext?.theme) {
+      theme = themeContext.theme as ToasterProps["theme"]
+    }
+  } catch {
+    theme = "system"
+  }
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={theme}
       className="toaster group"
+      richColors
+      closeButton
+      position="top-right"
       icons={{
         success: (
           <CircleCheckIcon className="size-4" />

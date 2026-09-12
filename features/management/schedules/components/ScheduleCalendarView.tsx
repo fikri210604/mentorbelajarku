@@ -26,6 +26,7 @@ import {
   X,
   Plus,
   CalendarX,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -638,13 +639,16 @@ export function ScheduleCalendarView({
                       <td className="px-4 py-3 text-right">
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          title="Lihat Detail Jadwal"
+                          aria-label="Lihat Detail Jadwal"
                           onClick={(e) => {
                             e.stopPropagation();
                             setActiveSchedule(schedule);
                           }}
                         >
-                          Detail
+                          <Eye className="w-4 h-4" />
                         </Button>
                       </td>
                     </tr>
