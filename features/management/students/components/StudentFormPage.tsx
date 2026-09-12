@@ -54,8 +54,9 @@ export default function StudentFormPage({ initialData, isEdit = false }: Student
       if (isEdit && initialData) {
         const res = await updateStudent(initialData.id, data);
         if (res && !res.success) {
-          setSubmitError(res.error || "Gagal memperbarui data murid.");
-          toast.error(res.error || "Gagal memperbarui data murid.");
+          const errText = (res as any)?.error || "Gagal memperbarui data murid.";
+          setSubmitError(errText);
+          toast.error(errText);
           return;
         }
         setSubmitSuccess("Data murid berhasil diperbarui!");
@@ -67,8 +68,9 @@ export default function StudentFormPage({ initialData, isEdit = false }: Student
       } else {
         const res = await createStudent(data);
         if (res && !res.success) {
-          setSubmitError(res.error || "Gagal menambahkan murid baru.");
-          toast.error(res.error || "Gagal menambahkan murid baru.");
+          const errText = (res as any)?.error || "Gagal menambahkan murid baru.";
+          setSubmitError(errText);
+          toast.error(errText);
           return;
         }
         setSubmitSuccess("Murid baru berhasil ditambahkan!");

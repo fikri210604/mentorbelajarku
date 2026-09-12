@@ -1,7 +1,7 @@
 "use client";
 
 import { PageHeader } from "@/components/shared/page-header";
-import { ScheduleWithDetails } from "@/features/management/schedules/types";
+import { ScheduleWithDetails } from "../types";
 import { ScheduleCalendarView } from "@/features/management/schedules/components/ScheduleCalendarView";
 
 interface TutorScheduleListPageProps {

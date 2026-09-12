@@ -56,7 +56,7 @@ export async function createStudent(input: StudentInput) {
   }
 
   revalidatePath("/management/students");
-  return { success: true, message: "Murid baru berhasil ditambahkan!" };
+  return { success: true, message: "Murid baru berhasil ditambahkan!", data: null as any, error: undefined as string | undefined };
 }
 
 export async function updateStudent(id: string, input: Partial<StudentInput>) {
@@ -108,7 +108,7 @@ export async function updateStudent(id: string, input: Partial<StudentInput>) {
 
   revalidatePath("/management/students");
   revalidatePath(`/management/students/${id}`);
-  return { success: true, message: "Data murid berhasil diperbarui!" };
+  return { success: true, message: "Data murid berhasil diperbarui!", data: null as any, error: undefined as string | undefined };
 }
 
 export async function updateStudentStatus(id: string, status: "active" | "inactive") {
