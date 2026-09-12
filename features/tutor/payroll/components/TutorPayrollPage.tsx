@@ -1,0 +1,68 @@
+"use client";
+
+import { CreditCard } from "lucide-react";
+import { PageHeader } from "@/components/shared/page-header";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { EmptyState } from "@/components/shared/empty-state";
+import { formatCurrency } from "@/lib/utils";
+import { PayrollWithDetails } from "../types";
+
+interface TutorPayrollPageProps {
+  initialPayrolls?: PayrollWithDetails[];
+}
+
+export default function TutorPayrollPage({ initialPayrolls = [] }: TutorPayrollPageProps) {
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Riwayat Honor Saya"
+        description="Rincian honor mengajar dan status pembayaran per periode."
+      />
+
+      {initialPayrolls.length === 0 ? (
+        <EmptyState
+          icon={CreditCard}
+          title="Belum ada riwayat honor"
+          description="Riwayat pembayaran honor Anda akan ditampilkan di sini."
+        />
+      ) : (
+        <div className="rounded-md border border-border bg-card">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-muted/50 text-muted-foreground uppercase text-xs font-semibold border-b">
+                <tr>
+                  <th className="px-4 py-3">Periode</th>
+                  <th className="px-4 py-3">Honor Kotor</th>
+                  <th className="px-4 py-3">Bonus / Potongan</th>
+                  <th className="px-4 py-3">Total Diterima</th>
+                  <th className="px-4 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {initialPayrolls.map((payroll) => (
+                  <tr key={payroll.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-3 font-medium">
+                      {payroll.period_start} s/d {payroll.period_end}
+                    </td>
+                    <td className="px-4 py-3 font-mono">
+                      {formatCurrency(Number(payroll.gross_amount))}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      +{formatCurrency(Number(payroll.bonus))} / -{formatCurrency(Number(payroll.deduction))}
+                    </td>
+                    <td className="px-4 py-3 font-mono font-semibold text-primary">
+                      {formatCurrency(Number(payroll.net_amount))}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={payroll.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
