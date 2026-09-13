@@ -1,7 +1,8 @@
+import { cache } from 'react';
 import { headers, cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth/auth';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, isSupabaseConfigured } from '@/lib/supabase/server';
 import { DEFAULT_SYNTHETIC_USER, SYNTHETIC_USERS } from '@/data/users';
 import type { UserRole } from '@/types/database.types';
 
@@ -51,11 +52,12 @@ export async function getServerSession() {
 /**
  * Retrieve authenticated user context along with their profile and tutor mapping.
  * Membaca session aktif Better Auth. Jika belum ada, menggunakan user sintetis dari cookie.
+ * Dibungkus dengan React cache() untuk mencegah duplicate database & cookie fetch per-request.
  */
-export async function getCurrentUser(): Promise<CurrentUserSession> {
+export const getCurrentUser = cache(async (): Promise<CurrentUserSession> => {
   const session = await getServerSession();
 
-  if (session?.user) {
+  if (session?.user && isSupabaseConfigured()) {
     try {
       const supabase = createServerSupabaseClient();
       const { data: profile } = await supabase
@@ -141,7 +143,7 @@ export async function getCurrentUser(): Promise<CurrentUserSession> {
     subrole: activeSyntheticUser.subrole || (activeSyntheticUser.role === 'management' ? 'owner' : null),
     tutorId: activeSyntheticUser.tutorId || null,
   };
-}
+});
 
 /**
  * Alias for getCurrentUser for API routes and Server Actions.

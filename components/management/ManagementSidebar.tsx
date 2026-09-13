@@ -60,10 +60,12 @@ export function ManagementSidebar({
     initialSubrole || null
   );
   const [activeName, setActiveName] = useState<string>(initialUserName || "Management");
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
 
-  // Otomatis menutup sidebar mobile jika rute halaman berganti
+  // Otomatis menutup sidebar mobile dan reset pending state jika rute halaman berganti
   useEffect(() => {
     closeMobileMenu();
+    setPendingHref(null);
   }, [pathname, closeMobileMenu]);
 
   // Listener tombol Escape untuk menutup drawer pada mobile
@@ -210,20 +212,35 @@ export function ManagementSidebar({
               const isActive =
                 pathname === item.href ||
                 (item.href !== "/management/dashboard" && pathname.startsWith(item.href));
+              const isPending = pendingHref === item.href && !isActive;
+
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={closeMobileMenu}
+                  prefetch={true}
+                  onClick={() => {
+                    if (pathname !== item.href) {
+                      setPendingHref(item.href);
+                    }
+                    closeMobileMenu();
+                  }}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                    "flex items-center justify-between px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
                     isActive
                       ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                      : isPending
+                      ? "bg-muted text-foreground font-semibold"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span>{item.label}</span>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  {isPending && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary animate-ping shrink-0" />
+                  )}
                 </Link>
               );
             })}

@@ -2,7 +2,6 @@ import { requireAuthUser } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { ManagementSidebar } from "@/components/management/ManagementSidebar";
 import { ManagementHeader } from "@/components/management/ManagementHeader";
-export const dynamic = "force-dynamic";
 
 export default async function ManagementLayout({
   children,

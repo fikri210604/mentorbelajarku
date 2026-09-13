@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -42,10 +42,12 @@ export function TutorSidebar({ isManagement }: TutorSidebarProps = {}) {
     mobileMenuOpen,
     closeMobileMenu,
   } = useUiStore();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
 
   // Otomatis menutup sidebar mobile jika navigasi halaman berganti
   useEffect(() => {
     closeMobileMenu();
+    setPendingHref(null);
   }, [pathname, closeMobileMenu]);
 
   // Listener tombol Escape untuk menutup drawer pada mobile
@@ -158,20 +160,35 @@ export function TutorSidebar({ isManagement }: TutorSidebarProps = {}) {
               const isActive =
                 pathname === item.href ||
                 (item.href !== "/tutor/dashboard" && pathname.startsWith(item.href));
+              const isPending = pendingHref === item.href && !isActive;
+
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={closeMobileMenu}
+                  prefetch={true}
+                  onClick={() => {
+                    if (pathname !== item.href) {
+                      setPendingHref(item.href);
+                    }
+                    closeMobileMenu();
+                  }}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                    "flex items-center justify-between px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
                     isActive
                       ? "bg-emerald-600 text-white font-semibold shadow-sm"
+                      : isPending
+                      ? "bg-muted text-foreground font-semibold"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span>{item.label}</span>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  {isPending && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-ping shrink-0" />
+                  )}
                 </Link>
               );
             })}

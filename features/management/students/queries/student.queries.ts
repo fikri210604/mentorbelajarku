@@ -1,11 +1,12 @@
-import { createServerClient } from "@/lib/supabase/server";
+import { createServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { SYNTHETIC_STUDENTS } from "@/data/students";
 import { StudentProgressService } from "@/features/shared/students/services/student-progress.service";
 import { StudentWithPrograms } from "../types";
 
 export async function getStudents(): Promise<StudentWithPrograms[]> {
-  try {
-    const supabase = createServerClient();
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = createServerClient();
     const { data, error } = await supabase
       .from("students")
       .select(`
@@ -28,8 +29,9 @@ export async function getStudents(): Promise<StudentWithPrograms[]> {
         })),
       })) as unknown as StudentWithPrograms[];
     }
-  } catch (err) {
-    console.warn("getStudents Supabase fallback:", err);
+    } catch (err) {
+      console.warn("getStudents Supabase fallback:", err);
+    }
   }
 
   // Fallback to synthetic students for prototype/demo

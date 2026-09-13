@@ -1,30 +1,38 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Noto_Sans, Playfair_Display } from "next/font/google";
+import { Suspense } from "react";
+import { Plus_Jakarta_Sans, Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
+import NextTopLoader from "nextjs-toploader";
+import { GlobalNavigationProgress } from "@/components/shared/global-navigation-progress";
 
-const playfairDisplayHeading = Playfair_Display({subsets:['latin'],variable:'--font-heading'});
-
-const notoSans = Noto_Sans({subsets:['latin'],variable:'--font-sans'});
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
+  variable: "--font-heading",
+  weight: ["600", "700", "800"],
+  display: "swap",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "Mentor Belajarku - Sistem Manajemen & Presensi Bimbel",
   description: "Platform manajemen bimbingan belajar, absensi tutor dan murid, jadwal pembelajaran, dan payroll terpadu.",
   icons: {
-    icon: "/logo.svg",
-    shortcut: "/logo.svg",
-    apple: "/logo.svg",
+    icon: "/logo.jpg",
+    shortcut: "/logo.jpg",
+    apple: "/logo.jpg",
   },
 };
 
@@ -35,10 +43,22 @@ export default function RootLayout({
 }) {
   return (
     <html
-      lang="en"
-      className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", notoSans.variable, playfairDisplayHeading.variable)}
+      lang="id"
+      className={cn("h-full", "antialiased", inter.variable, geistMono.variable, plusJakartaSans.variable, "font-sans")}
     >
       <body className="min-h-full flex flex-col">
+        <NextTopLoader
+          color="#00A86B"
+          height={3}
+          showSpinner={true}
+          shadow="0 0 10px #00A86B,0 0 5px #00A86B"
+          easing="ease"
+          speed={200}
+          zIndex={99999}
+        />
+        <Suspense fallback={null}>
+          <GlobalNavigationProgress />
+        </Suspense>
         {children}
         <Toaster />
       </body>

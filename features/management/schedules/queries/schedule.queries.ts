@@ -1,4 +1,4 @@
-import { createServerClient } from "@/lib/supabase/server";
+import { createServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { SYNTHETIC_SCHEDULES } from "@/data/schedules";
 import { ScheduleWithDetails } from "../types";
 
@@ -98,74 +98,78 @@ function mapSyntheticToScheduleWithDetails(s: (typeof SYNTHETIC_SCHEDULES)[0]): 
 }
 
 export async function getSchedules(): Promise<ScheduleWithDetails[]> {
-  try {
-    const supabase = createServerClient();
-    const { data, error } = await supabase
-      .from("schedules")
-      .select(`
-        *,
-        tutors (*, profiles (*)),
-        programs (*),
-        bimbel_types (*),
-        schedule_students (
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = createServerClient();
+      const { data, error } = await supabase
+        .from("schedules")
+        .select(`
           *,
-          students (*)
-        )
-      `)
-      .order("day_of_week", { ascending: true })
-      .order("start_time", { ascending: true });
+          tutors (*, profiles (*)),
+          programs (*),
+          bimbel_types (*),
+          schedule_students (
+            *,
+            students (*)
+          )
+        `)
+        .order("day_of_week", { ascending: true })
+        .order("start_time", { ascending: true });
 
-    if (!error && data && data.length > 0) {
-      return data.map((item: any) => {
-        const studentList = (item.schedule_students || [])
-          .map((ss: any) => ss.students?.name)
-          .filter(Boolean);
+      if (!error && data && data.length > 0) {
+        return data.map((item: any) => {
+          const studentList = (item.schedule_students || [])
+            .map((ss: any) => ss.students?.name)
+            .filter(Boolean);
 
-        return {
-          ...item,
-          student_names: studentList,
-          total_students: studentList.length,
-        };
-      }) as unknown as ScheduleWithDetails[];
+          return {
+            ...item,
+            student_names: studentList,
+            total_students: studentList.length,
+          };
+        }) as unknown as ScheduleWithDetails[];
+      }
+    } catch (err) {
+      console.warn("getSchedules Supabase query fallback to synthetic:", err);
     }
-  } catch (err) {
-    console.warn("getSchedules Supabase query fallback to synthetic:", err);
   }
 
   return SYNTHETIC_SCHEDULES.map(mapSyntheticToScheduleWithDetails);
 }
 
 export async function getScheduleById(id: string): Promise<ScheduleWithDetails | null> {
-  try {
-    const supabase = createServerClient();
-    const { data, error } = await supabase
-      .from("schedules")
-      .select(`
-        *,
-        tutors (*, profiles (*)),
-        programs (*),
-        bimbel_types (*),
-        schedule_students (
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = createServerClient();
+      const { data, error } = await supabase
+        .from("schedules")
+        .select(`
           *,
-          students (*)
-        )
-      `)
-      .eq("id", id)
-      .single();
+          tutors (*, profiles (*)),
+          programs (*),
+          bimbel_types (*),
+          schedule_students (
+            *,
+            students (*)
+          )
+        `)
+        .eq("id", id)
+        .single();
 
-    if (!error && data) {
-      const studentList = ((data as any).schedule_students || [])
-        .map((ss: any) => ss.students?.name)
-        .filter(Boolean);
+      if (!error && data) {
+        const studentList = ((data as any).schedule_students || [])
+          .map((ss: any) => ss.students?.name)
+          .filter(Boolean);
 
-      return {
-        ...(data as any),
-        student_names: studentList,
-        total_students: studentList.length,
-      } as unknown as ScheduleWithDetails;
+        return {
+          ...(data as any),
+          student_names: studentList,
+          total_students: studentList.length,
+        } as unknown as ScheduleWithDetails;
+      }
+    } catch (err) {
+      console.warn("getScheduleById Supabase query fallback to synthetic:", err);
     }
-  } catch (err) {
-    console.warn("getScheduleById Supabase query fallback to synthetic:", err);
   }
 
   const found = SYNTHETIC_SCHEDULES.find((s) => s.id === id);

@@ -2,7 +2,6 @@ import { requireAuthUser } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { TutorSidebar } from "@/components/tutor/TutorSidebar";
 import { TutorHeader } from "@/components/tutor/TutorHeader";
-export const dynamic = "force-dynamic";
 
 export default async function TutorLayout({
   children,

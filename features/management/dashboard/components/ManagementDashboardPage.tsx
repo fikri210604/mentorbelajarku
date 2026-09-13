@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Users,
@@ -18,6 +18,12 @@ import {
   BarChart2,
   CalendarX,
   Plus,
+  Shield,
+  Briefcase,
+  CircleDollarSign,
+  ArrowLeftRight,
+  Loader2,
+  UserCog,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,7 +53,10 @@ import {
 } from "recharts";
 import { SYNTHETIC_SESSIONS, type SyntheticSession } from "@/data/sessions";
 import { SYNTHETIC_SCHEDULES } from "@/data/schedules";
-import { formatDate } from "@/lib/utils";
+import { SYNTHETIC_USERS } from "@/data/users";
+import { loginWithSyntheticUser } from "@/features/auth/actions/auth.actions";
+import type { ManagementSubrole } from "@/types/auth";
+import { formatDate, cn } from "@/lib/utils";
 
 interface DashboardStats {
   totalStudents?: number;
@@ -75,6 +84,78 @@ const BIMBEL_TYPE_DATA = [
 
 export default function ManagementDashboardPage({ stats }: { stats?: DashboardStats }) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+
+  // State Role & Identitas Demo Aktif
+  const [activeUserId, setActiveUserId] = useState<string>("usr-mgmt-owner");
+  const [activeUserName, setActiveUserName] = useState<string>("Siti Rahmawati");
+  const [activeSubrole, setActiveSubrole] = useState<ManagementSubrole | null>("owner");
+  const [isSwitching, setIsSwitching] = useState(false);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      const match = document.cookie.match(/(?:^|;\s*)synthetic_user_id=([^;]+)/);
+      if (match && match[1]) {
+        const found = SYNTHETIC_USERS.find(
+          (u) => u.id === match[1] || u.email.toLowerCase() === match[1].toLowerCase()
+        );
+        if (found) {
+          setActiveUserId(found.id);
+          setActiveUserName(found.name);
+          setActiveSubrole(found.subrole || (found.role === "management" ? "owner" : null));
+        }
+      }
+    }
+  }, []);
+
+  const handleSwitchRole = async (targetUserId: string) => {
+    if (targetUserId === activeUserId && !isSwitching) return;
+    try {
+      setIsSwitching(true);
+      const result = await loginWithSyntheticUser(targetUserId);
+      if (result.success && result.user) {
+        document.cookie = `synthetic_user_id=${result.user.id}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+        document.cookie = `better-auth.session_token=synthetic-${result.user.id}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+        window.location.href = result.redirectTo;
+      } else {
+        setIsSwitching(false);
+      }
+    } catch (err) {
+      console.error("Gagal switch role:", err);
+      setIsSwitching(false);
+    }
+  };
+
+  const getSubroleDisplay = (sub?: ManagementSubrole | null) => {
+    switch (sub) {
+      case "hrd":
+        return {
+          label: "HRD & Operasional",
+          badgeClass:
+            "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800",
+          description:
+            "Hak akses: Pengelolaan Data Murid, Tutor, Jadwal, Sesi Belajar, Absensi, dan Laporan Kehadiran.",
+        };
+      case "finance":
+        return {
+          label: "Keuangan & Payroll",
+          badgeClass:
+            "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800",
+          description:
+            "Hak akses: Kalkulasi & Pembayaran Honor Tutor, Pengaturan Tarif Bimbel, dan Laporan Payroll.",
+        };
+      case "owner":
+      default:
+        return {
+          label: "Owner / Super Admin",
+          badgeClass:
+            "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800",
+          description:
+            "Hak akses penuh: Mengakses seluruh modul manajemen, operasional murid/tutor, payroll, laporan, dan konfigurasi master.",
+        };
+    }
+  };
+
+  const currentSubroleInfo = getSubroleDisplay(activeSubrole);
 
   // Helper format YYYY-MM-DD secara waktu lokal
   const getLocalDateStr = (date?: Date) => {
@@ -161,13 +242,141 @@ export default function ManagementDashboardPage({ stats }: { stats?: DashboardSt
         title="Dashboard Management"
         description="Ringkasan operasional harian bimbingan belajar, kalender jadwal, dan analitik kehadiran."
       >
-        <Button asChild size="sm" className="gap-1.5 shadow-xs">
-          <Link href="/management/schedules">
-            <CalendarDays className="w-4 h-4" />
-            <span>Lihat Kalender Jadwal</span>
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={isSwitching}
+            onClick={() => handleSwitchRole("usr-tut-001")}
+            className="gap-1.5 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 shadow-xs"
+          >
+            {isSwitching && activeUserId === "usr-tut-001" ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
+            )}
+            <span>Mode Tutor (Mengajar)</span>
+          </Button>
+
+          <Button asChild size="sm" className="gap-1.5 shadow-xs">
+            <Link href="/management/schedules">
+              <CalendarDays className="w-4 h-4" />
+              <span>Lihat Kalender Jadwal</span>
+            </Link>
+          </Button>
+        </div>
       </PageHeader>
+
+      {/* Quick Role & Persona Switcher Banner */}
+      <Card className="border border-border/80 bg-card/60 backdrop-blur-xs shadow-xs overflow-hidden">
+        <CardContent className="p-3.5 sm:p-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+                <ArrowLeftRight className="h-4 w-4" />
+              </div>
+              <div className="space-y-0.5 sm:space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    Peran Aktif:
+                  </span>
+                  <span
+                    className={cn(
+                      "text-xs font-semibold px-2.5 py-0.5 rounded-full border",
+                      currentSubroleInfo.badgeClass
+                    )}
+                  >
+                    {currentSubroleInfo.label}
+                  </span>
+                  <span className="text-xs text-muted-foreground hidden sm:inline">
+                    • Pengguna: <strong className="text-foreground">{activeUserName}</strong>
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground line-clamp-1">
+                  {currentSubroleInfo.description}
+                </p>
+              </div>
+            </div>
+
+            {/* Tombol Pilihan Switch Role Langsung */}
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap pt-1 lg:pt-0">
+              <Button
+                size="sm"
+                variant={activeUserId === "usr-mgmt-owner" ? "default" : "outline"}
+                disabled={isSwitching}
+                onClick={() => handleSwitchRole("usr-mgmt-owner")}
+                className={cn(
+                  "text-xs h-8 px-2.5 sm:px-3 gap-1.5 transition-all",
+                  activeUserId === "usr-mgmt-owner" &&
+                    "bg-purple-600 hover:bg-purple-700 text-white shadow-xs"
+                )}
+              >
+                {isSwitching && activeUserId === "usr-mgmt-owner" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Shield className="h-3.5 w-3.5 text-purple-400" />
+                )}
+                <span>👑 Owner</span>
+              </Button>
+
+              <Button
+                size="sm"
+                variant={activeUserId === "usr-mgmt-hrd" ? "default" : "outline"}
+                disabled={isSwitching}
+                onClick={() => handleSwitchRole("usr-mgmt-hrd")}
+                className={cn(
+                  "text-xs h-8 px-2.5 sm:px-3 gap-1.5 transition-all",
+                  activeUserId === "usr-mgmt-hrd" &&
+                    "bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                )}
+              >
+                {isSwitching && activeUserId === "usr-mgmt-hrd" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Briefcase className="h-3.5 w-3.5 text-blue-400" />
+                )}
+                <span>👥 HRD</span>
+              </Button>
+
+              <Button
+                size="sm"
+                variant={activeUserId === "usr-mgmt-finance" ? "default" : "outline"}
+                disabled={isSwitching}
+                onClick={() => handleSwitchRole("usr-mgmt-finance")}
+                className={cn(
+                  "text-xs h-8 px-2.5 sm:px-3 gap-1.5 transition-all",
+                  activeUserId === "usr-mgmt-finance" &&
+                    "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                )}
+              >
+                {isSwitching && activeUserId === "usr-mgmt-finance" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <CircleDollarSign className="h-3.5 w-3.5 text-emerald-400" />
+                )}
+                <span>💰 Keuangan</span>
+              </Button>
+
+              <div className="h-4 w-px bg-border mx-0.5 hidden sm:block" />
+
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isSwitching}
+                onClick={() => handleSwitchRole("usr-tut-001")}
+                className="text-xs h-8 px-2.5 sm:px-3 gap-1.5 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+              >
+                {isSwitching && activeUserId === "usr-tut-001" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <GraduationCap className="h-3.5 w-3.5 text-emerald-600" />
+                )}
+                <span>🎓 Mode Tutor</span>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -1,27 +1,29 @@
-import { createServerClient } from "@/lib/supabase/server";
+import { createServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { SYNTHETIC_TUTORS } from "@/data/tutors";
 import { TutorWithProfile } from "../types";
 
 export async function getTutors(): Promise<TutorWithProfile[]> {
-  try {
-    const supabase = createServerClient();
-    const { data, error } = await supabase
-      .from("tutors")
-      .select(`
-        *,
-        profiles (*),
-        tutor_rates (*, bimbel_types (*))
-      `)
-      .order("created_at", { ascending: false });
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = createServerClient();
+      const { data, error } = await supabase
+        .from("tutors")
+        .select(`
+          *,
+          profiles (*),
+          tutor_rates (*, bimbel_types (*))
+        `)
+        .order("created_at", { ascending: false });
 
-    if (!error && data && data.length > 0) {
-      return data as unknown as TutorWithProfile[];
+      if (!error && data && data.length > 0) {
+        return data as unknown as TutorWithProfile[];
+      }
+    } catch (err) {
+      console.warn("getTutors Supabase fallback:", err);
     }
-  } catch (err) {
-    console.warn("getTutors Supabase fallback:", err);
   }
 
   // Fallback to SYNTHETIC_TUTORS
-  const { SYNTHETIC_TUTORS } = await import("@/data/tutors");
   return SYNTHETIC_TUTORS.map((t) => ({
     id: t.id,
     user_id: t.userId,
@@ -42,27 +44,28 @@ export async function getTutors(): Promise<TutorWithProfile[]> {
 }
 
 export async function getTutorById(id: string): Promise<TutorWithProfile | null> {
-  try {
-    const supabase = createServerClient();
-    const { data, error } = await supabase
-      .from("tutors")
-      .select(`
-        *,
-        profiles (*),
-        tutor_rates (*, bimbel_types (*))
-      `)
-      .eq("id", id)
-      .single();
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = createServerClient();
+      const { data, error } = await supabase
+        .from("tutors")
+        .select(`
+          *,
+          profiles (*),
+          tutor_rates (*, bimbel_types (*))
+        `)
+        .eq("id", id)
+        .single();
 
-    if (!error && data) {
-      return data as unknown as TutorWithProfile;
+      if (!error && data) {
+        return data as unknown as TutorWithProfile;
+      }
+    } catch (err) {
+      console.warn("getTutorById Supabase fallback:", err);
     }
-  } catch (err) {
-    console.warn("getTutorById Supabase fallback:", err);
   }
 
   // Fallback to SYNTHETIC_TUTORS
-  const { SYNTHETIC_TUTORS } = await import("@/data/tutors");
   const found = SYNTHETIC_TUTORS.find((t) => t.id === id || t.userId === id);
   if (!found) return null;
 

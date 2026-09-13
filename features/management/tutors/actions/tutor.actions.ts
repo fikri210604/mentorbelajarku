@@ -3,6 +3,9 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { tutorSchema, TutorInput } from "../schemas/tutor.schema";
+import { SYNTHETIC_TUTORS } from "@/data/tutors";
+import { getCurrentUser } from "@/lib/auth/session";
+import { SYNTHETIC_USERS } from "@/data/users";
 
 export async function updateTutorStatus(id: string, status: "active" | "inactive") {
   try {
@@ -17,7 +20,6 @@ export async function updateTutorStatus(id: string, status: "active" | "inactive
 
   // Update in-memory synthetic tutors for local demo/prototype
   try {
-    const { SYNTHETIC_TUTORS } = await import("@/data/tutors");
     const tutor = SYNTHETIC_TUTORS.find((t) => t.id === id || t.userId === id);
     if (tutor) {
       tutor.status = status;
@@ -45,7 +47,6 @@ export async function promoteTutorToManagement(params: {
   keepActiveTeaching?: boolean;
 }) {
   try {
-    const { getCurrentUser } = await import("@/lib/auth/session");
     const currentUser = await getCurrentUser();
 
     // Pastikan hanya Owner yang boleh mengubah role
@@ -57,7 +58,6 @@ export async function promoteTutorToManagement(params: {
     }
 
     // Update data sintesis jika dalam mode sintesis
-    const { SYNTHETIC_USERS } = await import("@/data/users");
     const targetUser = SYNTHETIC_USERS.find((u) => u.tutorId === params.tutorId);
     if (targetUser) {
       targetUser.role = "management";

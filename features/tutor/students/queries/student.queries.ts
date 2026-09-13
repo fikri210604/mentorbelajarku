@@ -1,35 +1,37 @@
-import { createServerClient } from "@/lib/supabase/server";
+import { createServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { SYNTHETIC_STUDENTS } from "@/data/students";
 import { StudentProgressService } from "@/features/shared/students/services/student-progress.service";
 import { StudentWithPrograms } from "../types";
 
 export async function getStudents(): Promise<StudentWithPrograms[]> {
-  try {
-    const supabase = createServerClient();
-    const { data, error } = await supabase
-      .from("students")
-      .select(`
-        *,
-        enrollments (
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = createServerClient();
+      const { data, error } = await supabase
+        .from("students")
+        .select(`
           *,
-          programs (*),
-          bimbel_types (*)
-        )
-      `)
-      .order("student_code", { ascending: true });
+          enrollments (
+            *,
+            programs (*),
+            bimbel_types (*)
+          )
+        `)
+        .order("student_code", { ascending: true });
 
-    if (!error && data && data.length > 0) {
-      return data.map((item: any) => ({
-        ...item,
-        enrollments: item.enrollments || [],
-        student_programs: (item.enrollments || []).map((e: any) => ({
-          ...e,
-          total_sessions: e.max_meetings,
-        })),
-      })) as unknown as StudentWithPrograms[];
+      if (!error && data && data.length > 0) {
+        return data.map((item: any) => ({
+          ...item,
+          enrollments: item.enrollments || [],
+          student_programs: (item.enrollments || []).map((e: any) => ({
+            ...e,
+            total_sessions: e.max_meetings,
+          })),
+        })) as unknown as StudentWithPrograms[];
+      }
+    } catch (err) {
+      console.warn("tutor getStudents Supabase fallback:", err);
     }
-  } catch (err) {
-    console.warn("tutor getStudents Supabase fallback:", err);
   }
 
   // Fallback to synthetic students for tutor view
@@ -82,34 +84,36 @@ export async function getStudents(): Promise<StudentWithPrograms[]> {
 }
 
 export async function getStudentById(id: string): Promise<StudentWithPrograms | null> {
-  try {
-    const supabase = createServerClient();
-    const { data, error } = await supabase
-      .from("students")
-      .select(`
-        *,
-        enrollments (
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = createServerClient();
+      const { data, error } = await supabase
+        .from("students")
+        .select(`
           *,
-          programs (*),
-          bimbel_types (*)
-        )
-      `)
-      .eq("id", id)
-      .single();
+          enrollments (
+            *,
+            programs (*),
+            bimbel_types (*)
+          )
+        `)
+        .eq("id", id)
+        .single();
 
-    if (!error && data) {
-      const item: any = data;
-      return {
-        ...item,
-        enrollments: item.enrollments || [],
-        student_programs: (item.enrollments || []).map((e: any) => ({
-          ...e,
-          total_sessions: e.max_meetings,
-        })),
-      } as unknown as StudentWithPrograms;
+      if (!error && data) {
+        const item: any = data;
+        return {
+          ...item,
+          enrollments: item.enrollments || [],
+          student_programs: (item.enrollments || []).map((e: any) => ({
+            ...e,
+            total_sessions: e.max_meetings,
+          })),
+        } as unknown as StudentWithPrograms;
+      }
+    } catch (err) {
+      console.warn("tutor getStudentById Supabase fallback:", err);
     }
-  } catch (err) {
-    console.warn("tutor getStudentById Supabase fallback:", err);
   }
 
   const found = SYNTHETIC_STUDENTS.find((s) => s.id === id || s.student_code === id);
