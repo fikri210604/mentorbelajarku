@@ -1,8 +1,9 @@
-import { TableSkeleton } from "@/components/shared/skeletons/table-skeleton";
+import { GlobalLoading } from "@/components/shared/global-loading";
 
 export default function PayrollLoading() {
   return (
-    <TableSkeleton
+    <GlobalLoading
+      variant="table"
       title="Honor & Payroll Tutor"
       description="Kalkulasi otomatis honor mengajar berdasarkan kehadiran dan rate terkonfigurasi."
       columns={6}

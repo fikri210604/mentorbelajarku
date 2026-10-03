@@ -15,6 +15,8 @@ import {
   Save,
   FileText,
   Sparkles,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +71,9 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
   // State Feedback Password
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Form 1: Update Profil
   const {
@@ -103,7 +108,7 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
     setProfileSuccess(null);
     setProfileError(null);
 
-    const res = await updateTutorProfile(data, initialData.userId);
+    const res = await updateTutorProfile(data);
     if (!res.success) {
       setProfileError(res.error || "Gagal memperbarui profil.");
       return;
@@ -117,7 +122,7 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
     setPasswordSuccess(null);
     setPasswordError(null);
 
-    const res = await changeTutorPassword(data, initialData.userId);
+    const res = await changeTutorPassword(data);
     if (!res.success) {
       setPasswordError(res.error || "Gagal mengubah kata sandi.");
       return;
@@ -326,12 +331,28 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
                 <label className="text-xs font-semibold text-foreground">
                   Kata Sandi Saat Ini *
                 </label>
-                <Input
-                  {...registerPassword("currentPassword")}
-                  type="password"
-                  placeholder="Masukkan kata sandi saat ini"
-                  className="mt-1 text-xs"
-                />
+                <div className="relative mt-1">
+                  <Input
+                    {...registerPassword("currentPassword")}
+                    type={showCurrentPassword ? "text" : "password"}
+                    placeholder="Masukkan kata sandi saat ini"
+                    className="text-xs pr-9"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword((prev) => !prev)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors cursor-pointer"
+                    aria-label={showCurrentPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
+                    title={showCurrentPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
+                    tabIndex={-1}
+                  >
+                    {showCurrentPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
                 {passwordErrors.currentPassword && (
                   <p className="text-xs text-destructive mt-1 font-medium">
                     {passwordErrors.currentPassword.message}
@@ -343,12 +364,28 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
                 <label className="text-xs font-semibold text-foreground">
                   Kata Sandi Baru * (Min. 8 Karakter, Huruf & Angka)
                 </label>
-                <Input
-                  {...registerPassword("newPassword")}
-                  type="password"
-                  placeholder="Masukkan kata sandi baru"
-                  className="mt-1 text-xs"
-                />
+                <div className="relative mt-1">
+                  <Input
+                    {...registerPassword("newPassword")}
+                    type={showNewPassword ? "text" : "password"}
+                    placeholder="Masukkan kata sandi baru"
+                    className="text-xs pr-9"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword((prev) => !prev)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors cursor-pointer"
+                    aria-label={showNewPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
+                    title={showNewPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
+                    tabIndex={-1}
+                  >
+                    {showNewPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
                 {passwordErrors.newPassword && (
                   <p className="text-xs text-destructive mt-1 font-medium">
                     {passwordErrors.newPassword.message}
@@ -360,12 +397,28 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
                 <label className="text-xs font-semibold text-foreground">
                   Ulangi Kata Sandi Baru *
                 </label>
-                <Input
-                  {...registerPassword("confirmPassword")}
-                  type="password"
-                  placeholder="Ketik ulang kata sandi baru"
-                  className="mt-1 text-xs"
-                />
+                <div className="relative mt-1">
+                  <Input
+                    {...registerPassword("confirmPassword")}
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Ketik ulang kata sandi baru"
+                    className="text-xs pr-9"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors cursor-pointer"
+                    aria-label={showConfirmPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
+                    title={showConfirmPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
+                    tabIndex={-1}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
                 {passwordErrors.confirmPassword && (
                   <p className="text-xs text-destructive mt-1 font-medium">
                     {passwordErrors.confirmPassword.message}

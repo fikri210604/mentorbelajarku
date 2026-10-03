@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -10,11 +10,9 @@ import {
   Calendar,
   ClipboardCheck,
   CreditCard,
-  GraduationCap,
   LogOut,
   UserCog,
   Building2,
-  X,
   PanelLeftClose,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,49 +37,22 @@ export function TutorSidebar({ isManagement }: TutorSidebarProps = {}) {
   const {
     sidebarOpen,
     setSidebarOpen,
-    mobileMenuOpen,
     closeMobileMenu,
   } = useUiStore();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
-  // Otomatis menutup sidebar mobile jika navigasi halaman berganti
+  // Hentikan indikator loading saat navigasi selesai (halaman berganti)
   useEffect(() => {
-    closeMobileMenu();
     setPendingHref(null);
-  }, [pathname, closeMobileMenu]);
-
-  // Listener tombol Escape untuk menutup drawer pada mobile
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && mobileMenuOpen) {
-        closeMobileMenu();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [mobileMenuOpen, closeMobileMenu]);
+  }, [pathname]);
 
   return (
     <>
-      {/* Mobile Backdrop Overlay */}
-      {mobileMenuOpen && (
-        <div
-          onClick={closeMobileMenu}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 animate-in fade-in"
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Sidebar Aside */}
+      {/* Sidebar Aside — desktop only (mobile memakai bottom nav) */}
       <aside
         className={cn(
-          "bg-card border-r border-border min-h-screen p-4 flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out",
-          // Mobile Drawer styling (fixed overlay slide-in)
-          "fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] shadow-2xl lg:shadow-none",
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full",
-          // Desktop styling (in-flow sidebar)
-          "lg:static lg:translate-x-0",
-          sidebarOpen ? "lg:flex lg:w-64" : "lg:hidden"
+          "bg-card border-r border-border min-h-screen p-4 flex-col justify-between shrink-0 transition-all duration-300 ease-in-out hidden lg:flex",
+          sidebarOpen ? "lg:w-64" : "lg:w-0 lg:p-0 lg:overflow-hidden"
         )}
       >
         <div className="space-y-6">
@@ -106,17 +77,6 @@ export function TutorSidebar({ isManagement }: TutorSidebarProps = {}) {
                 </span>
               </div>
             </div>
-
-            {/* Tombol Tutup Mobile (X) */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground lg:hidden rounded-lg"
-              onClick={closeMobileMenu}
-              aria-label="Tutup sidebar"
-            >
-              <X className="h-4 w-4" />
-            </Button>
 
             {/* Tombol Tutup / Minimize Desktop */}
             <Button

@@ -1,6 +1,8 @@
 import ManagementSettingsPage from "@/features/management/settings/components/ManagementSettingsPage";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireAuthUser } from "@/lib/auth/session";
+import { getRolesWithPermissionsAction } from "@/features/management/settings/actions/role.actions";
+import { getPermissionsCatalog } from "@/features/management/settings/queries/permission.queries";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -18,8 +20,16 @@ export default async function Page({ searchParams }: SettingsPageProps) {
   const session = await requireAuthUser();
   const supabase = createServerClient();
 
-  const [bimbelRes, programsRes, packagesRes, ratesRes, mgmtRatesRes, tutorsRes] =
-    await Promise.all([
+  const [
+    bimbelRes,
+    programsRes,
+    packagesRes,
+    ratesRes,
+    mgmtRatesRes,
+    tutorsRes,
+    rolesRes,
+    permissionsCatalog,
+  ] = await Promise.all([
       supabase.from("bimbel_types").select("*").order("duration_minutes"),
       supabase.from("programs").select("*").order("name"),
       supabase
@@ -36,8 +46,10 @@ export default async function Page({ searchParams }: SettingsPageProps) {
         .order("created_at", { ascending: false }),
       supabase
         .from("tutors")
-        .select("id, status, profiles (id, full_name, role)")
+        .select("id, status, profiles (id, full_name)")
         .order("created_at", { ascending: true }),
+      getRolesWithPermissionsAction(),
+      getPermissionsCatalog(),
     ]);
 
   return (
@@ -47,10 +59,12 @@ export default async function Page({ searchParams }: SettingsPageProps) {
       initialPackages={packagesRes.data || []}
       initialRates={ratesRes.data || []}
       initialManagementRates={mgmtRatesRes.data || []}
+      initialRoles={rolesRes.data || []}
+      initialPermissions={permissionsCatalog}
       tutorsList={tutorsRes.data || []}
       currentSubrole={session.subrole}
       defaultTab={
-        ["bimbel-types", "programs", "packages", "tutor-rates", "management-rates"].includes(
+        ["bimbel-types", "programs", "packages", "tutor-rates", "management-rates", "roles"].includes(
           requestedTab
         )
           ? requestedTab

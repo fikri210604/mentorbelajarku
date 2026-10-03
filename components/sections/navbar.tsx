@@ -16,9 +16,9 @@ export function Navbar() {
     { label: 'Home', href: '/' },
     { label: 'Tentang Kami', href: '#tentang' },
     { label: 'Program', href: '#program' },
-    { label: 'Keunggulan', href: '#keunggulan' },
+    { label: 'Metode Belajar', href: '#metode' },
     { label: 'Testimoni', href: '#testimoni' },
-    { label: 'Gallery', href: '#gallery' },
+    { label: 'Aktivitas', href: '#gallery' },
     { label: 'FAQ', href: '#faq' },
   ];
 

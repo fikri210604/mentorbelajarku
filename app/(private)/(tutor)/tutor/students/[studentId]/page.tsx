@@ -15,8 +15,10 @@ export default async function Page({
   params: Promise<{ studentId: string }>;
 }) {
   const { studentId } = await params;
-  const student = await getStudentById(studentId);
-  const progressData = await getStudentProgressData(studentId);
+  const [student, progressData] = await Promise.all([
+    getStudentById(studentId),
+    getStudentProgressData(studentId),
+  ]);
 
   return (
     <TutorStudentDetailPage

@@ -742,6 +742,20 @@ export function ScheduleCalendarView({
                   </div>
                 </div>
 
+                {/* Mata Pelajaran & Kurikulum Terjadwal */}
+                {(activeSchedule.subject_name || activeSchedule.target_material) && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/60">
+                    <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Mata Pelajaran & Materi</p>
+                      <p className="font-semibold text-foreground">
+                        {activeSchedule.subject_name ? `${activeSchedule.subject_name} • ` : ""}
+                        {activeSchedule.target_material || activeSchedule.topic_title || "-"}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Murid Peserta */}
                 <div className="p-3 rounded-lg bg-muted/50 border border-border space-y-1.5">
                   <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">

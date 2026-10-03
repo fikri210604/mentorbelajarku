@@ -1,27 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { requireTutorApi } from "@/lib/auth/guards";
+import { getSafeErrorMessage } from "@/lib/traits/response.trait";
 
 export async function GET(
-  request: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ attendanceId: string }> }
 ) {
-  const user = await getAuthUser();
-  if (user.role !== "tutor" && user.role !== "management") {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-  }
+  const guard = await requireTutorApi("attendance:read");
+  if (!guard.ok) return guard.response;
 
+  const tutorId = guard.user.tutorId as string;
   const { attendanceId } = await params;
   const supabase = createServerSupabaseClient();
 
+  // Otorisasi level objek: attendance hanya boleh dibaca jika sesinya milik tutor aktif.
   const { data, error } = await supabase
     .from("attendance")
-    .select("*, students(id, name, student_code)")
+    .select(
+      `id, session_id, student_id, enrollment_id, status, verification_status,
+       photo_path, notes, checked_in_at, verified_at,
+       students (id, name, student_code),
+       sessions!inner (id, tutor_id, session_date, start_time, end_time)`
+    )
     .eq("id", attendanceId)
-    .single();
+    .eq("sessions.tutor_id", tutorId)
+    .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 404 });
+    return NextResponse.json(
+      { success: false, error: getSafeErrorMessage(error, "Gagal mengambil presensi.") },
+      { status: 500 }
+    );
+  }
+
+  if (!data) {
+    return NextResponse.json({ success: false, error: "Presensi tidak ditemukan." }, { status: 404 });
   }
 
   return NextResponse.json({ success: true, data });

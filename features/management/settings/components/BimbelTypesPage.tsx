@@ -39,15 +39,13 @@ import {
 } from "@/components/ui/select";
 import { bimbelTypeSchema, BimbelTypeInput } from "../schemas/settings.schema";
 import { saveBimbelType, deleteBimbelType } from "../actions/settings.actions";
-import { SYNTHETIC_BIMBEL_TYPES } from "@/data/bimbel-types";
 
 interface BimbelTypesPageProps {
   initialBimbelTypes?: any[];
 }
 
 export default function BimbelTypesPage({ initialBimbelTypes = [] }: BimbelTypesPageProps) {
-  const defaultTypes = initialBimbelTypes && initialBimbelTypes.length > 0 ? initialBimbelTypes : SYNTHETIC_BIMBEL_TYPES;
-  const [types, setTypes] = useState(defaultTypes);
+  const [types, setTypes] = useState<any[]>(initialBimbelTypes);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingType, setEditingType] = useState<any | null>(null);
   const [deletingType, setDeletingType] = useState<any | null>(null);
@@ -129,6 +127,8 @@ export default function BimbelTypesPage({ initialBimbelTypes = [] }: BimbelTypes
 
   return (
     <div className="space-y-6">
+      <SettingsNavTabs />
+
       <PageHeader
         title="Pengaturan Jenis Bimbel"
         description="Kelola jenis bimbingan belajar (Reguler, Intensif, Private) dan durasi standar pembelajarannya."
@@ -138,8 +138,6 @@ export default function BimbelTypesPage({ initialBimbelTypes = [] }: BimbelTypes
           Tambah Jenis Bimbel
         </Button>
       </PageHeader>
-
-      <SettingsNavTabs />
 
       <div className="rounded-md border border-border bg-card">
         <div className="overflow-x-auto">

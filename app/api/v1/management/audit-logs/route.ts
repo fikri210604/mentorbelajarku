@@ -1,22 +1,24 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { getAuthUser } from "@/lib/auth/session";
+import { requirePermissionApi } from "@/lib/auth/guards";
+import { getSafeErrorMessage } from "@/lib/traits/response.trait";
 
 export async function GET() {
-  const user = await getAuthUser();
-  if (!user || (user.role !== "management" && user.role !== "admin")) {
-    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
-  }
+  const guard = await requirePermissionApi("audit:read");
+  if (!guard.ok) return guard.response;
 
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("audit_logs")
-    .select("*")
+    .select("id, user_id, action, entity_type, entity_id, metadata, created_at")
     .order("created_at", { ascending: false })
     .limit(100);
 
   if (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    return NextResponse.json(
+      { success: false, error: getSafeErrorMessage(error, "Gagal mengambil audit log.") },
+      { status: 500 }
+    );
   }
   return NextResponse.json({ success: true, data });
 }

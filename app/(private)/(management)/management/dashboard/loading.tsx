@@ -1,5 +1,5 @@
-import { DashboardSkeleton } from "@/components/shared/skeletons/dashboard-skeleton";
+import { GlobalLoading } from "@/components/shared/global-loading";
 
 export default function DashboardLoading() {
-  return <DashboardSkeleton />;
+  return <GlobalLoading variant="dashboard" />;
 }

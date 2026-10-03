@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generatePayrollAction } from "@/features/management/payroll/actions/payroll.actions";
-import { getAuthUser } from "@/lib/auth/session";
+import { requirePermissionApi } from "@/lib/auth/guards";
+import { getSafeErrorMessage } from "@/lib/traits/response.trait";
 
 export async function POST(req: NextRequest) {
-  const user = await getAuthUser();
-  if (!user || (user.role !== "management" && user.role !== "admin")) {
-    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
-  }
+  const guard = await requirePermissionApi("payroll:generate");
+  if (!guard.ok) return guard.response;
 
   try {
     const body = await req.json();
@@ -15,7 +14,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(result, { status: 400 });
     }
     return NextResponse.json(result, { status: 201 });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 400 });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { success: false, error: getSafeErrorMessage(err, "Gagal membuat payroll.") },
+      { status: 400 }
+    );
   }
 }

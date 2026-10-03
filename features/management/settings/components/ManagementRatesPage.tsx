@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -51,7 +52,6 @@ import {
 } from "@/components/ui/select";
 import { managementRateSchema, ManagementRateInput } from "../schemas/settings.schema";
 import { saveManagementRate, deleteManagementRate } from "../actions/settings.actions";
-import { SYNTHETIC_MANAGEMENT_RATES } from "@/data/payroll";
 import { SettingsNavTabs } from "./SettingsNavTabs";
 
 interface ManagementRatesPageProps {
@@ -65,9 +65,7 @@ export default function ManagementRatesPage({
 }: ManagementRatesPageProps) {
   const isOwner = currentSubrole === "owner" || currentSubrole === "superadmin" || !currentSubrole;
 
-  const defaultRates =
-    initialRates && initialRates.length > 0 ? initialRates : SYNTHETIC_MANAGEMENT_RATES;
-  const [rates, setRates] = useState(defaultRates);
+  const [rates, setRates] = useState<any[]>(initialRates);
   const [search, setSearch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRate, setEditingRate] = useState<any | null>(null);
@@ -78,6 +76,7 @@ export default function ManagementRatesPage({
     register,
     handleSubmit,
     setValue,
+    watch,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<ManagementRateInput>({
@@ -200,6 +199,8 @@ export default function ManagementRatesPage({
 
   return (
     <div className="space-y-6">
+      <SettingsNavTabs />
+
       <PageHeader
         title="Pengaturan Gaji & Tarif Manajemen"
         description="Konfigurasi gaji pokok, tunjangan operasional, dan kompensasi staf manajemen bimbel (HRD, Finance, Admin, Owner)."
@@ -211,8 +212,6 @@ export default function ManagementRatesPage({
           </Button>
         )}
       </PageHeader>
-
-      <SettingsNavTabs />
 
       {/* CALLOUT KHUSUS OWNER */}
       <div className="flex items-start gap-3 p-4 rounded-xl bg-purple-50/70 border border-purple-200 dark:bg-purple-950/30 dark:border-purple-900/50 text-purple-900 dark:text-purple-200 text-xs">
@@ -442,10 +441,11 @@ export default function ManagementRatesPage({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="effective_from">Mulai Berlaku <span className="text-destructive">*</span></Label>
-                <Input
+                <DatePicker
                   id="effective_from"
-                  type="date"
-                  {...register("effective_from")}
+                  value={watch("effective_from")}
+                  onChange={(_, str) => setValue("effective_from", str, { shouldValidate: true })}
+                  placeholder="Pilih tanggal mulai"
                 />
                 {errors.effective_from && (
                   <p className="text-xs text-destructive">{errors.effective_from.message}</p>
@@ -454,10 +454,12 @@ export default function ManagementRatesPage({
 
               <div className="space-y-1.5">
                 <Label htmlFor="effective_until">Berlaku Sampai (Opsional)</Label>
-                <Input
+                <DatePicker
                   id="effective_until"
-                  type="date"
-                  {...register("effective_until")}
+                  value={watch("effective_until")}
+                  onChange={(_, str) => setValue("effective_until", str ? str : null, { shouldValidate: true })}
+                  placeholder="Tanpa batas (selamanya)"
+                  clearable
                 />
               </div>
             </div>

@@ -1,4 +1,4 @@
-import { Permission, Role, ManagementSubrole } from "@/types/auth";
+import { Role } from "@/types/auth";
 import {
   ROLE_PERMISSIONS,
   SUBROLE_PERMISSIONS,
@@ -6,6 +6,15 @@ import {
   hasSubrolePermission,
   canSubroleAccessRoute,
 } from "@/config/permissions";
+import {
+  KNOWN_PERMISSION_IDS,
+  normalizeRoleName,
+  isKnownPermission,
+  isOwnerRoleName,
+  resolvePermissionsForRoleName,
+  roleNameHasPermission,
+  hasAnyPermission,
+} from "./resolver";
 
 export {
   ROLE_PERMISSIONS,
@@ -13,6 +22,13 @@ export {
   hasPermission,
   hasSubrolePermission,
   canSubroleAccessRoute,
+  KNOWN_PERMISSION_IDS,
+  normalizeRoleName,
+  isKnownPermission,
+  isOwnerRoleName,
+  resolvePermissionsForRoleName,
+  roleNameHasPermission,
+  hasAnyPermission,
 };
 
 export function canAccessManagement(role?: Role): boolean {

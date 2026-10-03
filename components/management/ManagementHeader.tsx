@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UserNav } from "@/components/shared/user-nav";
+import { BreadcrumbNav } from "@/components/shared/breadcrumb-nav";
 import { useUiStore } from "@/stores/ui-store";
 
 export function ManagementHeader() {
@@ -36,13 +37,16 @@ export function ManagementHeader() {
           <Menu className="h-5 w-5" />
         </Button>
 
-        <div className="relative w-full max-w-xs hidden sm:block">
+        <div className="relative w-full max-w-xs hidden sm:flex items-center gap-3">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Cari murid, tutor, atau jadwal..."
             className="pl-9 h-9 bg-background/50 text-xs"
           />
+        </div>
+        <div className="hidden lg:flex shrink-0 border-l border-border/60 pl-3 sm:pl-4">
+          <BreadcrumbNav />
         </div>
       </div>
 

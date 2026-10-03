@@ -11,3 +11,20 @@ export interface PayrollWithDetails extends TutorPayment {
     bimbel_types?: Tables<"bimbel_types"> | null;
   })[];
 }
+
+/** Riwayat mengajar satu sesi beserta honor yang dihitung server. */
+export interface TutorSessionEarning {
+  sessionId: string;
+  sessionDate: string;
+  startTime: string | null;
+  endTime: string | null;
+  programName: string;
+  bimbelTypeName: string;
+  totalStudents: number;
+  payableStudents: number;
+  /** null = tarif belum dikonfigurasi / gagal dihitung. */
+  amount: number | null;
+  ratePerStudent: number | null;
+  /** true bila sesi sudah masuk ke dokumen payroll (tutor_payments). */
+  inPayroll: boolean;
+}

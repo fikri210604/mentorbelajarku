@@ -1,28 +1,22 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Plus_Jakarta_Sans, Inter, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
 import NextTopLoader from "nextjs-toploader";
 import { GlobalNavigationProgress } from "@/components/shared/global-navigation-progress";
+import { ConnectionAlert } from "@/components/shared/connection-alert";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-heading",
-  weight: ["600", "700", "800"],
   display: "swap",
 });
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
   display: "swap",
 });
 
@@ -44,9 +38,10 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={cn("h-full", "antialiased", inter.variable, geistMono.variable, plusJakartaSans.variable, "font-sans")}
+      className={cn("h-full", "antialiased", inter.variable, plusJakartaSans.variable, "font-sans")}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <NextTopLoader
           color="#00A86B"
           height={3}
@@ -60,6 +55,7 @@ export default function RootLayout({
           <GlobalNavigationProgress />
         </Suspense>
         {children}
+        <ConnectionAlert />
         <Toaster />
       </body>
     </html>

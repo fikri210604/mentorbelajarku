@@ -1,9 +1,13 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Clock, User, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Clock, User, CheckCircle2, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { RescheduleSessionDialog } from "@/features/shared/sessions/components/RescheduleSessionDialog";
 import { SessionWithDetails } from "../types";
 
 interface SessionDetailPageProps {
@@ -13,6 +17,7 @@ interface SessionDetailPageProps {
 
 export default function SessionDetailPage({ session, isTutor = false }: SessionDetailPageProps) {
   const backHref = isTutor ? "/tutor/dashboard" : "/management/sessions";
+  const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
 
   if (!session) {
     return (
@@ -36,6 +41,15 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
             <ArrowLeft className="w-4 h-4 mr-2" />
             Kembali
           </Link>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsRescheduleOpen(true)}
+          className="gap-1.5 border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10"
+        >
+          <CalendarClock className="w-4 h-4 text-amber-600" />
+          <span>Jadwalkan Ulang</span>
         </Button>
         {isTutor && (
           <Button asChild size="sm">
@@ -101,6 +115,19 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
           </CardContent>
         </Card>
       </div>
+
+      {/* Reschedule Dialog */}
+      <RescheduleSessionDialog
+        open={isRescheduleOpen}
+        onOpenChange={setIsRescheduleOpen}
+        session={{
+          id: session.id,
+          session_date: session.session_date,
+          start_time: session.start_time,
+          end_time: session.end_time,
+          program_name: session.programs?.name,
+        }}
+      />
     </div>
   );
 }

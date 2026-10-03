@@ -38,6 +38,7 @@ export type Database = {
           email_verified: boolean;
           image: string | null;
           role: UserRole;
+          role_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -48,6 +49,7 @@ export type Database = {
           email_verified?: boolean;
           image?: string | null;
           role?: UserRole;
+          role_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -213,6 +215,7 @@ export type Database = {
           name: string;
           gender: 'male' | 'female' | null;
           birth_date: string | null;
+          avatar_url: string | null;
           school: string | null;
           grade: string | null;
           level: string;
@@ -229,6 +232,7 @@ export type Database = {
           name: string;
           gender?: 'male' | 'female' | null;
           birth_date?: string | null;
+          avatar_url?: string | null;
           school?: string | null;
           grade?: string | null;
           level?: string;
@@ -373,6 +377,123 @@ export type Database = {
           referencedColumns: string[];
         }[];
       };
+      roles: {
+        Row: {
+          id: string;
+          name: string;
+          display_name: string;
+          description: string | null;
+          is_system: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          display_name: string;
+          description?: string | null;
+          is_system?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      permissions: {
+        Row: {
+          id: string;
+          category: string;
+          name: string;
+          description: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          category: string;
+          name: string;
+          description?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      role_permissions: {
+        Row: {
+          id: string;
+          role_id: string;
+          permission_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          role_id: string;
+          permission_id: string;
+          created_at?: string;
+        };
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne?: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
+      };
+      subjects: {
+        Row: {
+          id: string;
+          code: string;
+          name: string;
+          level: string;
+          description: string | null;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          name: string;
+          level: string;
+          description?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      curriculum_topics: {
+        Row: {
+          id: string;
+          subject_id: string;
+          grade: string;
+          chapter_number: number;
+          title: string;
+          description: string | null;
+          worksheet_name: string | null;
+          worksheet_url: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          subject_id: string;
+          grade: string;
+          chapter_number: number;
+          title: string;
+          description?: string | null;
+          worksheet_name?: string | null;
+          worksheet_url?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne?: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
+      };
       schedules: {
         Row: {
           id: string;
@@ -449,6 +570,9 @@ export type Database = {
           start_time: string;
           end_time: string;
           status: SessionStatus;
+          attendance_deadline: string | null;
+          allow_late_upload: boolean;
+          late_upload_reason: string | null;
           rescheduled_from_session_id: string | null;
           notes: string | null;
           created_by: string | null;
@@ -467,9 +591,49 @@ export type Database = {
           start_time: string;
           end_time: string;
           status?: SessionStatus;
+          attendance_deadline?: string | null;
+          allow_late_upload?: boolean;
+          late_upload_reason?: string | null;
           rescheduled_from_session_id?: string | null;
           notes?: string | null;
           created_by?: string | null;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne?: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
+      };
+      attendance_window_settings: {
+        Row: {
+          id: string;
+          name: string;
+          open_before_minutes: number;
+          close_after_hours: number;
+          max_days_allowed: number;
+          daily_cutoff_time: string;
+          allow_tutor_backdate: boolean;
+          description: string | null;
+          status: string;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name?: string;
+          open_before_minutes?: number;
+          close_after_hours?: number;
+          max_days_allowed?: number;
+          daily_cutoff_time?: string;
+          allow_tutor_backdate?: boolean;
+          description?: string | null;
+          status?: string;
           updated_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -488,11 +652,9 @@ export type Database = {
           session_id: string;
           student_id: string;
           enrollment_id: string | null;
-          student_program_id: string | null;
           status: AttendanceStatus;
           verification_status: VerificationStatus;
           photo_path: string | null;
-          material: string | null;
           notes: string | null;
           checked_in_at: string | null;
           checked_in_by: string | null;
@@ -508,11 +670,9 @@ export type Database = {
           session_id: string;
           student_id: string;
           enrollment_id?: string | null;
-          student_program_id?: string | null;
           status: AttendanceStatus;
           verification_status?: VerificationStatus;
           photo_path?: string | null;
-          material?: string | null;
           notes?: string | null;
           checked_in_at?: string | null;
           checked_in_by?: string | null;
@@ -669,13 +829,20 @@ export type Database = {
           tutor_id: string;
           period_start: string;
           period_end: string;
+          total_sessions: number;
+          total_students_attended: number;
+          total_amount: number;
           gross_amount: number;
           bonus: number;
           deduction: number;
           net_amount: number;
           status: PayrollStatus;
+          finalized_at: string | null;
+          finalized_by: string | null;
           paid_at: string | null;
-          processed_by: string | null;
+          paid_by: string | null;
+          payment_reference: string | null;
+          notes: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -684,13 +851,20 @@ export type Database = {
           tutor_id: string;
           period_start: string;
           period_end: string;
+          total_sessions?: number;
+          total_students_attended?: number;
+          total_amount?: number;
           gross_amount?: number;
           bonus?: number;
           deduction?: number;
           net_amount?: number;
           status?: PayrollStatus;
+          finalized_at?: string | null;
+          finalized_by?: string | null;
           paid_at?: string | null;
-          processed_by?: string | null;
+          paid_by?: string | null;
+          payment_reference?: string | null;
+          notes?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -705,24 +879,32 @@ export type Database = {
       tutor_payment_items: {
         Row: {
           id: string;
-          tutor_payment_id: string;
+          payment_id: string;
           session_id: string;
-          student_id: string;
-          bimbel_type_id: string;
-          rate: number;
+          student_id: string | null;
+          bimbel_type_id: string | null;
+          session_date: string | null;
+          payable_students_count: number;
+          rate_applied: number | null;
+          subtotal: number;
           quantity: number;
-          amount: number;
+          amount: number | null;
+          notes: string | null;
           created_at: string;
         };
         Insert: {
           id?: string;
-          tutor_payment_id: string;
+          payment_id: string;
           session_id: string;
-          student_id: string;
-          bimbel_type_id: string;
-          rate: number;
+          student_id?: string | null;
+          bimbel_type_id?: string | null;
+          session_date?: string | null;
+          payable_students_count?: number;
+          rate_applied?: number | null;
+          subtotal: number;
           quantity?: number;
-          amount: number;
+          amount?: number | null;
+          notes?: string | null;
           created_at?: string;
         };
         Relationships: {
@@ -807,6 +989,7 @@ export type Database = {
           max_meetings: number | null;
           enrollment_status: EnrollmentStatus | null;
           meeting_number: number | null;
+          meeting_code: string | null;
         };
         Relationships: {
           foreignKeyName: string;
@@ -818,7 +1001,13 @@ export type Database = {
       };
     };
     Functions: {
-      [_ in never]: never;
+      delete_student_cascade: {
+        Args: {
+          p_student_id: string;
+          p_actor_user_id: string;
+        };
+        Returns: Json;
+      };
     };
     Enums: {
       user_role: UserRole;

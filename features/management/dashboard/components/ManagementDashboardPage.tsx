@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   Users,
@@ -9,21 +9,13 @@ import {
   CreditCard,
   ArrowRight,
   Clock,
-  MapPin,
   GraduationCap,
-  Sparkles,
   CheckCircle2,
   Calendar as CalendarIcon,
   TrendingUp,
   BarChart2,
   CalendarX,
   Plus,
-  Shield,
-  Briefcase,
-  CircleDollarSign,
-  ArrowLeftRight,
-  Loader2,
-  UserCog,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,129 +25,37 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-} from "recharts";
-import { SYNTHETIC_SESSIONS, type SyntheticSession } from "@/data/sessions";
-import { SYNTHETIC_SCHEDULES } from "@/data/schedules";
-import { SYNTHETIC_USERS } from "@/data/users";
-import { loginWithSyntheticUser } from "@/features/auth/actions/auth.actions";
-import type { ManagementSubrole } from "@/types/auth";
-import { formatDate, cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
+import { ChartSkeleton } from "./charts/ChartSkeleton";
 
-interface DashboardStats {
-  totalStudents?: number;
-  totalTutors?: number;
-  todaySessions?: number;
-  totalPayrollDraft?: number;
+const WeeklyBarChart = dynamic(
+  () => import("./charts/WeeklyBarChart").then((mod) => mod.WeeklyBarChart),
+  {
+    loading: () => <ChartSkeleton height="h-72" />,
+    ssr: false,
+  }
+);
+
+const BimbelPieChart = dynamic(
+  () => import("./charts/BimbelPieChart").then((mod) => mod.BimbelPieChart),
+  {
+    loading: () => <ChartSkeleton height="h-56" />,
+    ssr: false,
+  }
+);
+import { formatDate } from "@/lib/utils";
+import type { DashboardData } from "../queries/dashboard.queries";
+
+interface ManagementDashboardPageProps {
+  initialData?: DashboardData;
 }
 
-// Data tren sesi mingguan untuk grafik Recharts
-const WEEKLY_SESSION_DATA = [
-  { day: "Senin", selesai: 6, terjadwal: 8 },
-  { day: "Selasa", selesai: 7, terjadwal: 7 },
-  { day: "Rabu", selesai: 5, terjadwal: 9 },
-  { day: "Kamis", selesai: 8, terjadwal: 8 },
-  { day: "Jumat", selesai: 6, terjadwal: 6 },
-  { day: "Sabtu", selesai: 9, terjadwal: 10 },
-  { day: "Minggu", selesai: 2, terjadwal: 3 },
-];
-
-const BIMBEL_TYPE_DATA = [
-  { name: "Reguler (60m)", value: 24, color: "#3b82f6" },
-  { name: "Intensif (75m)", value: 14, color: "#f59e0b" },
-  { name: "Private (90m)", value: 8, color: "#a855f7" },
-];
-
-export default function ManagementDashboardPage({ stats }: { stats?: DashboardStats }) {
+export default function ManagementDashboardPage({ initialData }: ManagementDashboardPageProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-
-  // State Role & Identitas Demo Aktif
-  const [activeUserId, setActiveUserId] = useState<string>("usr-mgmt-owner");
-  const [activeUserName, setActiveUserName] = useState<string>("Siti Rahmawati");
-  const [activeSubrole, setActiveSubrole] = useState<ManagementSubrole | null>("owner");
-  const [isSwitching, setIsSwitching] = useState(false);
-
-  useEffect(() => {
-    if (typeof document !== "undefined") {
-      const match = document.cookie.match(/(?:^|;\s*)synthetic_user_id=([^;]+)/);
-      if (match && match[1]) {
-        const found = SYNTHETIC_USERS.find(
-          (u) => u.id === match[1] || u.email.toLowerCase() === match[1].toLowerCase()
-        );
-        if (found) {
-          setActiveUserId(found.id);
-          setActiveUserName(found.name);
-          setActiveSubrole(found.subrole || (found.role === "management" ? "owner" : null));
-        }
-      }
-    }
-  }, []);
-
-  const handleSwitchRole = async (targetUserId: string) => {
-    if (targetUserId === activeUserId && !isSwitching) return;
-    try {
-      setIsSwitching(true);
-      const result = await loginWithSyntheticUser(targetUserId);
-      if (result.success && result.user) {
-        document.cookie = `synthetic_user_id=${result.user.id}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
-        document.cookie = `better-auth.session_token=synthetic-${result.user.id}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
-        window.location.href = result.redirectTo;
-      } else {
-        setIsSwitching(false);
-      }
-    } catch (err) {
-      console.error("Gagal switch role:", err);
-      setIsSwitching(false);
-    }
-  };
-
-  const getSubroleDisplay = (sub?: ManagementSubrole | null) => {
-    switch (sub) {
-      case "hrd":
-        return {
-          label: "HRD & Operasional",
-          badgeClass:
-            "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800",
-          description:
-            "Hak akses: Pengelolaan Data Murid, Tutor, Jadwal, Sesi Belajar, Absensi, dan Laporan Kehadiran.",
-        };
-      case "finance":
-        return {
-          label: "Keuangan & Payroll",
-          badgeClass:
-            "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800",
-          description:
-            "Hak akses: Kalkulasi & Pembayaran Honor Tutor, Pengaturan Tarif Bimbel, dan Laporan Payroll.",
-        };
-      case "owner":
-      default:
-        return {
-          label: "Owner / Super Admin",
-          badgeClass:
-            "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800",
-          description:
-            "Hak akses penuh: Mengakses seluruh modul manajemen, operasional murid/tutor, payroll, laporan, dan konfigurasi master.",
-        };
-    }
-  };
-
-  const currentSubroleInfo = getSubroleDisplay(activeSubrole);
 
   // Helper format YYYY-MM-DD secara waktu lokal
   const getLocalDateStr = (date?: Date) => {
@@ -171,54 +71,50 @@ export default function ManagementDashboardPage({ stats }: { stats?: DashboardSt
   // Cek apakah tanggal memiliki jadwal / sesi belajar
   const hasScheduleOnDate = (date: Date) => {
     const dateStr = getLocalDateStr(date);
-    // 1. Cek sesi aktual pada tanggal tersebut
-    const hasActualSession = SYNTHETIC_SESSIONS.some((s) => s.session_date === dateStr);
-    if (hasActualSession) return true;
-    // 2. Cek jadwal rutin aktif berdasarkan hari dalam seminggu
+    if (initialData?.allScheduledDates?.includes(dateStr)) return true;
     const dayOfWeek = date.getDay();
-    const hasRecurringSchedule = SYNTHETIC_SCHEDULES.some(
+    return (initialData?.todaySchedules || []).some(
       (sch) => sch.day_of_week === dayOfWeek && sch.status === "active"
     );
-    return hasRecurringSchedule;
   };
 
   // Filter sesi pembelajaran aktual pada tanggal yang dipilih
-  const actualSessions = SYNTHETIC_SESSIONS.filter(
-    (s) => s.session_date === selectedDateStr
-  );
+  const actualSessions = (initialData?.todaySessions || [])
+    .filter((s) => s.session_date === selectedDateStr)
+    .map((s) => ({
+      id: s.id,
+      start_time: s.start_time,
+      end_time: s.end_time,
+      bimbel_type_name: s.bimbel_types?.name || "Reguler",
+      duration_minutes: s.bimbel_types?.duration_minutes || 60,
+      status: s.status,
+      program_name: s.programs?.name || "Program Bimbel",
+      tutor_name: s.tutors?.profiles?.full_name || "Tutor",
+      students: s.students || [],
+      student_name: s.students?.[0]?.name || "1 Siswa",
+    }));
 
   // Jika tidak ada sesi tanggal spesifik, generate tampilan dari jadwal rutin aktif hari itu
-  const recurringForDay: SyntheticSession[] = selectedDate
-    ? SYNTHETIC_SCHEDULES.filter(
-        (sch) => sch.day_of_week === selectedDate.getDay() && sch.status === "active"
-      ).map((sch) => ({
-        id: `recurring-${sch.id}-${selectedDateStr}`,
-        session_date: selectedDateStr,
-        start_time: sch.start_time,
-        end_time: sch.end_time,
-        tutor_id: sch.tutor_id,
-        tutor_name: sch.tutor_name,
-        student_id: sch.student_id,
-        student_name: sch.student_name,
-        student_code: sch.student_code,
-        students: sch.student_id
-          ? [
-              {
-                id: sch.student_id,
-                name: sch.student_name || "Murid",
-                student_code: sch.student_code || "",
-              },
-            ]
-          : undefined,
-        class_group_name: sch.class_group_name,
-        program_id: sch.program_id,
-        program_name: sch.program_name,
-        bimbel_type_id: sch.bimbel_type_id,
-        bimbel_type_name: sch.bimbel_type_name,
-        duration_minutes: sch.duration_minutes,
-        status: "scheduled" as const,
-        notes: `Jadwal rutin mingguan (${sch.day_name})`,
-      }))
+  const recurringForDay = selectedDate
+    ? (initialData?.todaySchedules || [])
+        .filter((sch) => sch.day_of_week === selectedDate.getDay() && sch.status === "active")
+        .map((sch) => {
+          const studentItems = (sch.schedule_students || [])
+            .map((ss: { students?: { name?: string } | null }) => ss.students)
+            .filter((x): x is { name?: string } => Boolean(x));
+          return {
+            id: `sch-${sch.id}-${selectedDateStr}`,
+            start_time: sch.start_time,
+            end_time: sch.end_time,
+            bimbel_type_name: sch.bimbel_types?.name || "Reguler",
+            duration_minutes: sch.bimbel_types?.duration_minutes || 60,
+            status: "scheduled" as const,
+            program_name: sch.programs?.name || "Program Bimbel",
+            tutor_name: sch.tutors?.profiles?.full_name || "Tutor",
+            students: studentItems,
+            student_name: studentItems[0]?.name || "1 Siswa",
+          };
+        })
     : [];
 
   const displaySessions = actualSessions.length > 0 ? actualSessions : recurringForDay;
@@ -243,21 +139,6 @@ export default function ManagementDashboardPage({ stats }: { stats?: DashboardSt
         description="Ringkasan operasional harian bimbingan belajar, kalender jadwal, dan analitik kehadiran."
       >
         <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={isSwitching}
-            onClick={() => handleSwitchRole("usr-tut-001")}
-            className="gap-1.5 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 shadow-xs"
-          >
-            {isSwitching && activeUserId === "usr-tut-001" ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
-            )}
-            <span>Mode Tutor (Mengajar)</span>
-          </Button>
-
           <Button asChild size="sm" className="gap-1.5 shadow-xs">
             <Link href="/management/schedules">
               <CalendarDays className="w-4 h-4" />
@@ -266,117 +147,6 @@ export default function ManagementDashboardPage({ stats }: { stats?: DashboardSt
           </Button>
         </div>
       </PageHeader>
-
-      {/* Quick Role & Persona Switcher Banner */}
-      <Card className="border border-border/80 bg-card/60 backdrop-blur-xs shadow-xs overflow-hidden">
-        <CardContent className="p-3.5 sm:p-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
-            <div className="flex items-start sm:items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
-                <ArrowLeftRight className="h-4 w-4" />
-              </div>
-              <div className="space-y-0.5 sm:space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Peran Aktif:
-                  </span>
-                  <span
-                    className={cn(
-                      "text-xs font-semibold px-2.5 py-0.5 rounded-full border",
-                      currentSubroleInfo.badgeClass
-                    )}
-                  >
-                    {currentSubroleInfo.label}
-                  </span>
-                  <span className="text-xs text-muted-foreground hidden sm:inline">
-                    • Pengguna: <strong className="text-foreground">{activeUserName}</strong>
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground line-clamp-1">
-                  {currentSubroleInfo.description}
-                </p>
-              </div>
-            </div>
-
-            {/* Tombol Pilihan Switch Role Langsung */}
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap pt-1 lg:pt-0">
-              <Button
-                size="sm"
-                variant={activeUserId === "usr-mgmt-owner" ? "default" : "outline"}
-                disabled={isSwitching}
-                onClick={() => handleSwitchRole("usr-mgmt-owner")}
-                className={cn(
-                  "text-xs h-8 px-2.5 sm:px-3 gap-1.5 transition-all",
-                  activeUserId === "usr-mgmt-owner" &&
-                    "bg-purple-600 hover:bg-purple-700 text-white shadow-xs"
-                )}
-              >
-                {isSwitching && activeUserId === "usr-mgmt-owner" ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Shield className="h-3.5 w-3.5 text-purple-400" />
-                )}
-                <span>👑 Owner</span>
-              </Button>
-
-              <Button
-                size="sm"
-                variant={activeUserId === "usr-mgmt-hrd" ? "default" : "outline"}
-                disabled={isSwitching}
-                onClick={() => handleSwitchRole("usr-mgmt-hrd")}
-                className={cn(
-                  "text-xs h-8 px-2.5 sm:px-3 gap-1.5 transition-all",
-                  activeUserId === "usr-mgmt-hrd" &&
-                    "bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
-                )}
-              >
-                {isSwitching && activeUserId === "usr-mgmt-hrd" ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Briefcase className="h-3.5 w-3.5 text-blue-400" />
-                )}
-                <span>👥 HRD</span>
-              </Button>
-
-              <Button
-                size="sm"
-                variant={activeUserId === "usr-mgmt-finance" ? "default" : "outline"}
-                disabled={isSwitching}
-                onClick={() => handleSwitchRole("usr-mgmt-finance")}
-                className={cn(
-                  "text-xs h-8 px-2.5 sm:px-3 gap-1.5 transition-all",
-                  activeUserId === "usr-mgmt-finance" &&
-                    "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
-                )}
-              >
-                {isSwitching && activeUserId === "usr-mgmt-finance" ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <CircleDollarSign className="h-3.5 w-3.5 text-emerald-400" />
-                )}
-                <span>💰 Keuangan</span>
-              </Button>
-
-              <div className="h-4 w-px bg-border mx-0.5 hidden sm:block" />
-
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={isSwitching}
-                onClick={() => handleSwitchRole("usr-tut-001")}
-                className="text-xs h-8 px-2.5 sm:px-3 gap-1.5 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
-              >
-                {isSwitching && activeUserId === "usr-tut-001" ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <GraduationCap className="h-3.5 w-3.5 text-emerald-600" />
-                )}
-                <span>🎓 Mode Tutor</span>
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -390,7 +160,7 @@ export default function ManagementDashboardPage({ stats }: { stats?: DashboardSt
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalStudents ?? 42}</div>
+            <div className="text-2xl font-bold">{initialData?.stats?.totalStudents ?? 0}</div>
             <p className="text-xs text-muted-foreground mt-1">Terdaftar dalam program aktif</p>
           </CardContent>
         </Card>
@@ -405,8 +175,8 @@ export default function ManagementDashboardPage({ stats }: { stats?: DashboardSt
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalTutors ?? 12}</div>
-            <p className="text-xs text-muted-foreground mt-1">Pengajar aktif</p>
+            <div className="text-2xl font-bold">{initialData?.stats?.totalTutors ?? 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">Pengajar aktif di sistem</p>
           </CardContent>
         </Card>
 
@@ -420,8 +190,10 @@ export default function ManagementDashboardPage({ stats }: { stats?: DashboardSt
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.todaySessions ?? 8}</div>
-            <p className="text-xs text-muted-foreground mt-1">Jadwal belajar berjalan</p>
+            <div className="text-2xl font-bold">{initialData?.stats?.todaySessions ?? 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {initialData?.stats?.todayCompletedSessions ?? 0} sesi selesai
+            </p>
           </CardContent>
         </Card>
 
@@ -435,8 +207,8 @@ export default function ManagementDashboardPage({ stats }: { stats?: DashboardSt
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalPayrollDraft ?? 3}</div>
-            <p className="text-xs text-muted-foreground mt-1">Menunggu review manajemen</p>
+            <div className="text-2xl font-bold">{initialData?.stats?.pendingPayroll ?? 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">Batch menunggu review</p>
           </CardContent>
         </Card>
       </div>
@@ -579,7 +351,7 @@ export default function ManagementDashboardPage({ stats }: { stats?: DashboardSt
                         <span className="flex items-center gap-1 truncate">
                           <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                           {session.students && session.students.length > 1
-                            ? `${session.students.length} Siswa (${session.students.map((s) => s.name).join(", ")})`
+                            ? `${session.students.length} Siswa (${(session.students as Array<{ name?: string }>).map((s) => s.name).join(", ")})`
                             : session.student_name || "1 Siswa"}
                         </span>
                       </div>
@@ -619,27 +391,21 @@ export default function ManagementDashboardPage({ stats }: { stats?: DashboardSt
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={WEEKLY_SESSION_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
-                  <XAxis dataKey="day" tickLine={false} axisLine={false} fontSize={12} />
-                  <YAxis tickLine={false} axisLine={false} fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--card)",
-                      borderColor: "var(--border)",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "12px" }} />
-                  <Bar dataKey="selesai" name="Sesi Terlaksana" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="terjadwal" name="Total Terjadwal" fill="#93c5fd" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <WeeklyBarChart
+              data={
+                initialData?.weeklyTrends && initialData.weeklyTrends.length > 0
+                  ? initialData.weeklyTrends
+                  : [
+                      { day: "Senin", selesai: 0, terjadwal: 0 },
+                      { day: "Selasa", selesai: 0, terjadwal: 0 },
+                      { day: "Rabu", selesai: 0, terjadwal: 0 },
+                      { day: "Kamis", selesai: 0, terjadwal: 0 },
+                      { day: "Jumat", selesai: 0, terjadwal: 0 },
+                      { day: "Sabtu", selesai: 0, terjadwal: 0 },
+                      { day: "Minggu", selesai: 0, terjadwal: 0 },
+                    ]
+              }
+            />
           </CardContent>
         </Card>
 
@@ -655,38 +421,28 @@ export default function ManagementDashboardPage({ stats }: { stats?: DashboardSt
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-56 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={BIMBEL_TYPE_DATA}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={4}
-                  >
-                    {BIMBEL_TYPE_DATA.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--card)",
-                      borderColor: "var(--border)",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            <BimbelPieChart
+              data={
+                initialData?.bimbelTypeDistribution && initialData.bimbelTypeDistribution.length > 0
+                  ? initialData.bimbelTypeDistribution
+                  : [
+                      { name: "Reguler (60m)", value: 0, color: "#3b82f6" },
+                      { name: "Intensif (75m)", value: 0, color: "#f59e0b" },
+                      { name: "Private (90m)", value: 0, color: "#a855f7" },
+                    ]
+              }
+            />
 
             {/* Legend manual */}
             <div className="space-y-1.5 pt-2 border-t border-border/40 text-xs">
-              {BIMBEL_TYPE_DATA.map((item) => (
+              {(initialData?.bimbelTypeDistribution && initialData.bimbelTypeDistribution.length > 0
+                ? initialData.bimbelTypeDistribution
+                : [
+                    { name: "Reguler (60m)", value: 0, color: "#3b82f6" },
+                    { name: "Intensif (75m)", value: 0, color: "#f59e0b" },
+                    { name: "Private (90m)", value: 0, color: "#a855f7" },
+                  ]
+              ).map((item) => (
                 <div key={item.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span
@@ -695,7 +451,7 @@ export default function ManagementDashboardPage({ stats }: { stats?: DashboardSt
                     />
                     <span className="text-muted-foreground">{item.name}</span>
                   </div>
-                  <span className="font-semibold text-foreground">{item.value} Kelas</span>
+                  <span className="font-semibold text-foreground">{item.value} Sesi</span>
                 </div>
               ))}
             </div>

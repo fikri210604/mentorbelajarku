@@ -1,9 +1,8 @@
 import ScheduleFormPage from "@/features/management/schedules/components/ScheduleFormPage";
 import { getTutors } from "@/features/management/tutors/queries/tutor.queries";
 import { getStudents } from "@/features/management/students/queries/student.queries";
+import { getSubjects, getCurriculumTopics } from "@/features/management/subjects/queries/subject.queries";
 import { createServerClient } from "@/lib/supabase/server";
-import { SYNTHETIC_PROGRAMS } from "@/data/programs";
-import { SYNTHETIC_BIMBEL_TYPES } from "@/data/bimbel-types";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -12,35 +11,24 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   const supabase = createServerClient();
-  const tutors = await getTutors();
-  const students = await getStudents();
 
-  let programs: any[] = [];
-  let bimbelTypes: any[] = [];
-
-  try {
-    const { data: pData } = await supabase.from("programs").select("*").eq("status", "active");
-    if (pData && pData.length > 0) programs = pData;
-
-    const { data: bData } = await supabase.from("bimbel_types").select("*").eq("status", "active");
-    if (bData && bData.length > 0) bimbelTypes = bData;
-  } catch {
-    // fallback below
-  }
-
-  if (programs.length === 0) {
-    programs = SYNTHETIC_PROGRAMS;
-  }
-  if (bimbelTypes.length === 0) {
-    bimbelTypes = SYNTHETIC_BIMBEL_TYPES;
-  }
+  const [tutors, students, pResult, bResult, subjects, curriculumTopics] = await Promise.all([
+    getTutors(),
+    getStudents(),
+    supabase.from("programs").select("*").eq("status", "active"),
+    supabase.from("bimbel_types").select("*").eq("status", "active"),
+    getSubjects(),
+    getCurriculumTopics(),
+  ]);
 
   return (
     <ScheduleFormPage
       tutors={tutors}
       students={students}
-      programs={programs}
-      bimbelTypes={bimbelTypes}
+      programs={pResult.data ?? []}
+      bimbelTypes={bResult.data ?? []}
+      subjects={subjects}
+      curriculumTopics={curriculumTopics}
     />
   );
 }

@@ -1,8 +1,9 @@
-import { TableSkeleton } from "@/components/shared/skeletons/table-skeleton";
+import { GlobalLoading } from "@/components/shared/global-loading";
 
 export default function SessionsLoading() {
   return (
-    <TableSkeleton
+    <GlobalLoading
+      variant="table"
       title="Sesi Pembelajaran Aktif"
       description="Daftar sesi belajar harian, nomor pertemuan, dan status pelaksanaan."
       columns={6}

@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -50,7 +51,6 @@ import {
 } from "@/components/ui/select";
 import { tutorRateSchema, TutorRateInput } from "../schemas/settings.schema";
 import { saveTutorRate, deleteTutorRate } from "../actions/settings.actions";
-import { SYNTHETIC_TUTOR_RATES } from "@/data/payroll";
 import { SettingsNavTabs } from "./SettingsNavTabs";
 
 interface TutorRatesPageProps {
@@ -62,9 +62,7 @@ export default function TutorRatesPage({
   initialRates = [],
   bimbelTypesList = [],
 }: TutorRatesPageProps) {
-  const defaultRates =
-    initialRates && initialRates.length > 0 ? initialRates : SYNTHETIC_TUTOR_RATES;
-  const [rates, setRates] = useState(defaultRates);
+  const [rates, setRates] = useState<any[]>(initialRates);
   const [search, setSearch] = useState("");
   const [selectedLevelFilter, setSelectedLevelFilter] = useState<string>("ALL");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -196,6 +194,8 @@ export default function TutorRatesPage({
 
   return (
     <div className="space-y-6">
+      <SettingsNavTabs />
+
       <PageHeader
         title="Standar Tarif Honor Tutor (Per Jenjang & Jenis Bimbel)"
         description="Konfigurasi honor mengajar per anak per jenis bimbel dan jenjang (SD, SMP, SMA). Berlaku seragam untuk seluruh tutor berdasarkan absensi kehadiran murid."
@@ -205,8 +205,6 @@ export default function TutorRatesPage({
           Atur Tarif Baru
         </Button>
       </PageHeader>
-
-      <SettingsNavTabs />
 
       {/* CALLOUT RANGKUMAN ATURAN BISNIS GAJI TERBARU */}
       <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200 dark:bg-blue-950/30 dark:border-blue-900/50 text-blue-900 dark:text-blue-200 text-xs space-y-2">
@@ -470,10 +468,11 @@ export default function TutorRatesPage({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="effective_from">Mulai Berlaku <span className="text-destructive">*</span></Label>
-                <Input
+                <DatePicker
                   id="effective_from"
-                  type="date"
-                  {...register("effective_from")}
+                  value={watch("effective_from")}
+                  onChange={(_, str) => setValue("effective_from", str, { shouldValidate: true })}
+                  placeholder="Pilih tanggal mulai"
                 />
                 {errors.effective_from && (
                   <p className="text-xs text-destructive">{errors.effective_from.message}</p>
@@ -482,10 +481,12 @@ export default function TutorRatesPage({
 
               <div className="space-y-1.5">
                 <Label htmlFor="effective_until">Berlaku Sampai (Opsional)</Label>
-                <Input
+                <DatePicker
                   id="effective_until"
-                  type="date"
-                  {...register("effective_until")}
+                  value={watch("effective_until")}
+                  onChange={(_, str) => setValue("effective_until", str ? str : null, { shouldValidate: true })}
+                  placeholder="Tanpa batas (selamanya)"
+                  clearable
                 />
               </div>
             </div>

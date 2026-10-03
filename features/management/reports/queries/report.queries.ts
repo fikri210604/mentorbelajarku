@@ -5,7 +5,7 @@ export async function getAttendanceReportData() {
 }
 
 export async function getStudentReportData() {
-  return ReportService.getStudentEnrollmentSummary();
+  return ReportService.getStudentReport();
 }
 
 export async function getPayrollReportData() {

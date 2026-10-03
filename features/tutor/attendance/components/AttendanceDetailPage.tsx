@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, User, Clock, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Image as ImageIcon, ExternalLink, ImageOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
@@ -79,12 +79,42 @@ export default function AttendanceDetailPage({ attendance, isTutor = false }: At
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {attendance.photo_path ? (
-              <div className="border rounded-md p-2 bg-muted/20 text-center">
-                <p className="text-xs text-muted-foreground mb-2 font-mono">{attendance.photo_path}</p>
-                <div className="aspect-video bg-muted flex items-center justify-center rounded text-muted-foreground text-sm">
-                  Foto Presensi Tersimpan di Supabase Storage
-                </div>
+            {attendance.photo_url ? (
+              <div className="space-y-2">
+                <a
+                  href={attendance.photo_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group block overflow-hidden rounded-lg border border-border"
+                  title="Klik untuk membuka ukuran penuh"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={attendance.photo_url}
+                    alt={`Bukti foto presensi ${attendance.students?.name || "murid"}`}
+                    loading="lazy"
+                    className="aspect-video w-full object-cover transition-transform group-hover:scale-[1.02]"
+                  />
+                </a>
+                <p className="text-[11px] text-muted-foreground font-mono break-all">
+                  {attendance.photo_path}
+                </p>
+                <Button asChild variant="outline" size="sm" className="w-full text-xs">
+                  <a href={attendance.photo_url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                    Buka Ukuran Penuh
+                  </a>
+                </Button>
+              </div>
+            ) : attendance.photo_path ? (
+              <div className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-8 text-center">
+                <ImageOff className="w-6 h-6 text-muted-foreground/60" />
+                <p className="text-xs text-muted-foreground">
+                  Foto tersimpan tetapi tidak dapat dimuat. Coba muat ulang halaman.
+                </p>
+                <p className="text-[11px] text-muted-foreground font-mono break-all">
+                  {attendance.photo_path}
+                </p>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">Tidak ada foto presensi yang dilampirkan.</p>

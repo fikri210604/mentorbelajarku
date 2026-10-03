@@ -8,7 +8,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --font-heading: var(--font-heading);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -27,6 +27,15 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -39,6 +48,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-cta: var(--cta);
+  --color-cta-foreground: var(--cta-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -64,6 +75,15 @@
   --accent: #E6F7F0; /* Mint Glow */
   --accent-foreground: #00A86B;
   --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --success: #10B981;
+  --success-foreground: #FFFFFF;
+  --warning: #F59E0B;
+  --warning-foreground: #FFFFFF;
+  --info: #3B82F6;
+  --info-foreground: #FFFFFF;
+  --danger: #EF4444;
+  --danger-foreground: #FFFFFF;
   --border: #E2ECE6;
   --input: #E2ECE6;
   --ring: #00A86B;
@@ -73,6 +93,8 @@
   --chart-4: #F59E0B;
   --chart-5: #6366F1;
   --radius: 1rem;
+  --cta: #FF6B00; /* Energetic Orange — khusus tombol aksi utama (daftar/konsultasi) */
+  --cta-foreground: #FFFFFF;
   --sidebar: #FFFFFF;
   --sidebar-foreground: #0F172A;
   --sidebar-primary: #00A86B;
@@ -99,6 +121,15 @@
   --accent: oklch(0.268 0.011 36.5);
   --accent-foreground: oklch(0.986 0.002 67.8);
   --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.986 0.002 67.8);
+  --success: oklch(0.627 0.194 149.2);
+  --success-foreground: oklch(0.986 0.002 67.8);
+  --warning: oklch(0.768 0.165 70.08);
+  --warning-foreground: oklch(0.147 0.004 49.3);
+  --info: oklch(0.623 0.188 259.8);
+  --info-foreground: oklch(0.986 0.002 67.8);
+  --danger: oklch(0.704 0.191 22.216);
+  --danger-foreground: oklch(0.986 0.002 67.8);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.547 0.021 43.1);
@@ -143,4 +174,138 @@
 
 .animate-indeterminate {
   animation: progress-indeterminate 1.2s infinite ease-in-out;
+}
+
+/* ==========================================================================
+   LANDING PAGE MOTION SYSTEM (murni CSS — 0 KB JS tambahan)
+   ========================================================================== */
+
+/* Marquee infinite: konten digeser -50% karena sudah diduplikasi 2x */
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee-scroll 30s linear infinite;
+}
+
+/* Mengambang halus untuk kartu/dekorasi di hero */
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float-soft {
+  animation: float-soft 5s ease-in-out infinite;
+}
+
+.animate-float-soft-delayed {
+  animation: float-soft 6s ease-in-out 1.2s infinite;
+}
+
+/* Denyut lembut untuk badge/notifikasi kecil */
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 168, 107, 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 168, 107, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 168, 107, 0);
+  }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Pola titik halus untuk background section (signature pattern) */
+.bg-dot-pattern {
+  background-image: radial-gradient(circle, rgba(0, 168, 107, 0.14) 1.2px, transparent 1.2px);
+  background-size: 22px 22px;
+}
+
+/* Hormati preferensi reduced motion pengguna */
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-float-soft,
+  .animate-float-soft-delayed,
+  .animate-pulse-ring {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   PRINT / PDF EXPORT STYLESHEET
+   Ultra-fast, 0ms native browser vector print formatting (A4 Portrait)
+   ========================================================================== */
+@media print {
+  /* 1. Sembunyikan elemen non-cetak (Sidebar, Header, Navigasi, Action Buttons) */
+  aside,
+  header,
+  nav,
+  [data-slot="sidebar"],
+  .no-print {
+    display: none !important;
+  }
+
+  /* 2. Reset canvas cetak */
+  html,
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 11pt;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  /* 3. Lembar cetak tanpa bayangan dan padding pas A4 */
+  .printable-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* 4. Pastikan warna background gradien banner dan header tabel tercetak tajam */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* 5. Pengaturan ukuran kertas standar A4 dengan margin yang pas */
+  @page {
+    size: A4 portrait;
+    margin: 10mm 10mm 10mm 10mm;
+  }
+
+  /* 6. Cegah pemotongan baris tabel secara canggung di tengah halaman */
+  tr,
+  img,
+  svg {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 }

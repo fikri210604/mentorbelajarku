@@ -3,10 +3,14 @@ import { headers, cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth/auth';
 import { createServerSupabaseClient, isSupabaseConfigured } from '@/lib/supabase/server';
-import { DEFAULT_SYNTHETIC_USER, SYNTHETIC_USERS } from '@/data/users';
+import {
+  resolvePermissionsForRoleName,
+  isOwnerRoleName,
+  portalRoleForRoleName,
+} from '@/lib/permissions/resolver';
 import type { UserRole } from '@/types/database.types';
 
-import type { ManagementSubrole } from '@/types/auth';
+import type { ManagementSubrole, Permission } from '@/types/auth';
 
 export interface CurrentUserSession {
   user: {
@@ -24,130 +28,224 @@ export interface CurrentUserSession {
     full_name: string;
     phone: string | null;
     avatar_url: string | null;
-    role: UserRole;
     must_change_password: boolean;
   } | null;
+  /** Role portal (management/tutor/admin/finance) untuk routing. */
   role: UserRole;
+  /** ID role dinamis dari database (user.role_id). */
+  roleId: string | null;
+  /** Nama role sebenarnya, termasuk role dinamis seperti `curriculum`/`hrd`. */
+  roleName: string;
+  /** Permission efektif hasil resolusi role. */
+  permissions: Permission[];
   subrole?: ManagementSubrole | null;
   tutorId: string | null;
 }
 
+const SUBROLE_NAMES: ManagementSubrole[] = [
+  'owner',
+  'curriculum',
+  'hrd',
+  'finance',
+  'general',
+];
+
+function resolvePortalRole(roleName: string, fallback: UserRole): UserRole {
+  return portalRoleForRoleName(roleName) ?? fallback;
+}
+
+function resolveSubrole(
+  roleName: string,
+  portalRole: UserRole
+): ManagementSubrole | null {
+  if (portalRole === 'tutor') return null;
+  const normalized = (roleName || '').toLowerCase().trim();
+  if (SUBROLE_NAMES.includes(normalized as ManagementSubrole)) {
+    return normalized as ManagementSubrole;
+  }
+  if (normalized === 'management' || normalized === 'admin') return 'owner';
+  return 'general';
+}
+
+interface CachedUserSession {
+  session: CurrentUserSession;
+  expiresAt: number;
+}
+
+const userSessionCache = new Map<string, CachedUserSession>();
+
+export function invalidateUserSessionCache(key?: string) {
+  if (key) {
+    userSessionCache.delete(key);
+  } else {
+    userSessionCache.clear();
+  }
+}
+
 /**
- * Get raw session from Better Auth via request headers.
- * (Sementara di-comment untuk mode coba-coba dengan user sintetis.
- *  Dapat dibuka kembali dengan menghapus tanda komentar di bawah ini).
+ * Mengambil session mentah Better Auth dari header request.
+ * Hanya token session Better Auth asli yang diterima.
  */
 export async function getServerSession() {
   try {
+    const cookieStore = await cookies();
+    const sessionToken =
+      cookieStore.get('better-auth.session_token')?.value ||
+      cookieStore.get('__Secure-better-auth.session_token')?.value;
+
+    if (!sessionToken) return null;
+
     const session = await auth.api.getSession({
       headers: await headers(),
     });
     return session;
-  } catch (err) {
-    // If DB is not connected yet, silently return null
+  } catch {
+    // Bila database belum siap/timeout, perlakukan sebagai tidak ada sesi (fail closed).
     return null;
   }
 }
 
 /**
- * Retrieve authenticated user context along with their profile and tutor mapping.
- * Membaca session aktif Better Auth. Jika belum ada, menggunakan user sintetis dari cookie.
- * Dibungkus dengan React cache() untuk mencegah duplicate database & cookie fetch per-request.
+ * Mengambil konteks user terautentikasi beserta profil dan pemetaan tutor.
+ * Fail closed: mengembalikan null bila tidak ada session Better Auth yang valid.
+ * Tidak ada lagi fallback ke identitas sintetis.
  */
-export const getCurrentUser = cache(async (): Promise<CurrentUserSession> => {
+export const getCurrentUser = cache(async (): Promise<CurrentUserSession | null> => {
+  const cookieStore = await cookies();
+  const sessionToken =
+    cookieStore.get('better-auth.session_token')?.value ||
+    cookieStore.get('__Secure-better-auth.session_token')?.value;
+
+  if (!sessionToken) return null;
+
+  // 0. Cache in-memory (45s) untuk menghindari query berulang per request.
+  const cached = userSessionCache.get(sessionToken);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.session;
+  }
+
   const session = await getServerSession();
 
-  if (session?.user && isSupabaseConfigured()) {
-    try {
-      const supabase = createServerSupabaseClient();
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, user_id, full_name, phone, avatar_url, role, must_change_password')
-        .eq('user_id', session.user.id)
-        .single();
-
-      let tutorId: string | null = null;
-      if (profile?.id) {
-        const { data: tutor } = await supabase
-          .from('tutors')
-          .select('id')
-          .eq('profile_id', profile.id)
-          .single();
-        tutorId = tutor?.id || null;
-      }
-
-      const role: UserRole = (profile?.role as UserRole) || (session.user as any).role || 'tutor';
-
-      return {
-        user: {
-          id: session.user.id,
-          email: session.user.email,
-          name: session.user.name,
-          image: session.user.image || null,
-          emailVerified: session.user.emailVerified,
-          createdAt: session.user.createdAt,
-          updatedAt: session.user.updatedAt,
-        },
-        profile: profile
-          ? {
-              ...profile,
-              must_change_password: Boolean((profile as any).must_change_password),
-            }
-          : null,
-        role,
-        subrole: role === 'management' ? 'owner' : null,
-        tutorId,
-      };
-    } catch (dbErr) {
-      console.warn('Supabase profile query warning, using session user:', dbErr);
-    }
+  if (!session?.user || !isSupabaseConfigured()) {
+    return null;
   }
 
-  // Ambil user sintetis aktif dari cookie, fallback ke DEFAULT_SYNTHETIC_USER
-  let activeSyntheticUser = DEFAULT_SYNTHETIC_USER;
   try {
-    const cookieStore = await cookies();
-    const syntheticId = cookieStore.get('synthetic_user_id')?.value;
-    if (syntheticId) {
-      const found = SYNTHETIC_USERS.find(
-        (u) => u.id === syntheticId || u.email.toLowerCase() === syntheticId.toLowerCase()
-      );
-      if (found) {
-        activeSyntheticUser = found;
+    const supabase = createServerSupabaseClient();
+    const db = supabase as unknown as {
+      from: (table: string) => {
+        select: (columns: string) => {
+          eq: (column: string, value: string) => {
+            maybeSingle: () => Promise<{ data: unknown; error: unknown }>;
+          };
+        };
+      };
+    };
+
+    const [{ data: userRow }, { data: profile }] = await Promise.all([
+      db.from('user').select('id, role, role_id').eq('id', session.user.id).maybeSingle(),
+      db
+        .from('profiles')
+        .select('id, user_id, full_name, phone, avatar_url, must_change_password, tutors(id)')
+        .eq('user_id', session.user.id)
+        .maybeSingle(),
+    ]);
+
+    const userRowTyped = userRow as { role?: string; role_id?: string | null } | null;
+    const profileTyped = profile as {
+      id: string;
+      user_id: string;
+      full_name: string;
+      phone: string | null;
+      avatar_url: string | null;
+      must_change_password: boolean;
+      tutors?: { id?: string }[] | { id?: string } | null;
+    } | null;
+
+    const fallbackRole: UserRole =
+      (userRowTyped?.role as UserRole) ||
+      ((session.user as unknown as { role?: UserRole }).role) ||
+      'tutor';
+
+    const roleId: string | null = userRowTyped?.role_id ?? null;
+    let roleName: string = userRowTyped?.role || fallbackRole;
+    let permissions: Permission[] = [];
+
+    if (roleId) {
+      const { data: roleRow } = await db
+        .from('roles')
+        .select('name, role_permissions(permission_id)')
+        .eq('id', roleId)
+        .maybeSingle();
+
+      const roleTyped = roleRow as {
+        name?: string;
+        role_permissions?: { permission_id: string }[];
+      } | null;
+
+      if (roleTyped?.name) {
+        roleName = roleTyped.name;
+        permissions = (roleTyped.role_permissions || []).map(
+          (rp) => rp.permission_id as Permission
+        );
       }
     }
-  } catch {
-    // Fallback jika cookies tidak dapat dibaca di konteks tertentu
-  }
 
-  return {
-    user: {
-      id: activeSyntheticUser.id,
-      email: activeSyntheticUser.email,
-      name: activeSyntheticUser.name,
-      image: activeSyntheticUser.avatarUrl || null,
-      emailVerified: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    profile: {
-      id: `prof-${activeSyntheticUser.id}`,
-      user_id: activeSyntheticUser.id,
-      full_name: activeSyntheticUser.name,
-      phone: activeSyntheticUser.phone,
-      avatar_url: activeSyntheticUser.avatarUrl || null,
-      role: activeSyntheticUser.role,
-      must_change_password: activeSyntheticUser.mustChangePassword ?? false,
-    },
-    role: activeSyntheticUser.role,
-    subrole: activeSyntheticUser.subrole || (activeSyntheticUser.role === 'management' ? 'owner' : null),
-    tutorId: activeSyntheticUser.tutorId || null,
-  };
+    if (permissions.length === 0) {
+      permissions = resolvePermissionsForRoleName(roleName);
+    }
+
+    const portalRole = resolvePortalRole(roleName, fallbackRole);
+
+    let tutorId: string | null = null;
+    if (profileTyped) {
+      const tutorData = profileTyped.tutors;
+      tutorId = Array.isArray(tutorData)
+        ? tutorData[0]?.id || null
+        : tutorData?.id || null;
+    }
+
+    const productionSession: CurrentUserSession = {
+      user: {
+        id: session.user.id,
+        email: session.user.email,
+        name: session.user.name,
+        image: session.user.image || null,
+        emailVerified: session.user.emailVerified,
+        createdAt: session.user.createdAt,
+        updatedAt: session.user.updatedAt,
+      },
+      profile: profileTyped
+        ? {
+            id: profileTyped.id,
+            user_id: profileTyped.user_id,
+            full_name: profileTyped.full_name,
+            phone: profileTyped.phone,
+            avatar_url: profileTyped.avatar_url,
+            must_change_password: Boolean(profileTyped.must_change_password),
+          }
+        : null,
+      role: portalRole,
+      roleId,
+      roleName,
+      permissions,
+      subrole: resolveSubrole(roleName, portalRole),
+      tutorId,
+    };
+
+    userSessionCache.set(sessionToken, {
+      session: productionSession,
+      expiresAt: Date.now() + 45_000,
+    });
+
+    return productionSession;
+  } catch (dbErr) {
+    console.warn('Supabase profile query warning, fail closed:', dbErr);
+    return null;
+  }
 });
 
-/**
- * Alias for getCurrentUser for API routes and Server Actions.
- */
+/** Alias untuk API routes dan Server Actions. */
 export const getAuthUser = getCurrentUser;
 
 /**
@@ -170,4 +268,45 @@ export async function requireRoleUser(allowedRoles: UserRole[]): Promise<Current
     redirect('/dashboard?error=forbidden');
   }
   return currentUser;
+}
+
+/**
+ * Cek permission murni pada sebuah session. Owner selalu lolos.
+ */
+export function sessionHasPermission(
+  session: CurrentUserSession,
+  permission: Permission
+): boolean {
+  if (isOwnerRoleName(session.roleName)) return true;
+  return session.permissions.includes(permission);
+}
+
+/**
+ * Guard untuk Server Component: redirect ke dashboard bila permission tidak cukup.
+ */
+export async function requirePermissionUser(
+  permission: Permission
+): Promise<CurrentUserSession> {
+  const currentUser = await requireAuthUser();
+  if (!sessionHasPermission(currentUser, permission)) {
+    redirect('/management/dashboard?error=forbidden');
+  }
+  return currentUser;
+}
+
+/**
+ * Guard untuk Server Action: mengembalikan status tanpa melempar/redirect,
+ * agar action dapat membalas `{ success: false, message }`.
+ */
+export async function checkPermission(
+  permission: Permission
+): Promise<
+  | { allowed: true; user: CurrentUserSession }
+  | { allowed: false; user: null }
+> {
+  const user = await getCurrentUser();
+  if (!user || !sessionHasPermission(user, permission)) {
+    return { allowed: false, user: null };
+  }
+  return { allowed: true, user };
 }

@@ -196,6 +196,8 @@ export default function PackagesPage({
 
   return (
     <div className="space-y-6">
+      <SettingsNavTabs />
+
       <PageHeader
         title="Pengaturan Paket Belajar Bimbel"
         description="Konfigurasi paket bimbingan belajar, jatah pertemuan bulanan, durasi, dan biaya per paket."
@@ -205,8 +207,6 @@ export default function PackagesPage({
           Tambah Paket Belajar
         </Button>
       </PageHeader>
-
-      <SettingsNavTabs />
 
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">

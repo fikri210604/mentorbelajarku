@@ -16,8 +16,26 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/20",
         link: "text-primary underline underline-offset-4 hover:underline",
+        success:
+          "bg-success text-success-foreground hover:bg-success/90 focus-visible:ring-success/30",
+        warning:
+          "bg-warning text-warning-foreground hover:bg-warning/90 focus-visible:ring-warning/30",
+        danger:
+          "bg-danger text-danger-foreground hover:bg-danger/90 focus-visible:ring-danger/30",
+        info:
+          "bg-info text-info-foreground hover:bg-info/90 focus-visible:ring-info/30",
+        "soft-success":
+          "bg-success/15 text-success border border-success/30 hover:bg-success/25",
+        "soft-warning":
+          "bg-warning/15 text-warning border border-warning/30 hover:bg-warning/25",
+        "soft-danger":
+          "bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25",
+        "soft-info":
+          "bg-info/15 text-info border border-info/30 hover:bg-info/25",
+        "soft-secondary":
+          "bg-muted text-muted-foreground border border-border hover:bg-muted/80",
       },
       size: {
         default:

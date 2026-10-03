@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Camera as CameraIcon, RefreshCw, Check, X, FlipHorizontal } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
+import { compressImageDataUrl } from '@/lib/utils/image-compression';
+
 export interface CameraCaptureProps {
   onCapture: (base64Image: string) => void;
   onCancel?: () => void;
@@ -24,18 +26,33 @@ export function CameraCapture({ onCapture, onCancel, initialImage, className }: 
   const [capturedImage, setCapturedImage] = useState<string | null>(initialImage || null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
 
-  const capture = useCallback(() => {
+  const capture = useCallback(async () => {
     if (webcamRef.current) {
-      const imageSrc = webcamRef.current.getScreenshot({
-        width: 1024,
-        height: 768,
-      });
-      if (imageSrc) {
-        setCapturedImage(imageSrc);
-        setCameraError(null);
-      } else {
-        setCameraError('Gagal mengambil gambar dari webcam. Coba lagi.');
+      setIsCapturing(true);
+      try {
+        const imageSrc = webcamRef.current.getScreenshot({
+          width: 1280,
+          height: 960,
+        });
+        if (imageSrc) {
+          try {
+            const compressed = await compressImageDataUrl(imageSrc, {
+              maxWidth: 1024,
+              maxHeight: 1024,
+              quality: 0.8,
+            });
+            setCapturedImage(compressed.dataUrl);
+          } catch {
+            setCapturedImage(imageSrc);
+          }
+          setCameraError(null);
+        } else {
+          setCameraError('Gagal mengambil gambar dari webcam. Coba lagi.');
+        }
+      } finally {
+        setIsCapturing(false);
       }
     }
   }, [webcamRef]);
@@ -140,10 +157,11 @@ export function CameraCapture({ onCapture, onCancel, initialImage, className }: 
               variant="default"
               size="sm"
               onClick={capture}
+              disabled={isCapturing}
               className="flex-1 gap-1.5"
             >
               <CameraIcon className="size-3.5" />
-              Ambil Foto
+              {isCapturing ? 'Memproses Foto...' : 'Ambil Foto'}
             </Button>
           </>
         )}

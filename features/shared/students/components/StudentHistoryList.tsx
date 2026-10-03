@@ -1,18 +1,23 @@
+import Link from 'next/link';
 import { Clock, User, BookOpen, AlertCircle, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/components/shared/status-badge';
 import type { StudentMeetingHistoryItem } from '../types';
 
 interface StudentHistoryListProps {
   history: StudentMeetingHistoryItem[];
   title?: string;
   description?: string;
+  studentId?: string;
 }
 
 export function StudentHistoryList({
   history,
   title = 'Riwayat Sesi Pembelajaran & Pertemuan',
   description = 'Daftar pertemuan riil yang telah terlaksana beserta nomor urut pertemuan dan tutor pengajar.',
+  studentId,
 }: StudentHistoryListProps) {
   if (history.length === 0) {
     return (
@@ -35,38 +40,12 @@ export function StudentHistoryList({
 
   const getStatusBadge = (item: StudentMeetingHistoryItem) => {
     switch (item.status) {
-      case 'present':
-        return (
-          <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 font-semibold text-xs">
-            Hadir
-          </Badge>
-        );
-      case 'late':
-        return (
-          <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100 border-orange-300 dark:bg-orange-950 dark:text-orange-300 font-semibold text-xs">
-            Terlambat
-          </Badge>
-        );
       case 'permission':
-        return (
-          <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-300 dark:bg-amber-950 dark:text-amber-300 font-semibold text-xs">
-            Izin (Kuota Utuh)
-          </Badge>
-        );
+        return <Badge variant="warning">Izin (Kuota Utuh)</Badge>;
       case 'sick':
-        return (
-          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-300 dark:bg-blue-950 dark:text-blue-300 font-semibold text-xs">
-            Sakit (Kuota Utuh)
-          </Badge>
-        );
-      case 'absent':
-        return (
-          <Badge className="bg-rose-100 text-rose-800 hover:bg-rose-100 border-rose-300 dark:bg-rose-950 dark:text-rose-300 font-semibold text-xs">
-            Alpa
-          </Badge>
-        );
+        return <Badge variant="info">Sakit (Kuota Utuh)</Badge>;
       default:
-        return <Badge variant="outline">{item.status}</Badge>;
+        return <StatusBadge status={item.status} />;
     }
   };
 
@@ -81,9 +60,24 @@ export function StudentHistoryList({
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
           </div>
-          <Badge variant="secondary" className="text-xs">
-            {history.length} Catatan Sesi
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs">
+              {history.length} Catatan Sesi
+            </Badge>
+            {studentId && (
+              <Button
+                asChild
+                variant="outline"
+                size="xs"
+                className="h-7 text-xs text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border-emerald-300 gap-1.5"
+              >
+                <Link href={`/management/students/${studentId}/progress-report`}>
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Cetak Rapor Perkembangan</span>
+                </Link>
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
 

@@ -39,15 +39,13 @@ import {
 } from "@/components/ui/select";
 import { programSchema, ProgramInput } from "../schemas/settings.schema";
 import { saveProgram, deleteProgram } from "../actions/settings.actions";
-import { SYNTHETIC_PROGRAMS } from "@/data/programs";
 
 interface ProgramsPageProps {
   initialPrograms?: any[];
 }
 
 export default function ProgramsPage({ initialPrograms = [] }: ProgramsPageProps) {
-  const defaultPrograms = initialPrograms && initialPrograms.length > 0 ? initialPrograms : SYNTHETIC_PROGRAMS;
-  const [programs, setPrograms] = useState(defaultPrograms);
+  const [programs, setPrograms] = useState<any[]>(initialPrograms);
   const [search, setSearch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProgram, setEditingProgram] = useState<any | null>(null);
@@ -142,23 +140,23 @@ export default function ProgramsPage({ initialPrograms = [] }: ProgramsPageProps
 
   return (
     <div className="space-y-6">
+      <SettingsNavTabs />
+
       <PageHeader
-        title="Pengaturan Mata Pelajaran & Program"
-        description="Kelola daftar mata pelajaran, kode bidang studi, dan jenjang pendidikan bimbingan belajar."
+        title="Pengaturan Program Bimbel"
+        description="Kelola program layanan bimbingan belajar (Mengaji, Matematika, IPA, UTBK, dll.) dan jenjang sasarannya."
       >
         <Button onClick={openAddDialog}>
           <Plus className="w-4 h-4 mr-2" />
-          Tambah Mata Pelajaran
+          Tambah Program Bimbel
         </Button>
       </PageHeader>
-
-      <SettingsNavTabs />
 
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Cari mata pelajaran, kode (MTK), jenjang..."
+            placeholder="Cari program bimbel, kode (MTK, NGAJI), jenjang..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -172,7 +170,7 @@ export default function ProgramsPage({ initialPrograms = [] }: ProgramsPageProps
             <thead className="bg-muted/50 text-muted-foreground uppercase text-xs font-semibold border-b">
               <tr>
                 <th className="px-4 py-3">Kode</th>
-                <th className="px-4 py-3">Nama Mata Pelajaran</th>
+                <th className="px-4 py-3">Nama Program Bimbel</th>
                 <th className="px-4 py-3">Jenjang / Level</th>
                 <th className="px-4 py-3">Deskripsi</th>
                 <th className="px-4 py-3">Status</th>
@@ -249,10 +247,10 @@ export default function ProgramsPage({ initialPrograms = [] }: ProgramsPageProps
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingProgram ? "Edit Mata Pelajaran" : "Tambah Mata Pelajaran Baru"}
+              {editingProgram ? "Edit Program Bimbel" : "Tambah Program Bimbel Baru"}
             </DialogTitle>
             <DialogDescription>
-              Tentukan kode singkatan dan nama mata pelajaran atau bidang studi.
+              Tentukan kode singkatan dan nama program bimbingan belajar.
             </DialogDescription>
           </DialogHeader>
 
@@ -271,10 +269,10 @@ export default function ProgramsPage({ initialPrograms = [] }: ProgramsPageProps
                 )}
               </div>
               <div className="col-span-2 space-y-1.5">
-                <Label htmlFor="name">Nama Mata Pelajaran <span className="text-destructive">*</span></Label>
+                <Label htmlFor="name">Nama Program Bimbel <span className="text-destructive">*</span></Label>
                 <Input
                   id="name"
-                  placeholder="Contoh: Matematika"
+                  placeholder="Contoh: Matematika (TKA & Pendalaman)"
                   {...register("name")}
                 />
                 {errors.name && (

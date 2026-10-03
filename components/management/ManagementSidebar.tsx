@@ -17,13 +17,14 @@ import {
   Building2,
   LogOut,
   ShieldCheck,
+  BookMarked,
+  FileCheck2,
   X,
   PanelLeftClose,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ManagementSubrole } from "@/types/auth";
 import { canSubroleAccessRoute } from "@/lib/permissions";
-import { SYNTHETIC_USERS } from "@/data/users";
 import { useUiStore } from "@/stores/ui-store";
 import { Button } from "@/components/ui/button";
 
@@ -34,8 +35,11 @@ const MANAGEMENT_MENU = [
   { label: "Jadwal", href: "/management/schedules", icon: Calendar },
   { label: "Sesi Belajar", href: "/management/sessions", icon: Clock },
   { label: "Presensi", href: "/management/attendance", icon: ClipboardCheck },
+  { label: "Catatan Belajar", href: "/management/learning-records", icon: BookMarked },
+  { label: "Evaluasi Murid", href: "/management/progress-reports", icon: FileCheck2 },
   { label: "Payroll / Honor", href: "/management/payroll", icon: CreditCard },
   { label: "Laporan", href: "/management/reports/attendance", icon: BarChart3 },
+  { label: "Audit Log", href: "/management/audit-logs", icon: ShieldCheck },
   { label: "Pengaturan", href: "/management/settings", icon: Settings },
 ];
 
@@ -59,7 +63,7 @@ export function ManagementSidebar({
   const [activeSubrole, setActiveSubrole] = useState<ManagementSubrole | null>(
     initialSubrole || null
   );
-  const [activeName, setActiveName] = useState<string>(initialUserName || "Management");
+  const [activeName] = useState<string>(initialUserName || "Management");
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
   // Otomatis menutup sidebar mobile dan reset pending state jika rute halaman berganti
@@ -78,21 +82,6 @@ export function ManagementSidebar({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [mobileMenuOpen, closeMobileMenu]);
-
-  useEffect(() => {
-    if (typeof document !== "undefined") {
-      const match = document.cookie.match(/(?:^|;\s*)synthetic_user_id=([^;]+)/);
-      if (match && match[1]) {
-        const found = SYNTHETIC_USERS.find(
-          (u) => u.id === match[1] || u.email.toLowerCase() === match[1].toLowerCase()
-        );
-        if (found) {
-          setActiveSubrole(found.subrole || (found.role === "management" ? "owner" : null));
-          setActiveName(found.name);
-        }
-      }
-    }
-  }, []);
 
   // Filter menu berdasarkan subrole (HRD, Keuangan, Owner)
   const filteredMenu = MANAGEMENT_MENU.filter((item) =>

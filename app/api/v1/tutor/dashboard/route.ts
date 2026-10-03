@@ -1,34 +1,46 @@
 import { NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { requireTutorApi } from "@/lib/auth/guards";
+import { getSafeErrorMessage } from "@/lib/traits/response.trait";
 
 export async function GET() {
-  const user = await getAuthUser();
-  if (user.role !== "tutor" && user.role !== "management") {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-  }
+  const guard = await requireTutorApi("schedule:read");
+  if (!guard.ok) return guard.response;
 
+  const tutorId = guard.user.tutorId as string;
   const supabase = createServerSupabaseClient();
-  const tutorId = user.tutorId;
 
-  let query = supabase.from("schedules").select("id, student_id, day_of_week, start_time, end_time, status, students(id, name, student_code)");
-  if (tutorId) {
-    query = query.eq("tutor_id", tutorId);
+  const { data: schedules, error } = await supabase
+    .from("schedules")
+    .select(
+      `id, day_of_week, start_time, end_time, status,
+       schedule_students (student_id, students (id, name, student_code))`
+    )
+    .eq("tutor_id", tutorId);
+
+  if (error) {
+    return NextResponse.json(
+      { success: false, error: getSafeErrorMessage(error, "Gagal mengambil data dashboard.") },
+      { status: 500 }
+    );
   }
 
-  const { data: schedules, error: scheduleError } = await query;
-  if (scheduleError) {
-    return NextResponse.json({ success: false, error: scheduleError.message }, { status: 500 });
+  const uniqueStudentIds = new Set<string>();
+  for (const schedule of schedules ?? []) {
+    const rows =
+      (schedule as unknown as { schedule_students?: Array<{ student_id?: string }> })
+        .schedule_students ?? [];
+    for (const row of rows) {
+      if (row.student_id) uniqueStudentIds.add(row.student_id);
+    }
   }
-
-  const uniqueStudentIds = new Set((schedules || []).map((s: any) => s.student_id).filter(Boolean));
 
   return NextResponse.json({
     success: true,
     data: {
-      totalSchedules: (schedules || []).length,
+      totalSchedules: (schedules ?? []).length,
       totalStudents: uniqueStudentIds.size,
-      schedules: schedules || [],
+      schedules: schedules ?? [],
     },
   });
 }

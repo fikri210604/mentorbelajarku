@@ -7,3 +7,4 @@ export const APP_CONFIG = {
   maxAttendancePhotoSizeBytes: 5 * 1024 * 1024, // 5MB
   allowedImageMimeTypes: ["image/jpeg", "image/png", "image/webp"],
 };
+

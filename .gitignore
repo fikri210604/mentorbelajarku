@@ -42,3 +42,4 @@ tsconfig.tsbuildinfo
 
 # supabase
 /supabase/
+.opencode

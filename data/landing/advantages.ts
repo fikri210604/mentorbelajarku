@@ -20,8 +20,8 @@ export const LANDING_ADVANTAGES: LandingAdvantage[] = [
   },
   {
     id: 'laporan-presensi',
-    title: 'Laporan Foto & Progres Real-Time',
-    description: 'Setiap sesi tercatat dengan absensi berfoto dan ringkasan materi yang dipelajari, memberi ketenangan penuh bagi orang tua.',
+    title: 'Orang Tua Tetap Terlibat',
+    description: 'Orang tua mendapat gambaran perkembangan belajar anak secara jelas, tanpa mengganggu fokus anak saat belajar bersama mentor.',
     iconName: 'Camera',
   },
   {
@@ -38,8 +38,8 @@ export const LANDING_ADVANTAGES: LandingAdvantage[] = [
   },
   {
     id: 'reschedule-ramah',
-    title: 'Sistem Reschedule Ramah Siswa',
-    description: 'Siswa berhalangan hadir karena sakit atau agenda sekolah? Sesi izin tidak dianggap hangus dan dapat dijadwalkan ulang.',
+    title: 'Pendampingan yang Fleksibel',
+    description: 'Siswa berhalangan hadir karena sakit atau agenda sekolah? Kami membantu mengatur ulang sesi dengan tetap menghargai proses belajar anak.',
     iconName: 'RefreshCw',
   },
 ];

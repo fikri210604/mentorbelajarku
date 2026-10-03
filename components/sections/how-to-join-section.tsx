@@ -27,7 +27,7 @@ export function HowToJoinSection() {
       icon: BookOpenCheck,
       title: 'Mulai Belajar & Pantau Laporan',
       description:
-        'Sesi belajar pertama dimulai! Orang tua menerima bukti foto kehadiran dan catatan evaluasi materi setiap sesi langsung melalui sistem kami.',
+        'Sesi belajar pertama dimulai! Orang tua mendapat kabar perkembangan belajar anak secara jelas setelah sesi, sehingga prosesnya terasa dekat dan terarah.',
     },
   ];
 

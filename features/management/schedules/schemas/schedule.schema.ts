@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const scheduleSchema = z.object({
   tutorId: z.string().min(1, "Tutor harus dipilih"),
-  programId: z.string().min(1, "Program studi harus dipilih"),
+  programId: z.string().min(1, "Program bimbel harus dipilih"),
   bimbelTypeId: z.string().min(1, "Jenis bimbel harus dipilih"),
   studentId: z.string().optional().nullable(),
   studentIds: z
@@ -15,6 +15,11 @@ export const scheduleSchema = z.object({
   location: z.string().max(100).optional().nullable(),
   notes: z.string().max(255).optional().nullable(),
   status: z.enum(["active", "inactive"]),
+  // Kurikulum & Penugasan Materi Pembelajaran
+  subjectId: z.string().optional().nullable(),
+  topicId: z.string().optional().nullable(),
+  targetMaterial: z.string().max(255).optional().nullable(),
+  worksheetUrl: z.string().optional().nullable(),
 });
 
 export type ScheduleInput = z.infer<typeof scheduleSchema>;

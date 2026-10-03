@@ -2,6 +2,7 @@ import { HeroSection } from '@/components/sections/hero-section';
 import { TrustLogos } from '@/components/sections/trust-logos';
 import { WhyNeedMentorSection } from '@/components/sections/why-need-mentor-section';
 import { LearningModeSection } from '@/components/sections/learning-mode-section';
+import { TeachingMethodSection } from '@/components/sections/teaching-method-section';
 import { MidPageCTA } from '@/components/sections/mid-page-cta';
 import { ProgramSection } from '@/components/sections/program-section';
 import { AdvantagesSection } from '@/components/sections/advantages-section';
@@ -26,6 +27,9 @@ export function LandingPageView() {
 
       {/* 5. Learning Mode (Tatap Muka Kemiling vs Home Visit) */}
       <LearningModeSection />
+
+      {/* 5.5 Signature brand: metode belajar yang membangun pemahaman */}
+      <TeachingMethodSection />
 
       {/* 6. Mid-Page CTA */}
       <MidPageCTA />

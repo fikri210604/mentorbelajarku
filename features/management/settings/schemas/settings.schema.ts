@@ -94,3 +94,41 @@ export const managementRateSchema = z.object({
 });
 
 export type ManagementRateInput = z.infer<typeof managementRateSchema>;
+
+// ==============================================================================
+// 6. MASTER BATAS WAKTU ABSENSI & UPLOAD PRESENSI SCHEMA
+// ==============================================================================
+export const attendanceWindowSettingSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(2, "Nama pengaturan minimal 2 karakter"),
+  open_before_minutes: z
+    .number({ message: "Menit buka awal harus berupa angka" })
+    .min(0, "Minimal 0 menit")
+    .max(180, "Maksimal 180 menit (3 jam)"),
+  close_after_hours: z
+    .number({ message: "Jam toleransi upload harus berupa angka" })
+    .min(1, "Minimal 1 jam")
+    .max(72, "Maksimal 72 jam (3 hari)"),
+  max_days_allowed: z
+    .number({ message: "Toleransi hari harus berupa angka" })
+    .min(0, "Minimal 0 hari (hanya hari H)")
+    .max(30, "Maksimal 30 hari"),
+  daily_cutoff_time: z.string(),
+  allow_tutor_backdate: z.boolean(),
+  description: z.string().optional().nullable(),
+  status: z.enum(["active", "inactive"]),
+});
+
+export type AttendanceWindowSettingInput = z.infer<typeof attendanceWindowSettingSchema>;
+
+// ==============================================================================
+// 7. OVERRIDE DISPENSASI DEADLINE PRESENSI PER SESI
+// ==============================================================================
+export const sessionAttendanceDeadlineSchema = z.object({
+  sessionId: z.string().min(1, "ID Sesi tidak valid"),
+  attendance_deadline: z.string().min(1, "Batas tanggal & waktu dispensasi wajib diisi"),
+  allow_late_upload: z.boolean(),
+  late_upload_reason: z.string().optional().nullable(),
+});
+
+export type SessionAttendanceDeadlineInput = z.infer<typeof sessionAttendanceDeadlineSchema>;

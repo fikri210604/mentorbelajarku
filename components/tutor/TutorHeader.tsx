@@ -4,6 +4,7 @@ import { Bell, Building2, Menu } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { UserNav } from "@/components/shared/user-nav";
+import { BreadcrumbNav } from "@/components/shared/breadcrumb-nav";
 import { useUiStore } from "@/stores/ui-store";
 
 interface TutorHeaderProps {
@@ -11,22 +12,11 @@ interface TutorHeaderProps {
 }
 
 export function TutorHeader({ isManagement }: TutorHeaderProps = {}) {
-  const { toggleMobileMenu, toggleSidebar } = useUiStore();
+  const { toggleSidebar } = useUiStore();
 
   return (
     <header className="h-16 border-b border-border bg-card/60 backdrop-blur px-3 sm:px-6 flex items-center justify-between shrink-0 sticky top-0 z-30">
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Tombol Hamburger Mobile */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0 lg:hidden"
-          onClick={toggleMobileMenu}
-          aria-label="Buka menu navigasi"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
-
         {/* Tombol Hamburger / Collapse Desktop */}
         <Button
           variant="ghost"
@@ -39,9 +29,12 @@ export function TutorHeader({ isManagement }: TutorHeaderProps = {}) {
           <Menu className="h-5 w-5" />
         </Button>
 
-        <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-foreground truncate">Portal Tutor Pengajar</h2>
-          <p className="text-[11px] text-muted-foreground hidden sm:block">Catat kehadiran dan pantau jadwal mengajar hari ini</p>
+        <div className="min-w-0 flex items-center gap-3">
+          <BreadcrumbNav />
+          <div className="hidden min-w-0 sm:block">
+            <h2 className="text-sm font-semibold text-foreground truncate">Portal Tutor Pengajar</h2>
+            <p className="text-[11px] text-muted-foreground hidden sm:block">Catat kehadiran dan pantau jadwal mengajar hari ini</p>
+          </div>
         </div>
       </div>
 

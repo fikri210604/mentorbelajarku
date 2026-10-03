@@ -1,40 +1,38 @@
 import { NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { requireTutorApi } from "@/lib/auth/guards";
+import { getSafeErrorMessage } from "@/lib/traits/response.trait";
 
 export async function GET() {
-  const user = await getAuthUser();
-  if (user.role !== "tutor" && user.role !== "management") {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-  }
+  const guard = await requireTutorApi("student:read");
+  if (!guard.ok) return guard.response;
 
+  const tutorId = guard.user.tutorId as string;
   const supabase = createServerSupabaseClient();
-  const tutorId = user.tutorId;
 
-  let query = supabase
-    .from("schedules")
-    .select("student_id, students(id, name, student_code, status, school, grade)")
-    .not("student_id", "is", null);
+  const { data, error } = await supabase
+    .from("schedule_students")
+    .select(
+      `student_id,
+       students (id, name, student_code, status, school, grade),
+       schedules!inner (tutor_id, status)`
+    )
+    .eq("schedules.tutor_id", tutorId);
 
-  if (tutorId) {
-    query = query.eq("tutor_id", tutorId);
-  }
-
-  const { data, error } = await query;
   if (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: getSafeErrorMessage(error, "Gagal mengambil data murid.") },
+      { status: 500 }
+    );
   }
 
-  // Deduplicate students
-  const studentMap = new Map();
-  (data || []).forEach((item: any) => {
-    if (item.students && !studentMap.has(item.students.id)) {
-      studentMap.set(item.students.id, item.students);
+  const studentMap = new Map<string, unknown>();
+  for (const row of data ?? []) {
+    const student = (row as { students?: { id?: string } }).students;
+    if (student?.id && !studentMap.has(student.id)) {
+      studentMap.set(student.id, student);
     }
-  });
+  }
 
-  return NextResponse.json({
-    success: true,
-    data: Array.from(studentMap.values()),
-  });
+  return NextResponse.json({ success: true, data: Array.from(studentMap.values()) });
 }

@@ -1,28 +1,26 @@
 import { NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { requireTutorApi } from "@/lib/auth/guards";
+import { getSafeErrorMessage } from "@/lib/traits/response.trait";
 
 export async function GET() {
-  const user = await getAuthUser();
-  if (user.role !== "tutor" && user.role !== "management") {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-  }
+  const guard = await requireTutorApi("payroll:read");
+  if (!guard.ok) return guard.response;
 
+  const tutorId = guard.user.tutorId as string;
   const supabase = createServerSupabaseClient();
-  const tutorId = user.tutorId;
 
-  let query = supabase
+  const { data, error } = await supabase
     .from("tutor_payments")
     .select("*, tutor_payment_items(*)")
+    .eq("tutor_id", tutorId)
     .order("period_end", { ascending: false });
 
-  if (tutorId) {
-    query = query.eq("tutor_id", tutorId);
-  }
-
-  const { data, error } = await query;
   if (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: getSafeErrorMessage(error, "Gagal mengambil data honor.") },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ success: true, data });

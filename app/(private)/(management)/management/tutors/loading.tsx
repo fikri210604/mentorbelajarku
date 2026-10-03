@@ -1,8 +1,9 @@
-import { TableSkeleton } from "@/components/shared/skeletons/table-skeleton";
+import { GlobalLoading } from "@/components/shared/global-loading";
 
 export default function TutorsLoading() {
   return (
-    <TableSkeleton
+    <GlobalLoading
+      variant="table"
       title="Data Tutor"
       description="Kelola data pengajar, keahlian mata pelajaran, dan penugasan murid."
       columns={6}

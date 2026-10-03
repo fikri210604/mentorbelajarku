@@ -5,13 +5,15 @@ import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { formatCurrency } from "@/lib/utils";
-import { PayrollWithDetails } from "../types";
+import { PayrollWithDetails, TutorSessionEarning } from "../types";
+import { TutorTeachingHistory } from "@/features/tutor/attendance/components/TutorTeachingHistory";
 
 interface TutorPayrollPageProps {
   initialPayrolls?: PayrollWithDetails[];
+  history?: TutorSessionEarning[];
 }
 
-export default function TutorPayrollPage({ initialPayrolls = [] }: TutorPayrollPageProps) {
+export default function TutorPayrollPage({ initialPayrolls = [], history = [] }: TutorPayrollPageProps) {
   return (
     <div className="space-y-6">
       <PageHeader
@@ -63,6 +65,11 @@ export default function TutorPayrollPage({ initialPayrolls = [] }: TutorPayrollP
           </div>
         </div>
       )}
+      <TutorTeachingHistory
+        history={history}
+        title="Rincian Honor per Sesi"
+        description="Setiap sesi yang sudah diabsen otomatis masuk perhitungan honor (hanya murid hadir yang dihitung)."
+      />
     </div>
   );
 }

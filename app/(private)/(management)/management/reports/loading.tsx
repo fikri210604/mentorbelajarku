@@ -1,8 +1,9 @@
-import { TableSkeleton } from "@/components/shared/skeletons/table-skeleton";
+import { GlobalLoading } from "@/components/shared/global-loading";
 
 export default function ReportsLoading() {
   return (
-    <TableSkeleton
+    <GlobalLoading
+      variant="table"
       title="Laporan & Rekapitulasi"
       description="Memuat ringkasan data analitik dan pelaporan berkala..."
       columns={6}

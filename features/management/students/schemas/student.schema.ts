@@ -9,8 +9,12 @@ export const studentSchema = z.object({
   name: z.string().min(2, 'Nama murid minimal 2 karakter').max(150, 'Nama murid maksimal 150 karakter'),
   gender: z.enum(['male', 'female']).optional().nullable(),
   birthDate: z.string().optional().nullable(),
+  avatarUrl: z.string().optional().nullable(),
   school: z.string().max(100).optional().nullable(),
-  grade: z.string().max(20).optional().nullable(),
+  level: z.enum(['TK/PAUD', 'SD', 'SMP', 'SMA', 'Umum']),
+  grade: z.string().max(30).optional().nullable(),
+  bimbelType: z.enum(['Reguler', 'Intensif', 'Private']),
+  bimbelTypeId: z.string().optional().nullable(),
   parentName: z.string().max(100).optional().nullable(),
   parentPhone: z
     .string()

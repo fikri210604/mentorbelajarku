@@ -18,9 +18,14 @@ import {
   Clock,
   MapPin,
   FileText,
+  BookOpen,
+  BookCheck,
+  FileSpreadsheet,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TimePicker } from "@/components/ui/date-picker";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -45,12 +50,15 @@ import {
 } from "@/components/ui/breadcrumb";
 import { scheduleSchema, ScheduleInput } from "../schemas/schedule.schema";
 import { createSchedule } from "../actions/schedule.actions";
+import type { Subject, CurriculumTopic } from "@/types/subjects";
 
 interface ScheduleFormPageProps {
   tutors?: any[];
   programs?: any[];
   bimbelTypes?: any[];
   students?: any[];
+  subjects?: Subject[];
+  curriculumTopics?: CurriculumTopic[];
 }
 
 export default function ScheduleFormPage({
@@ -58,6 +66,8 @@ export default function ScheduleFormPage({
   programs = [],
   bimbelTypes = [],
   students = [],
+  subjects = [],
+  curriculumTopics = [],
 }: ScheduleFormPageProps) {
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -76,7 +86,7 @@ export default function ScheduleFormPage({
   } = useForm<ScheduleInput>({
     resolver: zodResolver(scheduleSchema),
     defaultValues: {
-      dayOfWeek: 1, // Senin
+      dayOfWeek: new Date().getDay(), // Otomatis mengikuti hari saat ini (day now)
       startTime: "16:00",
       endTime: "17:15",
       studentIds: [],
@@ -86,8 +96,61 @@ export default function ScheduleFormPage({
 
   const watchBimbelTypeId = watch("bimbelTypeId");
   const watchStartTime = watch("startTime");
+  const watchSubjectId = watch("subjectId");
+  const watchTopicId = watch("topicId");
+
+  // Filter topik bab materi berdasarkan mata pelajaran yang dipilih
+  const availableTopics = useMemo(() => {
+    if (!watchSubjectId) return [];
+    return curriculumTopics.filter((t) => t.subject_id === watchSubjectId);
+  }, [curriculumTopics, watchSubjectId]);
+
+  // Topik yang sedang dipilih saat ini
+  const selectedTopic = useMemo(() => {
+    if (!watchTopicId) return null;
+    return curriculumTopics.find((t) => t.id === watchTopicId) || null;
+  }, [curriculumTopics, watchTopicId]);
+
+  // Handler pergantian mata pelajaran
+  const handleSubjectChange = (subjectId: string) => {
+    setValue("subjectId", subjectId);
+    setValue("topicId", "");
+    setValue("targetMaterial", "");
+    setValue("worksheetUrl", "");
+  };
+
+  // Handler pergantian bab materi kurikulum
+  const handleTopicChange = (topicId: string) => {
+    setValue("topicId", topicId);
+    const top = curriculumTopics.find((t) => t.id === topicId);
+    if (top) {
+      const fullTitle = `Bab ${top.chapter_number}: ${top.title}`;
+      setValue("targetMaterial", fullTitle);
+      setValue("worksheetUrl", top.worksheet_url || null);
+    } else {
+      setValue("targetMaterial", "");
+      setValue("worksheetUrl", null);
+    }
+  };
 
   // Auto-calculate end time when bimbel type or start time changes
+  const handleStartTimeChange = (val: string) => {
+    setValue("startTime", val, { shouldValidate: true });
+    const selectedType = bimbelTypes.find((bt) => bt.id === watch("bimbelTypeId"));
+    const duration = selectedType?.duration_minutes || 75;
+
+    if (val && val.includes(":")) {
+      const [hours, minutes] = val.split(":").map(Number);
+      if (!isNaN(hours) && !isNaN(minutes)) {
+        const totalMinutes = hours * 60 + minutes + duration;
+        const endHours = Math.floor(totalMinutes / 60) % 24;
+        const endMinutes = totalMinutes % 60;
+        const formattedEnd = `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
+        setValue("endTime", formattedEnd, { shouldValidate: true });
+      }
+    }
+  };
+
   const handleBimbelTypeChange = (bimbelTypeId: string) => {
     setValue("bimbelTypeId", bimbelTypeId);
     const selectedType = bimbelTypes.find((bt) => bt.id === bimbelTypeId);
@@ -118,14 +181,68 @@ export default function ScheduleFormPage({
     );
   }, [students, studentSearchQuery]);
 
-  // Toggle student selection
+  // Deteksi data murid terpilih untuk penyaringan mata pelajaran & level
+  const selectedStudents = useMemo(() => {
+    return students.filter((s) => selectedStudentIds.includes(s.id));
+  }, [students, selectedStudentIds]);
+
+  // Deteksi tingkat/jenjang dari murid terpilih
+  const detectedLevels = useMemo(() => {
+    const levels = selectedStudents.map((st) => {
+      if (st.level) return st.level;
+      const g = (st.grade || "").toUpperCase();
+      if (g.includes("TK") || g.includes("PAUD") || g.includes("KB")) return "TK/PAUD";
+      if (g.includes("SMP") || g.includes("7") || g.includes("8") || g.includes("9")) return "SMP";
+      if (g.includes("SMA") || g.includes("SMK") || g.includes("10") || g.includes("11") || g.includes("12")) return "SMA";
+      if (g.includes("ALUMNI") || g.includes("UTBK")) return "Umum";
+      return "SD";
+    });
+    return Array.from(new Set(levels));
+  }, [selectedStudents]);
+
+  // Filter mata pelajaran berdasarkan jenjang murid terpilih
+  const filteredSubjects = useMemo(() => {
+    if (detectedLevels.length === 1) {
+      const targetLevel = detectedLevels[0];
+      return subjects.filter(
+        (s) => s.level === targetLevel || s.level === "Semua Jenjang"
+      );
+    }
+    return subjects;
+  }, [subjects, detectedLevels]);
+
+  // Toggle student selection dengan sinkronisasi Jenis Bimbel dari data murid
   const handleToggleStudent = (id: string) => {
-    const next = selectedStudentIds.includes(id)
-      ? selectedStudentIds.filter((item) => item !== id)
-      : [...selectedStudentIds, id];
+    const isAdding = !selectedStudentIds.includes(id);
+    const next = isAdding
+      ? [...selectedStudentIds, id]
+      : selectedStudentIds.filter((item) => item !== id);
 
     setSelectedStudentIds(next);
     setValue("studentIds", next, { shouldValidate: true });
+
+    // Jika murid baru dipilih, otomatis sesuaikan Jenis Bimbel dari data murid tersebut
+    if (isAdding) {
+      const addedStudent = students.find((s) => s.id === id);
+      if (addedStudent) {
+        const studentBimbelName =
+          addedStudent.bimbel_type ||
+          addedStudent.enrollments?.[0]?.bimbel_types?.name ||
+          addedStudent.student_programs?.[0]?.bimbel_types?.name ||
+          "";
+
+        if (studentBimbelName) {
+          const matchedType = bimbelTypes.find(
+            (bt) =>
+              bt.name?.toLowerCase() === studentBimbelName.toLowerCase() ||
+              bt.id === addedStudent.bimbel_type_id
+          );
+          if (matchedType) {
+            handleBimbelTypeChange(matchedType.id);
+          }
+        }
+      }
+    }
   };
 
   // Select all currently filtered students
@@ -423,12 +540,12 @@ export default function ScheduleFormPage({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-foreground">Program Studi *</label>
+                <label className="text-xs font-semibold text-foreground">Program Bimbel *</label>
                 <select
                   {...register("programId")}
                   className="w-full mt-1 px-3 py-2 border rounded-md text-xs bg-background"
                 >
-                  <option value="">Pilih Program Studi</option>
+                  <option value="">Pilih Program Bimbel</option>
                   {programs.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} {p.level ? `(${p.level})` : ""}
@@ -482,24 +599,28 @@ export default function ScheduleFormPage({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-semibold text-foreground">Jam Mulai (HH:mm) *</label>
-                <Input
-                  {...register("startTime")}
-                  placeholder="16:00"
-                  className="mt-1 text-xs"
-                />
+                <label className="text-xs font-semibold text-foreground">Jam Mulai *</label>
+                <div className="mt-1">
+                  <TimePicker
+                    value={watch("startTime")}
+                    onChange={handleStartTimeChange}
+                    placeholder="Pilih jam mulai"
+                  />
+                </div>
                 {errors.startTime && (
                   <p className="text-xs text-destructive mt-1">{errors.startTime.message}</p>
                 )}
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-foreground">Jam Selesai (HH:mm) *</label>
-                <Input
-                  {...register("endTime")}
-                  placeholder="17:15"
-                  className="mt-1 text-xs"
-                />
+                <label className="text-xs font-semibold text-foreground">Jam Selesai *</label>
+                <div className="mt-1">
+                  <TimePicker
+                    value={watch("endTime")}
+                    onChange={(val) => setValue("endTime", val, { shouldValidate: true })}
+                    placeholder="Pilih jam selesai"
+                  />
+                </div>
                 {errors.endTime && (
                   <p className="text-xs text-destructive mt-1">{errors.endTime.message}</p>
                 )}
@@ -530,6 +651,146 @@ export default function ScheduleFormPage({
                   className="mt-1 text-xs"
                 />
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* BAGIAN 3: KURIKULUM & PENUGASAN MATERI BELAJAR (ADMIN SENTRIS) */}
+        <Card className="border shadow-xs">
+          <CardHeader className="pb-3 bg-muted/20 border-b">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-primary" />
+                  Mata Pelajaran & Materi Kurikulum 
+                </CardTitle>
+                <CardDescription className="text-xs mt-0.5">
+                  Admin menetapkan mata pelajaran dan bab materi agar tutor tidak perlu mengetik manual dan lembar kerja (worksheet) siap diunduh saat kelas.
+                </CardDescription>
+              </div>
+              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs self-start sm:self-center">
+                <Sparkles className="w-3 h-3 mr-1" />
+                Terpusat oleh Admin
+              </Badge>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-4 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <BookCheck className="w-3.5 h-3.5 text-primary" />
+                  Mata Pelajaran
+                </label>
+                <select
+                  value={watchSubjectId || ""}
+                  onChange={(e) => handleSubjectChange(e.target.value)}
+                  className="w-full mt-1 px-3 py-2 border rounded-md text-xs bg-background"
+                >
+                  <option value="">-- Pilih Mata Pelajaran --</option>
+                  {filteredSubjects.map((sub) => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.name} ({sub.level})
+                    </option>
+                  ))}
+                </select>
+                {detectedLevels.length === 1 ? (
+                  <p className="text-[11px] text-primary font-medium mt-1">
+                    ✓ Otomatis disaring untuk jenjang {detectedLevels[0]} sesuai data murid terpilih.
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Pilih mata pelajaran yang akan diajarkan pada jadwal ini.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-primary" />
+                  Bab / Topik Materi Kurikulum
+                </label>
+                <select
+                  value={watchTopicId || ""}
+                  onChange={(e) => handleTopicChange(e.target.value)}
+                  disabled={!watchSubjectId}
+                  className="w-full mt-1 px-3 py-2 border rounded-md text-xs bg-background disabled:bg-muted/50 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {watchSubjectId
+                      ? availableTopics.length > 0
+                        ? "-- Pilih Bab Materi --"
+                        : "-- Belum ada silabus bab untuk mapel ini --"
+                      : "-- Pilih mapel terlebih dahulu --"}
+                  </option>
+                  {availableTopics.map((top) => (
+                    <option key={top.id} value={top.id}>
+                      Bab {top.chapter_number}: {top.title} ({top.grade})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Materi akan otomatis terisi pada formulir presensi tutor.
+                </p>
+              </div>
+            </div>
+
+            {/* Preview Bab & Worksheet yang Terpilih */}
+            {selectedTopic && (
+              <div className="rounded-lg border bg-blue-50/50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900/60 p-3.5 space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-blue-600 text-white text-[10px]">
+                        Bab {selectedTopic.chapter_number}
+                      </Badge>
+                      <span className="text-xs font-bold text-foreground">
+                        {selectedTopic.title}
+                      </span>
+                      <Badge variant="outline" className="text-[10px]">
+                        {selectedTopic.grade}
+                      </Badge>
+                    </div>
+                    {selectedTopic.description && (
+                      <p className="text-xs text-muted-foreground mt-1.5">
+                        {selectedTopic.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {selectedTopic.worksheet_name && (
+                    <div className="shrink-0 text-right">
+                      <Badge variant="secondary" className="text-[11px] gap-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300">
+                        <Download className="w-3 h-3" />
+                        Worksheet Tersedia
+                      </Badge>
+                      <div className="text-[10px] text-muted-foreground mt-0.5 max-w-[180px] truncate">
+                        {selectedTopic.worksheet_name}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Input Materi Kustom / Tambahan Jika Perlu Penyesuaian */}
+            <div>
+              <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+                <span>Target / Rencana Materi Khusus (Otomatis terisi dari Bab terpilih)</span>
+                <span className="text-[11px] text-muted-foreground font-normal">Dapat disesuaikan jika ada catatan tambahan</span>
+              </label>
+              <Input
+                {...register("targetMaterial")}
+                placeholder="Contoh: Bab 1: Bilangan Cacah Besar & Latihan Soal Evaluasi"
+                className="mt-1 text-xs"
+              />
+            </div>
+
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
+              <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <span>
+                <strong>Kemudahan Alur Tutor:</strong> Tutor tidak perlu menebak atau mengetik materi dari awal. Ketika sesi dimulai, tutor langsung melihat materi ini dan lembar kerja (worksheet) murid siap diunduh dengan 1 klik.
+              </span>
             </div>
 
             <div className="pt-3 flex justify-end">
@@ -573,6 +834,14 @@ export default function ScheduleFormPage({
                   )
                 </span>
               </div>
+              {pendingData.targetMaterial && (
+                <div className="flex justify-between py-1 border-b border-muted">
+                  <span className="text-muted-foreground">Materi Kurikulum:</span>
+                  <span className="font-semibold text-foreground">
+                    {pendingData.targetMaterial}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between py-1 border-b border-muted">
                 <span className="text-muted-foreground">Hari & Waktu:</span>
                 <span className="font-semibold text-foreground">

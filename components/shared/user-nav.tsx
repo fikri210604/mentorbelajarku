@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-// import { authClient } from '@/lib/auth/client'; // Better Auth client - sementara di-comment
-import { logoutSyntheticUser } from '@/features/auth/actions/auth.actions';
-import { SYNTHETIC_USERS, SyntheticUser } from '@/data/users';
+import { authClient } from '@/lib/auth/client';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -25,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { LogOut, Shield, Users, GraduationCap, Building2, UserCog } from 'lucide-react';
+import { LogOut, Shield, GraduationCap, Building2, UserCog } from 'lucide-react';
 import type { UserRole } from '@/types/database.types';
 
 interface UserNavProps {
@@ -34,60 +32,39 @@ interface UserNavProps {
     email?: string | null;
   };
   role?: UserRole | string;
+  subrole?: string | null;
 }
 
-export function UserNav({ user: propUser, role: propRole }: UserNavProps = {}) {
+export function UserNav({ user: propUser, role: propRole, subrole }: UserNavProps = {}) {
   const router = useRouter();
   const pathname = usePathname();
-  // const { data: session } = authClient.useSession(); // Better Auth hook - sementara di-comment
-  const [syntheticUser, setSyntheticUser] = useState<SyntheticUser | null>(null);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  useEffect(() => {
-    if (typeof document !== 'undefined') {
-      const match = document.cookie.match(/(?:^|;\s*)synthetic_user_id=([^;]+)/);
-      if (match && match[1]) {
-        const found = SYNTHETIC_USERS.find(
-          (u) => u.id === match[1] || u.email.toLowerCase() === match[1].toLowerCase()
-        );
-        if (found) setSyntheticUser(found);
-      }
-    }
-  }, []);
-
-  const name = propUser?.name || syntheticUser?.name || 'User';
-  const email = propUser?.email || syntheticUser?.email || '';
-  const role = (propRole || syntheticUser?.role || 'tutor') as UserRole;
+  const name = propUser?.name || 'User';
+  const email = propUser?.email || '';
+  const role = (propRole || 'tutor') as UserRole;
 
   const handleSignOut = async () => {
     setIsLoggingOut(true);
     try {
-      await logoutSyntheticUser();
+      await authClient.signOut();
     } catch (err) {
       console.error('Logout error:', err);
     }
-
-    // Bersihkan cookie di client browser
-    if (typeof document !== 'undefined') {
-      const pastDate = 'Thu, 01 Jan 1970 00:00:00 GMT';
-      document.cookie = `synthetic_user_id=; path=/; expires=${pastDate}; max-age=0;`;
-      document.cookie = `better-auth.session_token=; path=/; expires=${pastDate}; max-age=0;`;
-      document.cookie = `__Secure-better-auth.session_token=; path=/; expires=${pastDate}; max-age=0;`;
-    }
-
-    // Hard redirect via API endpoint yang memberikan Set-Cookie max-age=0
-    window.location.href = '/api/v1/auth/logout';
+    window.location.href = '/login?logged_out=true';
   };
 
   const getInitials = (displayName: string) => {
-    return displayName
-      .split(' ')
-      .filter(Boolean)
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase() || 'MB';
+    return (
+      displayName
+        .split(' ')
+        .filter(Boolean)
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase() || 'MB'
+    );
   };
 
   const roleColors: Record<string, string> = {
@@ -96,8 +73,6 @@ export function UserNav({ user: propUser, role: propRole }: UserNavProps = {}) {
     admin: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border-rose-200',
     finance: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border-blue-200',
   };
-
-  const subrole = syntheticUser?.subrole;
 
   return (
     <div className="flex items-center gap-3">
@@ -150,21 +125,14 @@ export function UserNav({ user: propUser, role: propRole }: UserNavProps = {}) {
             </>
           )}
           <DropdownMenuItem
-            onClick={() => router.push(role === 'tutor' ? '/tutor/profile' : '/tutor/profile')}
+            onClick={() => router.push('/tutor/profile')}
             className="cursor-pointer font-medium"
           >
             <UserCog className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Profil & Keamanan</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push('/login?switch=true')} className="cursor-pointer">
-            <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-            <span>Ganti Akun Demo</span>
-          </DropdownMenuItem>
           <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault();
-              setShowLogoutDialog(true);
-            }}
+            onClick={() => setShowLogoutDialog(true)}
             className="text-destructive focus:text-destructive cursor-pointer"
           >
             <LogOut className="mr-2 h-4 w-4" />
@@ -173,7 +141,6 @@ export function UserNav({ user: propUser, role: propRole }: UserNavProps = {}) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Konfirmasi Logout Alert Dialog */}
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

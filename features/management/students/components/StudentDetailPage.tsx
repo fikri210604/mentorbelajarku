@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { ArrowLeft, Edit, BookOpen, Clock, Calendar, UserCheck } from "lucide-react";
+import { ArrowLeft, Edit, BookOpen, Clock, Calendar, UserCheck, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { StudentProgressCard } from "@/features/shared/students/components/StudentProgressCard";
 import { StudentHistoryList } from "@/features/shared/students/components/StudentHistoryList";
+import { DeleteStudentButton } from "./DeleteStudentButton";
 import type { StudentWithPrograms } from "../types";
 import type {
   StudentActivePackageProgress,
@@ -46,12 +47,23 @@ export default function StudentDetailPage({
             Kembali
           </Link>
         </Button>
-        <Button asChild size="sm">
+        <Button asChild variant="outline" size="sm">
           <Link href={`/management/students/${student.id}/edit`}>
             <Edit className="w-4 h-4 mr-2" />
             Edit Murid
           </Link>
         </Button>
+        <Button asChild size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs">
+          <Link href={`/management/students/${student.id}/progress-report`}>
+            <FileText className="w-4 h-4 mr-2" />
+            Laporan Perkembangan (Cetak PDF)
+          </Link>
+        </Button>
+        <DeleteStudentButton
+          studentId={student.id}
+          studentName={student.name}
+          studentCode={student.student_code}
+        />
       </PageHeader>
 
       {/* 1. KARTU PROGRES PAKET & PERTEMUAN KE-X */}
@@ -133,6 +145,7 @@ export default function StudentDetailPage({
       {/* 3. RIWAYAT PERTEMUAN KRONOLOGIS DENGAN NOMOR PERTEMUAN & NAMA TUTOR */}
       <StudentHistoryList
         history={history}
+        studentId={student.id}
         title="Histori Sesi & Log Pertemuan Murid"
         description="Riwayat presensi pertemuan riil. Nomor pertemuan bertambah hanya untuk kehadiran efektif (Hadir/Terlambat)."
       />

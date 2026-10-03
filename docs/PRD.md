@@ -18,7 +18,7 @@ Sistem Manajemen & Presensi Bimbel ini dirancang untuk mendigitalkan dan mengopt
 
 ### 2.1. Management (Pengelola Bimbel)
 - **Kebutuhan**:
-  - Mengelola data master murid, tutor, program studi, jenis bimbel, dan konfigurasi tarif honor tutor.
+  - Mengelola data master murid, tutor, program bimbel, jenis bimbel, dan konfigurasi tarif honor tutor.
   - Membuat dan memodifikasi jadwal belajar reguler/kelompok/private.
   - Memverifikasi absensi dan catatan materi pembelajaran harian.
   - Mengkalkulasi, mereview, memfinalisasi, dan menandai pembayaran honor tutor setiap periode payroll.
@@ -45,9 +45,12 @@ Sistem Manajemen & Presensi Bimbel ini dirancang untuk mendigitalkan dan mengopt
 | **Sesi Aktual (Sessions)** | Manifestasi riil dari jadwal pada tanggal kalender tertentu. Mencatat tutor aktual yang mengajar (termasuk tutor pengganti). | Management, Tutor |
 | **Presensi (Attendance)** | Pengambilan presensi murid per sesi dengan kamera browser (`react-webcam`), upload ke Supabase Storage, status multi-opsi. | Tutor (Input), Management (Review/Koreksi) |
 | **Payroll (Honor Tutor)** | Perhitungan otomatis di server berdasarkan tarif yang berlaku saat sesi berlangsung dan jumlah murid terbayar. Finalisasi & riwayat transfer. | Management (Kelola), Tutor (Lihat Rincian) |
-| **Laporan (Reports)** | Rekapitulasi presensi, keaktifan murid, jam terbang tutor, dan pengeluaran payroll. | Management |
-| **Pengaturan (Settings)** | Konfigurasi program studi, jenis bimbel (Reguler, Intensif, Private beserta durasi default), dan tarif tutor per jenis bimbel. | Management |
+| **Laporan & Evaluasi** | Rekapitulasi presensi, evaluasi materi, cetak lembar perkembangan murid A4 (0 ms), jam terbang tutor, dan pengeluaran payroll. | Management |
+| **Pengaturan (Settings)** | Konfigurasi program bimbel, jenis bimbel (Reguler, Intensif, Private beserta durasi default), dan tarif tutor per jenis bimbel. | Management |
 | **Audit Logs** | Pencatatan otomatis *who, what, when, before, after* untuk mutasi sensitif (koreksi absensi, perubahan tarif, payroll). | System, Management |
+| **Push Notification & Pengingat** *(Roadmap)* | Pengingat jadwal presensi otomatis H-30m dan eskalasi pasca-sesi via Web Push & WhatsApp Bot agar tutor tidak lupa absen. | Tutor, Management |
+| **Master Mata Pelajaran & Silabus** *(Roadmap)* | Admin mengelola master mapel & bab silabus kurikulum dan mengisikannya pada jadwal sesi. Tutor otomatis melihat materi yang harus diajarkan tanpa input manual. | Management (Kelola & Jadwalkan), Tutor (Melihat Materi) |
+| **Worksheet Siap Unduh Tutor** *(Roadmap)* | Admin mengunggah lembar kerja siswa (PDF) dan menautkannya ke materi jadwal. Tutor dapat langsung mengunduh worksheet untuk diajarkan. | Management (Upload), Tutor (Download Langsung) |
 
 ---
 
@@ -65,4 +68,18 @@ Sistem Manajemen & Presensi Bimbel ini dirancang untuk mendigitalkan dan mengopt
 - **Security**: Autentikasi ketat Better Auth, RBAC di level Server Component, Server Action, API v1 Route Handler, dan database constraints.
 - **Performance**: Pemanfaatan Server Components Next.js untuk data fetching efisien dan TanStack Table untuk rendering tabel data besar.
 - **Responsiveness**: Antarmuka responsif ramah mobile/tablet bagi tutor saat melakukan absensi langsung di kelas.
-- **Modularity**: Arsitektur feature-oriented terstruktur (`src/features/*`) dengan Thin App Pages di `src/app/*`.
+- **Modularity**: Arsitektur feature-oriented terstruktur (`features/*`) dengan Thin App Pages di `app/*`.
+
+---
+
+## 6. Dokumentasi Status & Rekomendasi Terkini
+
+Untuk rincian status fitur yang telah selesai per peran (**Management** dan **Tutor**) serta rekomendasi arsitektur pengembangan sistem (penanganan file, kompresi, WhatsApp bot, payroll, dan data integrity), lihat dokumen lengkap:
+👉 [DEVELOPMENT_STATUS_AND_RECOMMENDATIONS.md](DEVELOPMENT_STATUS_AND_RECOMMENDATIONS.md)
+
+Untuk hasil audit keamanan & integritas data serta status implementasi perbaikannya, lihat:
+
+- 👉 [SECURITY_AND_FLOW_AUDIT.md](SECURITY_AND_FLOW_AUDIT.md)
+- 👉 [PROJECT_REVIEW_2026-09-28.md](PROJECT_REVIEW_2026-09-28.md)
+- 👉 [IMPLEMENTATION_STATUS_2026-09-28.md](IMPLEMENTATION_STATUS_2026-09-28.md)
+

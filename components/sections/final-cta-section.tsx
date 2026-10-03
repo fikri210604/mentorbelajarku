@@ -19,11 +19,11 @@ export function FinalCTASection() {
           </div>
 
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground font-heading leading-tight">
-            Berikan Pendampingan Belajar Terbaik untuk Anak Anda Hari Ini
+            Bantu Anak Menemukan Cara Belajar yang Lebih Baik
           </h2>
 
           <p className="text-base sm:text-lg text-foreground/80 max-w-2xl mx-auto leading-relaxed">
-            Jangan tunggu hingga nilai rapor menurun atau ujian semakin dekat. Konsultasikan jadwal dan kebutuhan belajar siswa bersama tim akademik Mentor Belajarku di Kemiling, Bandar Lampung.
+            Ceritakan tantangan belajar anak kepada kami. Tim Mentor Belajarku siap membantu memilihkan program, mentor, dan ritme belajar yang paling sesuai di Kemiling dan Bandar Lampung.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">

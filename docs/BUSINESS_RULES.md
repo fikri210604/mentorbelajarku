@@ -1104,3 +1104,26 @@ Enrollment #3
 Ini menurut saya sudah jauh lebih sesuai dengan probis nyata bimbelmu.
 
 Dan setelah aturan ini dikunci, rancangan ERD + migration Supabase sebaiknya mengikuti model ini. Terutama kita perlu menentukan apakah Schedule berada di bawah Enrollment, karena kalau jadwal berubah/reschedule dan paket tetap sama, relasinya harus dirancang supaya histori tidak rusak.
+
+---
+
+## 11. Keputusan Bisnis Final (dikonfirmasi 28 September 2026)
+
+Bagian ini mengunci keputusan yang sebelumnya terbuka (lihat `docs/PROJECT_REVIEW_2026-09-28.md` §5). Implementasi server mengikuti aturan ini.
+
+| # | Pertanyaan | Keputusan |
+|---|---|---|
+| 1 | Apakah payroll wajib attendance `verified`? | **Tidak.** Attendance berstatus `submitted` sudah cukup untuk dihitung (verifikasi bersifat informatif/koreksi). |
+| 2 | Perlakuan status `late`? | **Payable dan mengurangi kuota paket.** `late` dihitung sebagai pertemuan efektif. |
+| 3 | Perlakuan status `sick`? | **Sama seperti `permission`.** Tidak mengurangi kuota paket, tidak payable, murid boleh reschedule. |
+| 4 | Hierarki tarif tutor? | **Override tutor > default global per (bimbel_type + level).** Tarif tutor-spesifik menang; jika tidak ada, pakai tarif global. |
+| 5 | Foto presensi wajib? | **Wajib** saat tutor submit. Pengecualian hanya melalui operasi Management terpisah yang diaudit (`overrideAttendanceWindow`). |
+| 6 | Durasi default Reguler? | **60 menit** pada master `bimbel_types`. Durasi paket per jenjang (`bimbel_packages`) dapat berbeda dan bersifat data-driven. |
+
+### 11.1. Implikasi implementasi
+
+- **Attendance payable** (`present`, `late`) dipakai pada kalkulasi payroll.
+- **Paket/kuota**: hanya `present`/`late` yang menambah nomor pertemuan; `permission`/`sick`/`absent` tidak.
+- **Foto wajib**: `submitSessionAttendance` menolak submit tanpa foto; `allowTimeBypass` dihapus dari input client.
+- **Tarif**: query payroll memfilter `level` sesi dan memilih `effective_from` terbaru secara deterministik; periode tarif tumpang tindih ditolak oleh constraint `ex_tutor_rates_no_overlap`.
+- **Reguler 60 menit**: seed `bimbel_types` diselaraskan; override per paket tetap dimungkinkan.

@@ -20,11 +20,11 @@ export function MidPageCTA() {
           </div>
 
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-heading tracking-tight leading-tight">
-            Ingin Nilai Anak Meningkat dan Percaya Diri di Sekolah?
+            Saatnya Anak Belajar dengan Lebih Terarah
           </h2>
 
           <p className="text-white/90 text-sm sm:text-base leading-relaxed">
-            Konsultasikan kebutuhan belajar putra-putri Anda sekarang dengan tim akademik kami. Gratis tanpa biaya pendaftaran awal!
+            Konsultasikan kebutuhan belajar putra-putri Anda dengan tim kami. Kami mulai dari memahami anak, bukan sekadar menawarkan paket.
           </p>
 
           <div className="pt-2">

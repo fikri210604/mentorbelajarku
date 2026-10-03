@@ -16,4 +16,12 @@ export interface ScheduleWithDetails extends Schedule {
   // Derived helper for UI
   student_names?: string[];
   total_students?: number;
+  // Kurikulum & Penugasan Materi
+  subject_id?: string | null;
+  subject_name?: string | null;
+  topic_id?: string | null;
+  topic_title?: string | null;
+  target_material?: string | null;
+  worksheet_url?: string | null;
+  worksheet_name?: string | null;
 }

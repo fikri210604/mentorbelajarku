@@ -5,7 +5,7 @@ import { Camera, Sparkles } from 'lucide-react';
 
 export function GallerySection() {
   return (
-    <section className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-24 border-t border-border/60 bg-muted/20">
+    <section id="gallery" className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-24 border-t border-border/60 bg-muted/20">
       <div className="text-center max-w-3xl mx-auto mb-14">
         <Badge variant="outline" className="mb-3 px-3.5 py-1 text-xs font-semibold border-primary/20 bg-accent text-primary">
           Aktivitas Belajar

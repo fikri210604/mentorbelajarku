@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { requirePermissionApi } from "@/lib/auth/guards";
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ rateId: string }> }
 ) {
+  const guard = await requirePermissionApi("rates:manage");
+  if (!guard.ok) return guard.response;
+
   const { rateId } = await params;
   const supabase = createServerClient();
   const { data, error } = await supabase
