@@ -20,7 +20,7 @@ function getOrCreatePgPool(): Pool | undefined {
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     connectionTimeoutMillis: 5000,
-    idleTimeoutMillis: 60000, // Menjaga koneksi hangat selama 60 detik (mencegah TLS handshake berulang)
+    idleTimeoutMillis: 60000,
     max: 10,
     keepAlive: true,
     ssl:
@@ -41,7 +41,20 @@ function getOrCreatePgPool(): Pool | undefined {
 export const auth = betterAuth({
   database: getOrCreatePgPool(),
   secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
+  baseURL:
+    process.env.BETTER_AUTH_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'),
+  trustedOrigins: Array.from(
+    new Set(
+      [
+        'https://mentorbelajarku.vercel.app',
+        process.env.BETTER_AUTH_URL,
+        process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+        process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+        'http://localhost:3000',
+      ].filter(Boolean) as string[]
+    )
+  ),
   user: {
     fields: {
       emailVerified: 'email_verified',
