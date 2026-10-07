@@ -41,6 +41,7 @@ export function DotLottieLoading({
 }: DotLottieLoadingProps) {
   const [playerLoaded, setPlayerLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const playerContainerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -59,6 +60,54 @@ export function DotLottieLoading({
     script.onerror = () => setHasError(true);
     document.head.appendChild(script);
   }, []);
+
+  // Pasang dan mainkan animasi di container begitu script siap
+  useEffect(() => {
+    if (!playerLoaded || !playerContainerRef.current || !src || hasError) return;
+
+    const container = playerContainerRef.current;
+    container.innerHTML = "";
+
+    // Buat Web Component dotlottie-player murni dengan DOM API
+    // Catatan penting: Library @dotlottie/player-component 2.7.12 memiliki bug jika property .loop
+    // di-assign dengan boolean true (mengharapkan string "true" atau integer).
+    // Menggunakan setAttribute("loop", "true") mencegah runtime error tersebut.
+    const player = document.createElement("dotlottie-player");
+    player.setAttribute("src", src);
+    player.setAttribute("autoplay", "true");
+    player.setAttribute("loop", "true");
+    player.setAttribute("background", "transparent");
+    player.style.width = "100%";
+    player.style.height = "100%";
+
+    const onReady = () => {
+      try {
+        (player as any).play?.();
+      } catch {}
+    };
+
+    const onError = () => {
+      setHasError(true);
+    };
+
+    player.addEventListener("ready", onReady);
+    player.addEventListener("DOMLoaded", onReady);
+    player.addEventListener("error", onError);
+    player.addEventListener("data_failed", onError);
+
+    container.appendChild(player);
+
+    return () => {
+      player.removeEventListener("ready", onReady);
+      player.removeEventListener("DOMLoaded", onReady);
+      player.removeEventListener("error", onError);
+      player.removeEventListener("data_failed", onError);
+      try {
+        (player as any).destroy?.();
+      } catch {}
+      container.innerHTML = "";
+    };
+  }, [playerLoaded, src, hasError]);
 
   const content = (
     <div
@@ -79,22 +128,10 @@ export function DotLottieLoading({
             {children}
           </div>
         ) : src && playerLoaded && !hasError ? (
-          <div className="size-full flex items-center justify-center animate-in fade-in duration-300">
-            {React.createElement("dotlottie-player", {
-              ref: (node: HTMLElement | null) => {
-                if (node) {
-                  try {
-                    (node as any).loop = true;
-                    (node as any).autoplay = true;
-                  } catch {}
-                }
-              },
-              src,
-              background: "transparent",
-              style: { width: "100%", height: "100%" },
-              onError: () => setHasError(true),
-            })}
-          </div>
+          <div
+            ref={playerContainerRef}
+            className="size-full flex items-center justify-center animate-in fade-in duration-300"
+          />
         ) : (
           /* Placeholder Elegan Bertema Mentor Emerald (#00A86B) */
           <div className="relative size-full flex items-center justify-center">
