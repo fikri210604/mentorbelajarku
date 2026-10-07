@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { LANDING_GALLERY } from '@/data/landing/gallery';
-import { Camera, Sparkles } from 'lucide-react';
+import { Camera } from 'lucide-react';
 
 export function GallerySection() {
   return (

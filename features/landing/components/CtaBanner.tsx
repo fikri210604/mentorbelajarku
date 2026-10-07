@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
-import { MessageCircle, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
+import { MessageCircle, Sparkles, ShieldCheck } from 'lucide-react';
 
 export function CtaBanner() {
   return (

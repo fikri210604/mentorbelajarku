@@ -86,7 +86,7 @@ export class ReportService {
   ): Promise<AttendanceReportData> {
     const supabase = createServerSupabaseClient();
 
-    let query = (supabase.from("attendance") as any).select(`
+    const query = (supabase.from("attendance") as any).select(`
       id,
       status,
       checked_in_at,
@@ -408,12 +408,10 @@ export class ReportService {
       const tutorSessions = t.sessions || [];
       totalAllSessions += tutorSessions.length;
 
-      let tutorSessionMonthCount = 0;
       let tutorStudentsCount = 0;
 
       for (const s of tutorSessions) {
         if (s.session_date && s.session_date.startsWith(currentYearMonth)) {
-          tutorSessionMonthCount++;
           totalSessionsThisMonth++;
         }
         const attList = s.attendance || [];

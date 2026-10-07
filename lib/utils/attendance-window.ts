@@ -138,7 +138,7 @@ export function validateAttendanceTimeWindow(
       windowEnd: windowEndFormatted,
       message: `Waktu presensi dibuka (${windowStartFormatted} s/d ${windowEndFormatted}).`,
     };
-  } catch (err) {
+  } catch {
     return {
       isAllowed: true,
       status: 'open',

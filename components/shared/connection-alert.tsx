@@ -32,10 +32,6 @@ export function ConnectionAlert() {
 
   // 1. Listener event online/offline dari browser
   useEffect(() => {
-    if (typeof navigator !== "undefined") {
-      setIsOnline(navigator.onLine);
-    }
-
     const handleOnline = () => {
       setIsOnline(true);
       if (!isPublicRoute) {

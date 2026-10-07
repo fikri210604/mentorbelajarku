@@ -9,9 +9,13 @@ export function GlobalNavigationProgress() {
   const [isNavigating, setIsNavigating] = useState(false);
   const [, startTransition] = useTransition();
 
-  useEffect(() => {
+  const currentKey = `${pathname}?${searchParams?.toString() ?? ""}`;
+  const [prevKey, setPrevKey] = useState(currentKey);
+
+  if (prevKey !== currentKey) {
+    setPrevKey(currentKey);
     setIsNavigating(false);
-  }, [pathname, searchParams]);
+  }
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = (e.target as HTMLElement).closest("a");
@@ -49,18 +53,17 @@ export function GlobalNavigationProgress() {
       }
     };
 
-    // Tambahkan fallback timeout agar loading tidak gantung selamanya jika navigasi dibatalkan
-    const handleTimeout = () => {
-      if (isNavigating) {
-        const timer = setTimeout(() => setIsNavigating(false), 8000);
-        return () => clearTimeout(timer);
-      }
-    };
-
     document.addEventListener("click", handleClick, { capture: true });
     return () => {
       document.removeEventListener("click", handleClick, { capture: true });
     };
+  }, []);
+
+  // Fallback timeout agar loading tidak gantung selamanya jika navigasi tertahan
+  useEffect(() => {
+    if (!isNavigating) return;
+    const timer = setTimeout(() => setIsNavigating(false), 8000);
+    return () => clearTimeout(timer);
   }, [isNavigating]);
 
   if (!isNavigating) return null;

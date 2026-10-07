@@ -88,12 +88,13 @@ export default function ProgressReportsPage({
   const [formTutorName, setFormTutorName] = useState<string>('');
   const [isSavingModal, setIsSavingModal] = useState<boolean>(false);
 
-  // Sync state saat initialReport berubah dari server component navigation
-  useEffect(() => {
+  const [prevReport, setPrevReport] = useState<StudentEvaluationReportData>(initialReport);
+  if (prevReport !== initialReport) {
+    setPrevReport(initialReport);
     setReportData(initialReport);
     setRows(initialReport.rows || []);
     setSelectedStudentId(initialReport.studentId);
-  }, [initialReport]);
+  }
 
   // Handler saat memilih murid lain dari dropdown
   const handleSelectStudent = (newStudentId: string | null) => {
@@ -151,8 +152,8 @@ export default function ProgressReportsPage({
       } else {
         toast.error(res.message);
       }
-    } catch (err: any) {
-      toast.error(err?.message || 'Gagal menyimpan keterangan evaluasi.');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan keterangan evaluasi.');
     } finally {
       setIsSavingModal(false);
     }
@@ -184,8 +185,8 @@ export default function ProgressReportsPage({
       } else {
         toast.error(res.message);
       }
-    } catch (err: any) {
-      toast.error(err?.message || 'Gagal menyimpan perubahan.');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan perubahan.');
     } finally {
       setIsSaving(false);
     }
@@ -349,9 +350,9 @@ export default function ProgressReportsPage({
           <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
           <div className="leading-relaxed">
             <span className="font-semibold">Tips Ekspor PDF Cepat (0 ms):</span> Klik tombol{' '}
-            <strong>"Cetak / Export PDF"</strong> di atas. Pada kotak dialog printer browser, pilih
-            tujuan <em>"Save as PDF" (Simpan sebagai PDF)</em>, pastikan ukuran kertas{' '}
-            <em>A4</em>, dan centang opsi <em>"Background graphics" (Grafik latar belakang)</em> agar
+            <strong>&quot;Cetak / Export PDF&quot;</strong> di atas. Pada kotak dialog printer browser, pilih
+            tujuan <em>&quot;Save as PDF&quot; (Simpan sebagai PDF)</em>, pastikan ukuran kertas{' '}
+            <em>A4</em>, dan centang opsi <em>&quot;Background graphics&quot; (Grafik latar belakang)</em> agar
             warna gradien banner hijau dan header biru tampil sempurna.
           </div>
         </div>

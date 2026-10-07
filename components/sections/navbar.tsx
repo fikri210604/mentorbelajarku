@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { buttonVariants } from '@/components/ui/button';
 import { buildWaLink } from '@/lib/whatsapp';
 import { MessageCircle, Menu, X, Sparkles } from 'lucide-react';
 

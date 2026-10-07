@@ -52,6 +52,7 @@ export function UserNav({ user: propUser, role: propRole, subrole }: UserNavProp
     } catch (err) {
       console.error('Logout error:', err);
     }
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = '/login?logged_out=true';
   };
 

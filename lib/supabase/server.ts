@@ -18,7 +18,6 @@ export function isSupabaseConfigured(): boolean {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var _supabaseServerClient: ReturnType<typeof createClient<Database>> | undefined;
 }
 

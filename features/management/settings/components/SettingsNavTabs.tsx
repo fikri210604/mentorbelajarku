@@ -193,12 +193,19 @@ export function SettingsNavTabs({
     permissions: initialPermissions ?? [],
   });
 
-  useEffect(() => {
+  const [prevInitial, setPrevInitial] = useState({ initialRoleName, initialPermissions });
+  if (prevInitial.initialRoleName !== initialRoleName || prevInitial.initialPermissions !== initialPermissions) {
+    setPrevInitial({ initialRoleName, initialPermissions });
     if (initialRoleName !== undefined && initialPermissions !== undefined) {
       setSessionData({
         roleName: initialRoleName ?? null,
         permissions: initialPermissions ?? [],
       });
+    }
+  }
+
+  useEffect(() => {
+    if (initialRoleName !== undefined && initialPermissions !== undefined) {
       return;
     }
 

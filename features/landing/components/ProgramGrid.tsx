@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { CheckCircle2, Clock, Users, BookOpen, Sparkles, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Clock, Sparkles, ArrowRight } from 'lucide-react';
 
 export function ProgramGrid() {
   const [selectedGrade, setSelectedGrade] = useState<'all' | 'sd' | 'smp' | 'sma'>('all');

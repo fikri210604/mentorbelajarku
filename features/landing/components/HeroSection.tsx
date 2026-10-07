@@ -1,15 +1,10 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { LeadCaptureForm } from './LeadCaptureForm';
 import {
-  GraduationCap,
   Target,
   CheckCircle2,
-  Sparkles,
-  Award,
-  BookCheck,
   Star,
   ArrowRight,
 } from 'lucide-react';

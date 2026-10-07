@@ -1,6 +1,6 @@
 "use client";
 
-import { CreditCard, CheckCircle2, Clock, Users, ArrowUpRight } from "lucide-react";
+import { CreditCard, CheckCircle2, Clock, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
@@ -67,7 +67,7 @@ export default function PayrollReportPage({ initialData }: PayrollReportPageProp
             <p className="text-2xl font-bold font-mono text-emerald-600">
               {formatCurrency(data.totalPaid)}
             </p>
-            <span className="text-xs text-muted-foreground">Status 'paid' di sistem</span>
+            <span className="text-xs text-muted-foreground">Status &apos;paid&apos; di sistem</span>
           </CardContent>
         </Card>
 
@@ -82,7 +82,7 @@ export default function PayrollReportPage({ initialData }: PayrollReportPageProp
             <p className="text-2xl font-bold font-mono text-amber-600">
               {formatCurrency(data.totalPending)}
             </p>
-            <span className="text-xs text-muted-foreground">Status 'draft' atau 'processed'</span>
+            <span className="text-xs text-muted-foreground">Status &apos;draft&apos; atau &apos;processed&apos;</span>
           </CardContent>
         </Card>
       </div>

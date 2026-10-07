@@ -88,10 +88,14 @@ export function ManagementSidebar({
   const [activeName] = useState<string>(initialUserName || "Management");
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
-  // Otomatis menutup sidebar mobile dan reset pending state jika rute halaman berganti
+  // Reset pending indicator jika halaman target sudah tercapai
+  if (pendingHref && pathname === pendingHref) {
+    setPendingHref(null);
+  }
+
+  // Otomatis menutup sidebar mobile jika rute halaman berganti
   useEffect(() => {
     closeMobileMenu();
-    setPendingHref(null);
   }, [pathname, closeMobileMenu]);
 
   // Listener tombol Escape untuk menutup drawer pada mobile

@@ -41,10 +41,10 @@ export function TutorSidebar({ isManagement }: TutorSidebarProps = {}) {
   } = useUiStore();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
-  // Hentikan indikator loading saat navigasi selesai (halaman berganti)
-  useEffect(() => {
+  // Hentikan indikator loading saat navigasi selesai
+  if (pendingHref && pathname === pendingHref) {
     setPendingHref(null);
-  }, [pathname]);
+  }
 
   return (
     <>

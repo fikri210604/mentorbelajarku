@@ -18,20 +18,20 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 
-interface DataTableProps<TData extends Record<string, any>> {
-  columns: LegacyColumnDef<TData, any>[];
+interface DataTableProps<TData extends Record<string, unknown>> {
+  columns: LegacyColumnDef<TData, unknown>[];
   data: TData[];
   pageSize?: number;
 }
 
-export function DataTable<TData extends Record<string, any>>({
+export function DataTable<TData extends Record<string, unknown>>({
   columns,
   data,
   pageSize = 10,
 }: DataTableProps<TData>) {
   const table = useLegacyTable<TData>({
     data,
-    columns,
+    columns: columns as LegacyColumnDef<TData, any>[],
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
@@ -47,9 +47,9 @@ export function DataTable<TData extends Record<string, any>>({
       <div className="rounded-md border border-border bg-card">
         <Table>
           <TableHeader>
-            {table.getHeaderGroups().map((headerGroup: any) => (
+            {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header: any) => (
+                {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
@@ -64,12 +64,12 @@ export function DataTable<TData extends Record<string, any>>({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row: any) => (
+              table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
                 >
-                  {row.getVisibleCells().map((cell: any) => (
+                  {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,

@@ -184,7 +184,7 @@ function CalendarDayButton({
   className,
   day,
   modifiers,
-  locale,
+  locale: _locale,
   children,
   ...props
 }: React.ComponentProps<typeof DayButton> & { locale?: Partial<Locale> }) {

@@ -4,8 +4,6 @@ import {
   BrainCircuit,
   FileCheck2,
   HelpCircle,
-  CheckCircle,
-  GraduationCap,
 } from 'lucide-react';
 
 export function MethodFormula() {

@@ -6,7 +6,6 @@ import { Pool } from 'pg';
 // (Sementara di-guard agar tidak error koneksi database saat mode coba-coba)
 // =========================================================================
 declare global {
-  // eslint-disable-next-line no-var
   var _betterAuthPgPool: Pool | undefined;
 }
 

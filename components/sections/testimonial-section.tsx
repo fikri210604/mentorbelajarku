@@ -36,7 +36,7 @@ export function TestimonialSection() {
                 {/* Quote */}
                 <p className="text-xs sm:text-sm text-foreground/85 leading-relaxed italic relative">
                   <Quote className="h-5 w-5 text-primary/20 mb-1" />
-                  "{item.quote}"
+                  &ldquo;{item.quote}&rdquo;
                 </p>
               </div>
 

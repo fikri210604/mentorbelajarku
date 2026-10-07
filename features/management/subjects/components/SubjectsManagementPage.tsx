@@ -413,7 +413,7 @@ export default function SubjectsManagementPage({
               <CardContent className="py-12 text-center text-muted-foreground space-y-2">
                 <BookOpen className="w-8 h-8 mx-auto opacity-50" />
                 <p className="text-sm font-semibold">Tidak ada mata pelajaran ditemukan.</p>
-                <p className="text-xs">Klik tombol "Tambah Mata Pelajaran" di atas untuk menambah baru.</p>
+                <p className="text-xs">Klik tombol &quot;Tambah Mata Pelajaran&quot; di atas untuk menambah baru.</p>
               </CardContent>
             </Card>
           ) : (
@@ -580,7 +580,7 @@ export default function SubjectsManagementPage({
                 <Layers className="w-8 h-8 mx-auto opacity-50" />
                 <p className="text-sm font-semibold">Belum ada bab materi kurikulum.</p>
                 <p className="text-xs">
-                  Pilih mata pelajaran & jenjang kelas, lalu klik "+ Tambah Bab" untuk menyusun materi ajar.
+                  Pilih mata pelajaran &amp; jenjang kelas, lalu klik &quot;+ Tambah Bab&quot; untuk menyusun materi ajar.
                 </p>
               </CardContent>
             </Card>

@@ -60,6 +60,79 @@ const DAYS_ORDER = [
   { index: 0, name: "Minggu", short: "Min" },
 ];
 
+const WIB_TIME_ZONE = "Asia/Jakarta";
+
+const MONTHS_SHORT_ID = [
+  "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+  "Jul", "Agu", "Sep", "Okt", "Nov", "Des",
+];
+
+const MONTHS_LONG_ID = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+];
+
+const WEEKDAY_LONG_ID = [
+  "Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu",
+];
+
+interface CalendarDay {
+  index: number;
+  name: string;
+  short: string;
+  year: number;
+  month: number;
+  day: number;
+  iso: string;
+  isToday: boolean;
+  shortDate: string;
+  longDate: string;
+}
+
+function wibToday(): { year: number; month: number; day: number } {
+  const iso = new Date().toLocaleDateString("en-CA", { timeZone: WIB_TIME_ZONE });
+  const [year, month, day] = iso.split("-").map(Number);
+  return { year, month, day };
+}
+
+function weekdayFromYmd(year: number, month: number, day: number): number {
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+}
+
+function shiftYmd(year: number, month: number, day: number, days: number) {
+  const dt = new Date(Date.UTC(year, month - 1, day));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  return { year: dt.getUTCFullYear(), month: dt.getUTCMonth() + 1, day: dt.getUTCDate() };
+}
+
+function buildWeek(offset: number, today: { year: number; month: number; day: number }): CalendarDay[] {
+  const backToMonday = (weekdayFromYmd(today.year, today.month, today.day) + 6) % 7;
+  const monday = shiftYmd(today.year, today.month, today.day, -backToMonday + offset * 7);
+  const todayIso = `${today.year}-${today.month}-${today.day}`;
+
+  return DAYS_ORDER.map((day, i) => {
+    const date = shiftYmd(monday.year, monday.month, monday.day, i);
+    const iso = `${date.year}-${date.month}-${date.day}`;
+    return {
+      ...day,
+      year: date.year,
+      month: date.month,
+      day: date.day,
+      iso,
+      isToday: iso === todayIso,
+      shortDate: `${String(date.day).padStart(2, "0")} ${MONTHS_SHORT_ID[date.month - 1]}`,
+      longDate: `${WEEKDAY_LONG_ID[day.index]}, ${date.day} ${MONTHS_LONG_ID[date.month - 1]} ${date.year}`,
+    };
+  });
+}
+
+function formatWeekRange(first: CalendarDay, last: CalendarDay): string {
+  if (first.month === last.month && first.year === last.year) {
+    return `${first.day} – ${last.day} ${MONTHS_LONG_ID[last.month - 1]} ${last.year}`;
+  }
+  return `${first.day} ${MONTHS_SHORT_ID[first.month - 1]} – ${last.day} ${MONTHS_SHORT_ID[last.month - 1]} ${last.year}`;
+}
+
 const HOURS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 const HOUR_HEIGHT = 64; // px per hour
 const START_HOUR = 7;
@@ -83,8 +156,12 @@ export function ScheduleCalendarView({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [activeSchedule, setActiveSchedule] = useState<ScheduleWithDetails | null>(null);
 
-  // Hari ini (0=Minggu, 1=Senin, dst)
-  const todayDayIndex = new Date().getDay();
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const weekDays = buildWeek(weekOffset, wibToday());
+  const weekDayByIndex = new Map<number, CalendarDay>();
+  weekDays.forEach((d) => weekDayByIndex.set(d.index, d));
+  const weekRangeLabel = formatWeekRange(weekDays[0], weekDays[weekDays.length - 1]);
 
   // Extract unique bimbel types for filter
   const bimbelTypes = useMemo(() => {
@@ -292,6 +369,58 @@ export function ScheduleCalendarView({
         </div>
       </div>
 
+      {(viewMode === "calendar" || viewMode === "agenda") && (
+        <div className="flex items-center justify-between gap-2 bg-card p-2.5 rounded-xl border border-border shadow-xs">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setWeekOffset((o) => o - 1)}
+            className="h-8 gap-1 text-xs"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Minggu Sebelumnya</span>
+            <span className="sm:hidden">Sebelumnya</span>
+          </Button>
+
+          <div className="text-center min-w-0">
+            <div className="text-sm font-semibold text-foreground truncate">{weekRangeLabel}</div>
+            <div className="text-[11px] text-muted-foreground">
+              {weekOffset === 0
+                ? "Minggu Ini"
+                : weekOffset > 0
+                  ? `${weekOffset} minggu ke depan`
+                  : `${Math.abs(weekOffset)} minggu lalu`}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {weekOffset !== 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setWeekOffset(0)}
+                className="h-8 text-xs"
+              >
+                Minggu Ini
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setWeekOffset((o) => o + 1)}
+              className="h-8 gap-1 text-xs"
+            >
+              <span className="hidden sm:inline">Minggu Berikutnya</span>
+              <span className="sm:hidden">Berikutnya</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Legend Badge Bar */}
       <div className="flex flex-wrap items-center justify-between text-xs text-muted-foreground px-1 gap-2">
         <div className="flex items-center gap-4">
@@ -329,8 +458,8 @@ export function ScheduleCalendarView({
                 </div>
 
                 {/* 7 Kolom Hari */}
-                {DAYS_ORDER.map((d) => {
-                  const isToday = d.index === todayDayIndex;
+                {weekDays.map((d) => {
+                  const isToday = d.isToday;
                   return (
                     <div
                       key={d.index}
@@ -340,6 +469,7 @@ export function ScheduleCalendarView({
                       )}
                     >
                       <div className="text-xs uppercase tracking-wider">{d.name}</div>
+                      <div className="text-[11px] font-medium mt-0.5 opacity-80">{d.shortDate}</div>
                       {isToday && (
                         <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-primary text-primary-foreground">
                           Hari Ini
@@ -366,9 +496,9 @@ export function ScheduleCalendarView({
                 </div>
 
                 {/* 7 Kolom Jadwal Hari */}
-                {DAYS_ORDER.map((d) => {
+                {weekDays.map((d) => {
                   const daySchedules = filteredSchedules.filter((s) => s.day_of_week === d.index);
-                  const isToday = d.index === todayDayIndex;
+                  const isToday = d.isToday;
 
                   return (
                     <div
@@ -478,9 +608,9 @@ export function ScheduleCalendarView({
       {/* MAIN VIEW: 2. AGENDA VIEW (DAFTAR PER HARI) */}
       {viewMode === "agenda" && (
         <div className="space-y-4">
-          {DAYS_ORDER.map((d) => {
+          {weekDays.map((d) => {
             const daySchedules = filteredSchedules.filter((s) => s.day_of_week === d.index);
-            const isToday = d.index === todayDayIndex;
+            const isToday = d.isToday;
 
             if (daySchedules.length === 0 && selectedDay !== "all" && selectedDay !== d.index.toString()) {
               return null;
@@ -499,6 +629,7 @@ export function ScheduleCalendarView({
                     <h3 className="font-semibold text-base flex items-center gap-2">
                       <CalendarIcon className="w-4 h-4 text-primary" />
                       {d.name}
+                      <span className="text-xs font-normal text-muted-foreground">• {d.longDate.replace(`${d.name}, `, "")}</span>
                     </h3>
                     {isToday && (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary text-primary-foreground">
@@ -605,7 +736,15 @@ export function ScheduleCalendarView({
                       className="hover:bg-muted/30 transition-colors cursor-pointer"
                     >
                       <td className="px-4 py-3 font-medium">
-                        {DAYS_ORDER.find((d) => d.index === schedule.day_of_week)?.name || "Hari"}, {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}
+                        <span className="block">
+                          {DAYS_ORDER.find((d) => d.index === schedule.day_of_week)?.name || "Hari"}
+                          {weekDayByIndex.get(schedule.day_of_week)
+                            ? `, ${weekDayByIndex.get(schedule.day_of_week)!.shortDate}`
+                            : ""}
+                        </span>
+                        <span className="text-muted-foreground font-mono text-xs">
+                          {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <span className="font-medium text-foreground">{schedule.bimbel_types?.name}</span>
@@ -728,6 +867,11 @@ export function ScheduleCalendarView({
                         {activeSchedule.start_time.slice(0, 5)} - {activeSchedule.end_time.slice(0, 5)} WIB
                       </span>
                     </p>
+                    {weekDayByIndex.get(activeSchedule.day_of_week) && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Tanggal: {weekDayByIndex.get(activeSchedule.day_of_week)!.longDate}
+                      </p>
+                    )}
                   </div>
                 </div>
 

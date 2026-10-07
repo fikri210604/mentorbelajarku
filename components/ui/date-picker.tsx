@@ -128,9 +128,11 @@ export function DatePicker({
   const [internalTime, setInternalTime] = React.useState(timeValue)
   const [viewMode, setViewMode] = React.useState<"calendar" | "grid">("calendar")
 
-  React.useEffect(() => {
+  const [prevTimeValue, setPrevTimeValue] = React.useState(timeValue)
+  if (prevTimeValue !== timeValue) {
+    setPrevTimeValue(timeValue)
     if (timeValue) setInternalTime(timeValue)
-  }, [timeValue])
+  }
 
   // Safe parsing of Date object or "YYYY-MM-DD" string to avoid timezone offset shifts
   const selectedDate = React.useMemo(() => {
@@ -168,14 +170,18 @@ export function DatePicker({
     return Math.floor(y / 10) * 10
   })
 
-  React.useEffect(() => {
+  const [prevSelectedDate, setPrevSelectedDate] = React.useState(selectedDate)
+  if (prevSelectedDate !== selectedDate) {
+    setPrevSelectedDate(selectedDate)
     if (selectedDate) {
       setCurrentMonth(selectedDate)
       setSelectedDecade(Math.floor(selectedDate.getFullYear() / 10) * 10)
     }
-  }, [selectedDate])
+  }
 
-  React.useEffect(() => {
+  const [prevOpen, setPrevOpen] = React.useState(open)
+  if (prevOpen !== open) {
+    setPrevOpen(open)
     if (open) {
       setViewMode("calendar")
       if (selectedDate) {
@@ -183,7 +189,7 @@ export function DatePicker({
         setSelectedDecade(Math.floor(selectedDate.getFullYear() / 10) * 10)
       }
     }
-  }, [open, selectedDate])
+  }
 
   const decadeYears = React.useMemo(() => {
     const years: number[] = []
@@ -625,9 +631,11 @@ export function TimePicker({
 
   const [customInput, setCustomInput] = React.useState(value || "16:00")
 
-  React.useEffect(() => {
+  const [prevValue, setPrevValue] = React.useState(value)
+  if (prevValue !== value) {
+    setPrevValue(value)
     if (value) setCustomInput(value)
-  }, [value])
+  }
 
   const handleApplyTime = (h: string, m: string) => {
     const timeStr = `${h.padStart(2, "0")}:${m.padStart(2, "0")}`

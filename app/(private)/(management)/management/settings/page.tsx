@@ -15,7 +15,7 @@ interface SettingsPageProps {
 
 export default async function Page({ searchParams }: SettingsPageProps) {
   const resolvedParams = searchParams ? await searchParams : {};
-  const requestedTab = resolvedParams.tab as any;
+  const requestedTab = resolvedParams.tab as string | undefined;
 
   const session = await requireAuthUser();
   const supabase = createServerClient();
@@ -66,6 +66,7 @@ export default async function Page({ searchParams }: SettingsPageProps) {
       permissions={session.permissions}
       currentSubrole={session.subrole}
       defaultTab={
+        requestedTab &&
         ["bimbel-types", "programs", "packages", "tutor-rates", "management-rates", "roles"].includes(
           requestedTab
         )

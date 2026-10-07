@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Award, GraduationCap, Trophy, Star, CheckCircle } from 'lucide-react';
+import { Trophy, Star } from 'lucide-react';
 
 export function HallOfFame() {
   const champions = [
@@ -89,7 +89,7 @@ export function HallOfFame() {
 
                 {/* Quote */}
                 <p className="text-xs text-muted-foreground leading-relaxed italic border-l-2 border-primary/30 pl-3 my-4">
-                  "{champ.quote}"
+                  &ldquo;{champ.quote}&rdquo;
                 </p>
               </div>
 

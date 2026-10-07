@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo } from 'react';
 import { CameraCapture } from '@/components/shared/camera';
 import { submitSessionAttendance } from '@/features/tutor/attendance/actions/attendance.actions';
 import { validateAttendanceTimeWindow, AttendanceTimeWindowResult } from '@/lib/utils/attendance-window';
@@ -35,7 +34,6 @@ import {
   FileText,
   Trash2,
   Wifi,
-  WifiOff,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -114,7 +112,6 @@ export function AttendanceForm({
   students,
   onSuccess,
 }: AttendanceFormProps) {
-  const router = useRouter();
   const { isOnline, isPoorConnection } = useNetworkStatus();
 
   // Wizard Step State: 1: Materi & Worksheet, 2: Foto Sesi, 3: Presensi Murid
@@ -123,14 +120,14 @@ export function AttendanceForm({
   const startTime = sessionDetails.startTime || '16:00';
   const endTime = sessionDetails.endTime || '17:15';
 
-  const windowConfig = {
+  const windowConfig = useMemo(() => ({
     openBeforeMinutes: sessionDetails.windowConfig?.openBeforeMinutes ?? 15,
     closeAfterHours: sessionDetails.windowConfig?.closeAfterHours ?? 4,
     maxDaysAllowed: sessionDetails.windowConfig?.maxDaysAllowed ?? 1,
     allowBackdate: sessionDetails.windowConfig?.allowBackdate ?? false,
     sessionDeadlineOverride: sessionDetails.attendanceDeadline,
     sessionAllowLateUpload: sessionDetails.allowLateUpload,
-  };
+  }), [sessionDetails.windowConfig, sessionDetails.attendanceDeadline, sessionDetails.allowLateUpload]);
 
   // 1. Validasi Batas Waktu Absensi Dinamis (Master Config + Sesi Override)
   const [windowInfo, setWindowInfo] = useState<AttendanceTimeWindowResult>(() =>
@@ -143,7 +140,7 @@ export function AttendanceForm({
       setWindowInfo(validateAttendanceTimeWindow(sessionDetails.date, startTime, windowConfig));
     }, 60000);
     return () => clearInterval(timer);
-  }, [sessionDetails.date, startTime, sessionDetails.attendanceDeadline, sessionDetails.allowLateUpload]);
+  }, [sessionDetails.date, startTime, windowConfig]);
 
   // 2. State untuk Foto Tunggal Sesi (1x Foto untuk seluruh murid)
   const [sessionPhotoBase64, setSessionPhotoBase64] = useState<string | null>(null);
@@ -181,7 +178,9 @@ export function AttendanceForm({
   );
 
   // Sinkronisasi jika prop students berubah
-  useEffect(() => {
+  const [prevStudents, setPrevStudents] = useState(students);
+  if (prevStudents !== students) {
+    setPrevStudents(students);
     const defaultMaterial = sessionDetails.targetMaterial || sessionDetails.topicTitle || '';
     setStudentRows(
       students.map((st) => {
@@ -202,7 +201,7 @@ export function AttendanceForm({
         };
       })
     );
-  }, [students, defaultMaxMeetings, sessionDetails.bimbelTypeName, sessionDetails.targetMaterial, sessionDetails.topicTitle]);
+  }
 
   // Bulk Material Helper (Terapkan materi ke semua murid)
   const [commonMaterial, setCommonMaterial] = useState(sessionDetails.targetMaterial || sessionDetails.topicTitle || '');

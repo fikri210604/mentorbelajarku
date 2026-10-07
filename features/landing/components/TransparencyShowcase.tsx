@@ -1,13 +1,7 @@
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   Camera,
-  CalendarCheck,
-  CheckCircle2,
   FileSpreadsheet,
-  Clock,
-  ShieldCheck,
-  Award,
   Sparkles,
   RefreshCw,
 } from 'lucide-react';
@@ -66,7 +60,7 @@ export function TransparencyShowcase() {
                 <div>
                   <span className="text-muted-foreground block mb-1">Catatan Evaluasi Tutor:</span>
                   <p className="text-[11px] bg-muted/40 p-2 rounded text-foreground italic leading-relaxed">
-                    "Ananda Alghazy memahami teorema sisa dengan baik. Mampu menyelesaikan 6 latihan soal tingkat sedang dan 2 soal HOTS secara mandiri."
+                    &ldquo;Ananda Alghazy memahami teorema sisa dengan baik. Mampu menyelesaikan 6 latihan soal tingkat sedang dan 2 soal HOTS secara mandiri.&rdquo;
                   </p>
                 </div>
               </div>

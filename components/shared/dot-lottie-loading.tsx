@@ -39,7 +39,9 @@ export function DotLottieLoading({
   mode = "page",
   className,
 }: DotLottieLoadingProps) {
-  const [playerLoaded, setPlayerLoaded] = useState(false);
+  const [playerLoaded, setPlayerLoaded] = useState(
+    () => typeof window !== "undefined" && Boolean(customElements.get("dotlottie-player"))
+  );
   const [hasError, setHasError] = useState(false);
   const playerContainerRef = React.useRef<HTMLDivElement>(null);
 
@@ -48,7 +50,6 @@ export function DotLottieLoading({
 
     // Cek apakah web component dotlottie-player sudah terdaftar di browser
     if (customElements.get("dotlottie-player")) {
-      setPlayerLoaded(true);
       return;
     }
 
@@ -82,7 +83,7 @@ export function DotLottieLoading({
 
     const onReady = () => {
       try {
-        (player as any).play?.();
+        (player as HTMLElement & { play?: () => void }).play?.();
       } catch {}
     };
 
@@ -103,7 +104,7 @@ export function DotLottieLoading({
       player.removeEventListener("error", onError);
       player.removeEventListener("data_failed", onError);
       try {
-        (player as any).destroy?.();
+        (player as HTMLElement & { destroy?: () => void }).destroy?.();
       } catch {}
       container.innerHTML = "";
     };

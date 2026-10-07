@@ -1,5 +1,5 @@
 import React from "react";
-import { DotLottieLoading, type DotLottieLoadingProps } from "./dot-lottie-loading";
+import { DotLottieLoading } from "./dot-lottie-loading";
 
 export type GlobalLoadingVariant =
   | "default"
