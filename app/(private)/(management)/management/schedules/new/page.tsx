@@ -12,11 +12,10 @@ export const metadata: Metadata = {
 export default async function Page() {
   const supabase = createServerClient();
 
-  const [tutors, students, pResult, bResult, subjects, curriculumTopics] = await Promise.all([
+  const [tutors, students, pResult, subjects, curriculumTopics] = await Promise.all([
     getTutors(),
     getStudents(),
     supabase.from("programs").select("*").eq("status", "active"),
-    supabase.from("bimbel_types").select("*").eq("status", "active"),
     getSubjects(),
     getCurriculumTopics(),
   ]);
@@ -26,7 +25,6 @@ export default async function Page() {
       tutors={tutors}
       students={students}
       programs={pResult.data ?? []}
-      bimbelTypes={bResult.data ?? []}
       subjects={subjects}
       curriculumTopics={curriculumTopics}
     />

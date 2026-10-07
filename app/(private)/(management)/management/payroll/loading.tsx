@@ -4,8 +4,8 @@ export default function PayrollLoading() {
   return (
     <GlobalLoading
       variant="table"
-      title="Honor & Payroll Tutor"
-      description="Kalkulasi otomatis honor mengajar berdasarkan kehadiran dan rate terkonfigurasi."
+      title="Penggajian Tutor"
+      description="Sheet penggajian bulanan tiap tutor dan kalkulasi honor berdasarkan kehadiran."
       columns={6}
       rows={8}
     />

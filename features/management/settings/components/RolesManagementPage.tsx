@@ -35,6 +35,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { cn } from "cn";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,19 +61,26 @@ import {
 } from "../actions/role.actions";
 import { SYSTEM_PERMISSIONS } from "@/config/permissions";
 import { Permission, PermissionDefinition, RoleWithPermissions } from "@/types/auth";
-import { cn } from "@/lib/utils";
+import { isOwnerRoleName } from "@/lib/permissions/resolver";
 
-interface RolesManagementPageProps {
+export interface RolesManagementPageProps {
   initialRoles?: RoleWithPermissions[];
   initialPermissions?: PermissionDefinition[];
+  roleName?: string | null;
+  permissions?: Permission[];
   currentSubrole?: string | null;
 }
 
 export default function RolesManagementPage({
   initialRoles = [],
   initialPermissions = [],
+  roleName,
+  permissions: userPermissions = [],
   currentSubrole = "owner",
 }: RolesManagementPageProps) {
+  const isOwner = isOwnerRoleName(roleName);
+  const canManageRoles = isOwner || userPermissions.includes("roles:manage");
+
   const [roles, setRoles] = useState<RoleWithPermissions[]>(initialRoles);
   const permissions =
     initialPermissions.length > 0 ? initialPermissions : SYSTEM_PERMISSIONS;
@@ -176,6 +184,7 @@ export default function RolesManagementPage({
   };
 
   const togglePermission = (permId: string) => {
+    if (!canManageRoles) return;
     if (matrixRole?.name === "owner") return; // Owner selalu all
     setSelectedPermissions((prev) =>
       prev.includes(permId) ? prev.filter((p) => p !== permId) : [...prev, permId]
@@ -183,6 +192,7 @@ export default function RolesManagementPage({
   };
 
   const toggleCategoryPermissions = (category: string) => {
+    if (!canManageRoles) return;
     if (matrixRole?.name === "owner") return;
     const catPerms = permissions.filter((p) => p.category === category).map(
       (p) => p.id
@@ -201,6 +211,7 @@ export default function RolesManagementPage({
   const knownPermissionIds = new Set(permissions.map((p) => p.id));
 
   const copyPermissionsFromRole = (sourceRoleId: string) => {
+    if (!canManageRoles) return;
     if (matrixRole?.name === "owner") return;
     const source = roles.find((r) => r.id === sourceRoleId);
     if (!source) return;
@@ -209,7 +220,7 @@ export default function RolesManagementPage({
   };
 
   const savePermissions = async () => {
-    if (!matrixRole) return;
+    if (!canManageRoles || !matrixRole) return;
     setIsSavingPermissions(true);
     try {
       const res = await updateRolePermissionsAction(matrixRole.id, selectedPermissions);
@@ -258,22 +269,36 @@ export default function RolesManagementPage({
         title="Manajemen Peran & Hak Akses (RBAC)"
         description="Pusat kendali peran tim bimbel. Pimpinan dapat menambahkan scope tugas baru (seperti Bagian Kurikulum) dan mengatur checklist izin akses secara dinamis."
       >
-        <Button onClick={openAddRoleDialog} className="gap-2 shadow-xs cursor-pointer">
-          <Plus className="w-4 h-4" />
-          <span>Tambah Peran Baru</span>
-        </Button>
+        {canManageRoles && (
+          <Button onClick={openAddRoleDialog} className="gap-2 shadow-xs cursor-pointer">
+            <Plus className="w-4 h-4" />
+            <span>Tambah Peran Baru</span>
+          </Button>
+        )}
       </PageHeader>
 
-      {/* 3. ALERT INFORMASI UNTUK OWNER */}
-      <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20 text-sm text-foreground">
-        <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-        <div className="space-y-1">
-          <p className="font-semibold text-primary">Sistem Peran Fleksibel & Dinamis</p>
-          <p className="text-muted-foreground text-xs leading-relaxed">
-            Anda dapat mendefinisikan peran baru (misalnya <strong>Bagian Kurikulum</strong> untuk mengelola master mapel, silabus bab materi, dan worksheet siswa). Tutor juga dapat diberi izin mengunggah lembar kerja, namun kurikulum dan owner memegang kendali review penuh.
-          </p>
+      {/* 3. ALERT INFORMASI */}
+      {!canManageRoles ? (
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-sm text-foreground">
+          <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-semibold text-amber-800 dark:text-amber-300">Mode Hanya-Lihat (Read-Only)</p>
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              Akun Anda tidak memiliki izin <strong>Manajemen Role & Hak Akses</strong>. Anda hanya dapat melihat cakupan izin yang aktif dan tidak dapat memodifikasi matriks hak akses.
+            </p>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20 text-sm text-foreground">
+          <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-semibold text-primary">Sistem Peran Fleksibel & Dinamis</p>
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              Anda dapat mendefinisikan peran baru (misalnya <strong>Bagian Kurikulum</strong> untuk mengelola master mapel, silabus bab materi, dan worksheet siswa). Tutor juga dapat diberi izin mengunggah lembar kerja, namun kurikulum dan owner memegang kendali review penuh.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* 4. GRID DAFTAR ROLES */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -359,10 +384,14 @@ export default function RolesManagementPage({
                   className="flex-1 text-xs gap-1.5 cursor-pointer font-medium"
                 >
                   <KeyRound className="w-3.5 h-3.5 text-primary" />
-                  <span>{isOwnerRole ? "Lihat Izin Akses" : "Atur Hak Akses"}</span>
+                  <span>
+                    {isOwnerRole || !canManageRoles
+                      ? "Lihat Izin Akses"
+                      : "Atur Hak Akses"}
+                  </span>
                 </Button>
 
-                {!role.is_system && (
+                {!role.is_system && canManageRoles && (
                   <>
                     <Button
                       variant="ghost"
@@ -475,11 +504,18 @@ export default function RolesManagementPage({
               <KeyRound className="w-4 h-4" />
               <span>Matriks Hak Akses Granular</span>
             </div>
-            <DialogTitle className="text-lg">
-              Pengaturan Izin: {matrixRole?.display_name}
+            <DialogTitle className="text-lg flex items-center gap-2 flex-wrap">
+              <span>Pengaturan Izin: {matrixRole?.display_name}</span>
+              {!canManageRoles && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  Mode Baca Saja
+                </span>
+              )}
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Centang modul dan fitur yang diizinkan untuk diakses oleh pemegang peran ini.
+              {canManageRoles
+                ? "Centang modul dan fitur yang diizinkan untuk diakses oleh pemegang peran ini."
+                : "Daftar hak akses dan cakupan fitur yang sedang aktif untuk peran ini."}
             </DialogDescription>
           </DialogHeader>
 
@@ -494,8 +530,8 @@ export default function RolesManagementPage({
             </div>
           )}
 
-          {/* Dropdown salin izin dari peran lain (sumber database) */}
-          {matrixRole?.name !== "owner" && (
+          {/* Dropdown salin izin dari peran lain (hanya untuk pengelola peran) */}
+          {matrixRole?.name !== "owner" && canManageRoles && (
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-xl border border-primary/20 bg-primary/5">
               <div className="sm:flex-1 space-y-0.5">
                 <p className="text-xs font-semibold text-foreground">Salin Izin dari Peran Lain</p>
@@ -540,7 +576,7 @@ export default function RolesManagementPage({
                       <span>{category}</span>
                     </div>
 
-                    {matrixRole?.name !== "owner" && (
+                    {matrixRole?.name !== "owner" && canManageRoles && (
                       <button
                         type="button"
                         onClick={() => toggleCategoryPermissions(category)}
@@ -556,19 +592,23 @@ export default function RolesManagementPage({
                       const isChecked =
                         matrixRole?.name === "owner" ||
                         selectedPermissions.includes(perm.id);
+                      const isControlDisabled = matrixRole?.name === "owner" || !canManageRoles;
 
                       return (
                         <label
                           key={perm.id}
                           className={cn(
-                            "flex items-start gap-2.5 p-2.5 rounded-lg border text-left transition-all cursor-pointer select-none",
+                            "flex items-start gap-2.5 p-2.5 rounded-lg border text-left transition-all select-none",
+                            isControlDisabled
+                              ? "cursor-default"
+                              : "cursor-pointer hover:bg-muted/40",
                             isChecked
                               ? "bg-primary/5 border-primary/40 text-foreground"
-                              : "bg-card border-border text-muted-foreground hover:bg-muted/40 hover:text-foreground",
-                            matrixRole?.name === "owner" && "cursor-default opacity-90"
+                              : "bg-card border-border text-muted-foreground",
+                            isControlDisabled && !isChecked && "opacity-60"
                           )}
                           onClick={(e) => {
-                            if (matrixRole?.name === "owner") return;
+                            if (isControlDisabled) return;
                             e.preventDefault();
                             togglePermission(perm.id);
                           }}
@@ -577,7 +617,7 @@ export default function RolesManagementPage({
                             type="checkbox"
                             checked={isChecked}
                             readOnly
-                            disabled={matrixRole?.name === "owner"}
+                            disabled={isControlDisabled}
                             className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary/20 accent-primary"
                           />
                           <div className="space-y-0.5">
@@ -618,7 +658,7 @@ export default function RolesManagementPage({
                 >
                   Tutup
                 </Button>
-                {matrixRole?.name !== "owner" && (
+                {matrixRole?.name !== "owner" && canManageRoles && (
                   <Button
                     type="button"
                     onClick={savePermissions}

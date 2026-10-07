@@ -62,6 +62,8 @@ export default async function Page({ searchParams }: SettingsPageProps) {
       initialRoles={rolesRes.data || []}
       initialPermissions={permissionsCatalog}
       tutorsList={tutorsRes.data || []}
+      roleName={session.roleName}
+      permissions={session.permissions}
       currentSubrole={session.subrole}
       defaultTab={
         ["bimbel-types", "programs", "packages", "tutor-rates", "management-rates", "roles"].includes(

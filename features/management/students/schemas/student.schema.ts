@@ -15,6 +15,7 @@ export const studentSchema = z.object({
   grade: z.string().max(30).optional().nullable(),
   bimbelType: z.enum(['Reguler', 'Intensif', 'Private']),
   bimbelTypeId: z.string().optional().nullable(),
+  programId: z.string().min(1, 'Program bimbel harus dipilih'),
   parentName: z.string().max(100).optional().nullable(),
   parentPhone: z
     .string()

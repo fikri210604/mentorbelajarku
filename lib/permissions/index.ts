@@ -12,6 +12,7 @@ import {
   isKnownPermission,
   isOwnerRoleName,
   resolvePermissionsForRoleName,
+  portalRoleForRoleName,
   roleNameHasPermission,
   hasAnyPermission,
 } from "./resolver";
@@ -27,6 +28,7 @@ export {
   isKnownPermission,
   isOwnerRoleName,
   resolvePermissionsForRoleName,
+  portalRoleForRoleName,
   roleNameHasPermission,
   hasAnyPermission,
 };

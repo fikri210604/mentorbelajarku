@@ -43,7 +43,7 @@ export function TutorBottomNav({ hasActiveSession = true }: TutorBottomNavProps)
       icon: Users,
     },
     {
-      label: "Honor",
+      label: "Penggajian",
       href: "/tutor/payroll",
       icon: CreditCard,
     },

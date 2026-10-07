@@ -1,8 +1,11 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
 
+/**
+ * KOP / banner resmi dokumen cetak Bimbel Mentorbelajarku.
+ * Dipakai bersama oleh laporan perkembangan murid dan sheet penggajian tutor.
+ */
 export function ReportBanner() {
   return (
     <div className="relative w-full overflow-hidden rounded-sm bg-gradient-to-r from-[#005a3c] via-[#00875a] to-[#019365] text-white p-3 sm:p-4 shadow-xs select-none">

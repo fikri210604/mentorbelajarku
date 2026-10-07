@@ -13,6 +13,7 @@ import {
   Sparkles,
   ArrowRight,
   ChevronDown,
+  ChevronUp,
   Loader2,
   BookOpen,
 } from "lucide-react";
@@ -48,6 +49,7 @@ export default function TutorAttendancePage({
 }: TutorAttendancePageProps) {
   const router = useRouter();
   const [isGenerating, startGenerating] = useTransition();
+  const [showAllAttendanceSessions, setShowAllAttendanceSessions] = useState(false);
 
   const handleGenerateToday = () => {
     startGenerating(async () => {
@@ -176,7 +178,7 @@ export default function TutorAttendancePage({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {todaySessions.map((session) => {
+              {(showAllAttendanceSessions ? todaySessions : todaySessions.slice(0, 3)).map((session) => {
                 const isSelected = selectedSession?.id === session.id;
                 const isCompleted = session.status === "completed";
 
@@ -254,6 +256,29 @@ export default function TutorAttendancePage({
                 );
               })}
             </div>
+
+            {/* Tombol Tampilkan Semua / Tutup jika sesi lebih dari 3 */}
+            {todaySessions.length > 3 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAllAttendanceSessions((prev) => !prev)}
+                className="w-full rounded-full text-xs h-9 border-border/80 bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs font-semibold transition-all mt-1"
+              >
+                {showAllAttendanceSessions ? (
+                  <>
+                    <ChevronUp className="size-3.5" />
+                    <span>Tutup Sesi (Tampilkan 3 Saja)</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="size-3.5" />
+                    <span>Tampilkan Semua ({todaySessions.length} Sesi)</span>
+                  </>
+                )}
+              </Button>
+            )}
           </div>
 
           {/* ========================================================================= */}
@@ -288,7 +313,16 @@ export default function TutorAttendancePage({
                   date: selectedSession.session_date || new Date().toISOString().split("T")[0],
                   programName: selectedSession.programs?.name || "Program Bimbel",
                   bimbelTypeName: selectedSession.bimbel_types?.name || "Reguler",
-                  duration: selectedSession.bimbel_types?.duration_minutes || 60,
+                  duration: (() => {
+                    // Durasi sesi = selisih jam mulai s/d jam selesai (jam terakhir antar murid).
+                    const [sh, sm] = (selectedSession.start_time || "").split(":").map(Number);
+                    const [eh, em] = (selectedSession.end_time || "").split(":").map(Number);
+                    if ([sh, sm, eh, em].every((n) => !isNaN(n))) {
+                      const diff = eh * 60 + em - (sh * 60 + sm);
+                      if (diff > 0) return diff;
+                    }
+                    return selectedSession.bimbel_types?.duration_minutes || 60;
+                  })(),
                   tutorName: selectedSession.tutors?.profiles?.full_name || "Tutor Pengajar",
                   startTime: selectedSession.start_time || "16:00",
                   endTime: selectedSession.end_time || "17:15",

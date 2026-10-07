@@ -3,7 +3,7 @@ import { ReportService } from "@/features/management/reports/services/report.ser
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Laporan Payroll | Bimbel Belajarku",
+  title: "Laporan Penggajian | Bimbel Belajarku",
 };
 
 export default async function Page() {

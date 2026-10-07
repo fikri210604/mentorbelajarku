@@ -48,23 +48,74 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { scheduleSchema, ScheduleInput } from "../schemas/schedule.schema";
+import {
+  isScheduleSlotInPast,
+  scheduleSchema,
+  ScheduleInput,
+} from "../schemas/schedule.schema";
 import { createSchedule } from "../actions/schedule.actions";
 import type { Subject, CurriculumTopic } from "@/types/subjects";
 
+interface ScheduleFormStudent {
+  id: string;
+  name?: string | null;
+  student_code?: string | null;
+  school?: string | null;
+  grade?: string | null;
+  level?: string | null;
+  bimbel_type?: string | null;
+  enrollments?:
+    | Array<{
+        status?: string | null;
+        bimbel_types?: {
+          id?: string;
+          name?: string | null;
+          duration_minutes?: number | null;
+        } | null;
+      }>
+    | null;
+}
+
+interface ScheduleTutorOption {
+  id: string;
+  name?: string | null;
+  profiles?: { full_name?: string | null } | null;
+}
+
+interface ScheduleProgramOption {
+  id: string;
+  name?: string | null;
+  level?: string | null;
+}
+
 interface ScheduleFormPageProps {
-  tutors?: any[];
-  programs?: any[];
-  bimbelTypes?: any[];
-  students?: any[];
+  tutors?: ScheduleTutorOption[];
+  programs?: ScheduleProgramOption[];
+  students?: ScheduleFormStudent[];
   subjects?: Subject[];
   curriculumTopics?: CurriculumTopic[];
+}
+
+function addMinutes(time: string, minutes: number): string {
+  const [h, m] = time.split(":").map(Number);
+  const total = h * 60 + m + minutes;
+  const endHours = Math.floor(total / 60) % 24;
+  const endMinutes = total % 60;
+  return `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
+}
+
+/** Ambil jenis bimbel + durasi utama dari data enrollment murid. */
+function resolveStudentBimbel(student?: ScheduleFormStudent) {
+  const active =
+    student?.enrollments?.find((e) => e.status === "active") ?? student?.enrollments?.[0] ?? null;
+  const bimbelTypeName = active?.bimbel_types?.name || student?.bimbel_type || "—";
+  const duration = active?.bimbel_types?.duration_minutes ?? null;
+  return { bimbelTypeName, duration };
 }
 
 export default function ScheduleFormPage({
   tutors = [],
   programs = [],
-  bimbelTypes = [],
   students = [],
   subjects = [],
   curriculumTopics = [],
@@ -72,6 +123,7 @@ export default function ScheduleFormPage({
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  const [pastSlotError, setPastSlotError] = useState<string | null>(null);
 
   // Multi-Student Selection State
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
@@ -94,7 +146,6 @@ export default function ScheduleFormPage({
     },
   });
 
-  const watchBimbelTypeId = watch("bimbelTypeId");
   const watchStartTime = watch("startTime");
   const watchSubjectId = watch("subjectId");
   const watchTopicId = watch("topicId");
@@ -130,41 +181,6 @@ export default function ScheduleFormPage({
     } else {
       setValue("targetMaterial", "");
       setValue("worksheetUrl", null);
-    }
-  };
-
-  // Auto-calculate end time when bimbel type or start time changes
-  const handleStartTimeChange = (val: string) => {
-    setValue("startTime", val, { shouldValidate: true });
-    const selectedType = bimbelTypes.find((bt) => bt.id === watch("bimbelTypeId"));
-    const duration = selectedType?.duration_minutes || 75;
-
-    if (val && val.includes(":")) {
-      const [hours, minutes] = val.split(":").map(Number);
-      if (!isNaN(hours) && !isNaN(minutes)) {
-        const totalMinutes = hours * 60 + minutes + duration;
-        const endHours = Math.floor(totalMinutes / 60) % 24;
-        const endMinutes = totalMinutes % 60;
-        const formattedEnd = `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
-        setValue("endTime", formattedEnd, { shouldValidate: true });
-      }
-    }
-  };
-
-  const handleBimbelTypeChange = (bimbelTypeId: string) => {
-    setValue("bimbelTypeId", bimbelTypeId);
-    const selectedType = bimbelTypes.find((bt) => bt.id === bimbelTypeId);
-    const duration = selectedType?.duration_minutes || 75;
-
-    if (watchStartTime && watchStartTime.includes(":")) {
-      const [hours, minutes] = watchStartTime.split(":").map(Number);
-      if (!isNaN(hours) && !isNaN(minutes)) {
-        const totalMinutes = hours * 60 + minutes + duration;
-        const endHours = Math.floor(totalMinutes / 60) % 24;
-        const endMinutes = totalMinutes % 60;
-        const formattedEnd = `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
-        setValue("endTime", formattedEnd);
-      }
     }
   };
 
@@ -211,7 +227,46 @@ export default function ScheduleFormPage({
     return subjects;
   }, [subjects, detectedLevels]);
 
-  // Toggle student selection dengan sinkronisasi Jenis Bimbel dari data murid
+  // Jenis bimbel & durasi bersumber dari enrollment murid (bukan input jadwal).
+  const selectedStudentBimbel = useMemo(
+    () =>
+      selectedStudents.map((st) => ({
+        id: st.id,
+        name: st.name || "Murid",
+        ...resolveStudentBimbel(st),
+      })),
+    [selectedStudents]
+  );
+
+  const maxSelectedDuration = useMemo(() => {
+    const durations = selectedStudentBimbel
+      .map((s) => s.duration)
+      .filter((d): d is number => typeof d === "number" && d > 0);
+    return durations.length > 0 ? Math.max(...durations) : null;
+  }, [selectedStudentBimbel]);
+
+  // Recompute end time = jam mulai + durasi tipe terpanjang di antara murid terpilih.
+  const syncEndTime = (start: string, ids: string[]) => {
+    if (!start || !start.includes(":")) return;
+    const durations = ids
+      .map((id) => resolveStudentBimbel(students.find((s) => s.id === id)).duration)
+      .filter((d): d is number => typeof d === "number" && d > 0);
+    if (durations.length === 0) return;
+    setValue("endTime", addMinutes(start, Math.max(...durations)), { shouldValidate: true });
+  };
+
+  const handleStartTimeChange = (val: string) => {
+    setPastSlotError(null);
+    setValue("startTime", val, { shouldValidate: true });
+    const durations = selectedStudentBimbel
+      .map((s) => s.duration)
+      .filter((d): d is number => typeof d === "number" && d > 0);
+    if (durations.length > 0 && val && val.includes(":")) {
+      setValue("endTime", addMinutes(val, Math.max(...durations)), { shouldValidate: true });
+    }
+  };
+
+  // Toggle student selection; jam selesai mengikuti durasi tipe terpanjang.
   const handleToggleStudent = (id: string) => {
     const isAdding = !selectedStudentIds.includes(id);
     const next = isAdding
@@ -220,29 +275,7 @@ export default function ScheduleFormPage({
 
     setSelectedStudentIds(next);
     setValue("studentIds", next, { shouldValidate: true });
-
-    // Jika murid baru dipilih, otomatis sesuaikan Jenis Bimbel dari data murid tersebut
-    if (isAdding) {
-      const addedStudent = students.find((s) => s.id === id);
-      if (addedStudent) {
-        const studentBimbelName =
-          addedStudent.bimbel_type ||
-          addedStudent.enrollments?.[0]?.bimbel_types?.name ||
-          addedStudent.student_programs?.[0]?.bimbel_types?.name ||
-          "";
-
-        if (studentBimbelName) {
-          const matchedType = bimbelTypes.find(
-            (bt) =>
-              bt.name?.toLowerCase() === studentBimbelName.toLowerCase() ||
-              bt.id === addedStudent.bimbel_type_id
-          );
-          if (matchedType) {
-            handleBimbelTypeChange(matchedType.id);
-          }
-        }
-      }
-    }
+    syncEndTime(watchStartTime, next);
   };
 
   // Select all currently filtered students
@@ -252,6 +285,7 @@ export default function ScheduleFormPage({
     );
     setSelectedStudentIds(newIds);
     setValue("studentIds", newIds, { shouldValidate: true });
+    syncEndTime(watchStartTime, newIds);
   };
 
   // State Confirm Dialog
@@ -265,6 +299,16 @@ export default function ScheduleFormPage({
   };
 
   const handlePreSubmit = (data: ScheduleInput) => {
+    // Validasi bisnis: slot yang dipilih tidak boleh sudah lewat
+    // (hari terpilih = hari ini dan jam mulai sudah terlewat).
+    const { inPast, slotLabel } = isScheduleSlotInPast(data.dayOfWeek, data.startTime);
+    if (inPast) {
+      setPastSlotError(
+        `Jadwal tidak dapat dibuat karena waktunya sudah lewat (${slotLabel}). Silakan pilih hari atau jam yang masih akan datang.`
+      );
+      return;
+    }
+    setPastSlotError(null);
     setPendingData(data);
     setShowConfirmDialog(true);
   };
@@ -346,9 +390,17 @@ export default function ScheduleFormPage({
               {errors.studentIds?.message ||
                 errors.tutorId?.message ||
                 errors.programId?.message ||
-                errors.bimbelTypeId?.message ||
                 "Harap periksa kembali kolom formulir yang belum valid."}
             </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Banner Alert: Slot Waktu Sudah Lewat */}
+        {pastSlotError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Jadwal Tidak Dapat Dibuat</AlertTitle>
+            <AlertDescription>{pastSlotError}</AlertDescription>
           </Alert>
         )}
 
@@ -560,30 +612,12 @@ export default function ScheduleFormPage({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-semibold text-foreground">
-                  Jenis Bimbel & Durasi *
-                </label>
-                <select
-                  value={watchBimbelTypeId || ""}
-                  onChange={(e) => handleBimbelTypeChange(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 border rounded-md text-xs bg-background"
-                >
-                  <option value="">Pilih Jenis Bimbel</option>
-                  {bimbelTypes.map((bt) => (
-                    <option key={bt.id} value={bt.id}>
-                      {bt.name} ({bt.duration_minutes} Menit)
-                    </option>
-                  ))}
-                </select>
-                {errors.bimbelTypeId && (
-                  <p className="text-xs text-destructive mt-1">{errors.bimbelTypeId.message}</p>
-                )}
-              </div>
-
-              <div>
                 <label className="text-xs font-semibold text-foreground">Hari Belajar *</label>
                 <select
-                  {...register("dayOfWeek", { valueAsNumber: true })}
+                  {...register("dayOfWeek", {
+                    valueAsNumber: true,
+                    onChange: () => setPastSlotError(null),
+                  })}
                   className="w-full mt-1 px-3 py-2 border rounded-md text-xs bg-background"
                 >
                   <option value="1">Senin</option>
@@ -595,7 +629,55 @@ export default function ScheduleFormPage({
                   <option value="0">Minggu</option>
                 </select>
               </div>
+              <div className="flex items-end">
+                <div className="w-full rounded-md border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+                  Jenis bimbel &amp; durasi otomatis mengikuti data enrollment murid. Jam selesai =
+                  jam mulai + durasi tipe terpanjang.
+                </div>
+              </div>
             </div>
+
+            {/* Rincian jam selesai per murid (dari jenis bimbel masing-masing) */}
+            {selectedStudentBimbel.length > 0 && (
+              <div className="rounded-md border bg-background p-3 space-y-2">
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                  Rincian Jam Selesai per Murid
+                </p>
+                <ul className="divide-y divide-border/60">
+                  {selectedStudentBimbel.map((s) => (
+                    <li key={s.id} className="py-1.5 flex items-center justify-between gap-3 text-xs">
+                      <span className="font-medium text-foreground truncate">{s.name}</span>
+                      <span className="text-muted-foreground shrink-0">
+                        {s.duration ? (
+                          <>
+                            {s.bimbelTypeName} · {s.duration} menit
+                            {watchStartTime
+                              ? ` · selesai ${addMinutes(watchStartTime, s.duration)}`
+                              : ""}
+                          </>
+                        ) : (
+                          <span className="text-amber-600 dark:text-amber-400">
+                            Jenis bimbel belum diatur · ikut jam sesi ({watch("endTime")})
+                          </span>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {selectedStudentBimbel.some((s) => !s.duration) && (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                    Sebagian murid belum memiliki jenis bimbel/enrollment. Atur di Data Murid agar
+                    jam selesai otomatis presisi.
+                  </p>
+                )}
+                {maxSelectedDuration && watchStartTime && (
+                  <p className="text-[11px] text-primary font-medium pt-1">
+                    Sesi berakhir {addMinutes(watchStartTime, maxSelectedDuration)} WIB (durasi
+                    terpanjang {maxSelectedDuration} menit). Absensi cukup sekali di jam tersebut.
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -823,17 +905,47 @@ export default function ScheduleFormPage({
               <div className="flex justify-between py-1 border-b border-muted">
                 <span className="text-muted-foreground">Tutor Pengajar:</span>
                 <span className="font-semibold text-foreground">
-                  {tutors.find((t) => t.id === pendingData.tutorId)?.name || "-"}
+                  {tutors.find((t) => t.id === pendingData.tutorId)?.profiles?.full_name ||
+                    tutors.find((t) => t.id === pendingData.tutorId)?.name ||
+                    "-"}
                 </span>
               </div>
               <div className="flex justify-between py-1 border-b border-muted">
-                <span className="text-muted-foreground">Program & Jenis Bimbel:</span>
+                <span className="text-muted-foreground">Program Bimbel:</span>
                 <span className="font-semibold text-foreground">
-                  {programs.find((p) => p.id === pendingData.programId)?.name || "-"} (
-                  {bimbelTypes.find((b) => b.id === pendingData.bimbelTypeId)?.name || "-"}
-                  )
+                  {programs.find((p) => p.id === pendingData.programId)?.name || "-"}
                 </span>
               </div>
+              {pendingData.studentIds.length > 0 && (
+                <div className="py-1 border-b border-muted space-y-1">
+                  <span className="text-muted-foreground">Jam selesai per murid:</span>
+                  <div className="space-y-0.5">
+                    {pendingData.studentIds.map((id) => {
+                      const st = students.find((s) => s.id === id);
+                      const { bimbelTypeName, duration } = resolveStudentBimbel(st);
+                      return (
+                        <div key={id} className="flex justify-between gap-3">
+                          <span className="font-medium text-foreground truncate">
+                            {st?.name || id}
+                          </span>
+                          <span className="text-muted-foreground shrink-0">
+                            {duration ? (
+                              <>
+                                {bimbelTypeName} · selesai{" "}
+                                {addMinutes(pendingData.startTime, duration)}
+                              </>
+                            ) : (
+                              <span className="text-amber-600 dark:text-amber-400">
+                                Jenis bimbel belum diatur · ikut jam sesi ({pendingData.endTime})
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               {pendingData.targetMaterial && (
                 <div className="flex justify-between py-1 border-b border-muted">
                   <span className="text-muted-foreground">Materi Kurikulum:</span>

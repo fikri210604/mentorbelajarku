@@ -501,7 +501,7 @@ export type Database = {
           class_group_id: string | null;
           tutor_id: string;
           program_id: string;
-          bimbel_type_id: string;
+          bimbel_type_id: string | null;
           day_of_week: number;
           start_time: string;
           end_time: string;
@@ -517,7 +517,7 @@ export type Database = {
           class_group_id?: string | null;
           tutor_id: string;
           program_id: string;
-          bimbel_type_id: string;
+          bimbel_type_id?: string | null;
           day_of_week: number;
           start_time: string;
           end_time: string;
@@ -564,7 +564,7 @@ export type Database = {
           schedule_id: string | null;
           tutor_id: string;
           program_id: string;
-          bimbel_type_id: string;
+          bimbel_type_id: string | null;
           class_group_id: string | null;
           session_date: string;
           start_time: string;
@@ -585,7 +585,7 @@ export type Database = {
           schedule_id?: string | null;
           tutor_id: string;
           program_id: string;
-          bimbel_type_id: string;
+          bimbel_type_id?: string | null;
           class_group_id?: string | null;
           session_date: string;
           start_time: string;

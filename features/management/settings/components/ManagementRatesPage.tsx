@@ -53,17 +53,21 @@ import {
 import { managementRateSchema, ManagementRateInput } from "../schemas/settings.schema";
 import { saveManagementRate, deleteManagementRate } from "../actions/settings.actions";
 import { SettingsNavTabs } from "./SettingsNavTabs";
+import { isOwnerRoleName } from "@/lib/permissions/resolver";
 
 interface ManagementRatesPageProps {
   initialRates?: any[];
+  roleName?: string | null;
   currentSubrole?: string | null;
 }
 
 export default function ManagementRatesPage({
   initialRates = [],
+  roleName,
   currentSubrole = "owner",
 }: ManagementRatesPageProps) {
-  const isOwner = currentSubrole === "owner" || currentSubrole === "superadmin" || !currentSubrole;
+  const effectiveRole = roleName || currentSubrole || "owner";
+  const isOwner = isOwnerRoleName(effectiveRole);
 
   const [rates, setRates] = useState<any[]>(initialRates);
   const [search, setSearch] = useState("");

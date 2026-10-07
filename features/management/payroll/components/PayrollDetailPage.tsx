@@ -23,7 +23,7 @@ export default function PayrollDetailPage({ payroll }: PayrollDetailPageProps) {
   if (!payroll) {
     return (
       <div className="p-8 text-center">
-        <h2 className="text-xl font-bold">Data Payroll tidak ditemukan</h2>
+        <h2 className="text-xl font-bold">Data Penggajian tidak ditemukan</h2>
         <Button asChild className="mt-4" variant="outline">
           <Link href="/management/payroll">Kembali</Link>
         </Button>
@@ -37,9 +37,9 @@ export default function PayrollDetailPage({ payroll }: PayrollDetailPageProps) {
     try {
       const res = await finalizePayrollAction(payroll.id);
       if (res && !res.success) {
-        setFeedback({ type: "error", message: res.error || "Gagal memfinalisasi payroll." });
+        setFeedback({ type: "error", message: res.error || "Gagal memfinalisasi penggajian." });
       } else {
-        setFeedback({ type: "success", message: "Payroll berhasil difinalisasi dan siap dibayarkan!" });
+        setFeedback({ type: "success", message: "Penggajian berhasil difinalisasi dan siap dibayarkan!" });
       }
     } catch (err: unknown) {
       setFeedback({ type: "error", message: err instanceof Error ? err.message : "Terjadi kesalahan sistem." });
@@ -56,7 +56,7 @@ export default function PayrollDetailPage({ payroll }: PayrollDetailPageProps) {
       if (res && !res.success) {
         setFeedback({ type: "error", message: res.error || "Gagal memperbarui status pembayaran." });
       } else {
-        setFeedback({ type: "success", message: "Payroll berhasil ditandai telah dibayarkan kepada tutor!" });
+        setFeedback({ type: "success", message: "Penggajian berhasil ditandai telah dibayarkan kepada tutor!" });
       }
     } catch (err: unknown) {
       setFeedback({ type: "error", message: err instanceof Error ? err.message : "Terjadi kesalahan sistem." });
@@ -68,7 +68,7 @@ export default function PayrollDetailPage({ payroll }: PayrollDetailPageProps) {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <PageHeader
-        title={`Payroll: ${payroll.tutors?.profiles?.full_name || "Tutor"}`}
+        title={`Penggajian: ${payroll.tutors?.profiles?.full_name || "Tutor"}`}
         description={`Periode: ${payroll.period_start} s/d ${payroll.period_end}`}
       >
         <Button asChild variant="outline" size="sm">
@@ -80,7 +80,7 @@ export default function PayrollDetailPage({ payroll }: PayrollDetailPageProps) {
         {payroll.status === "draft" && (
           <Button size="sm" onClick={handleFinalize} disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
-            Finalisasi Payroll
+            Finalisasi Penggajian
           </Button>
         )}
         {payroll.status === "processed" && (

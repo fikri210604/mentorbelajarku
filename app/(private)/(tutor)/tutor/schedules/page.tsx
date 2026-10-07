@@ -1,5 +1,6 @@
 import TutorScheduleListPage from "@/features/tutor/schedules/components/TutorScheduleListPage";
 import { getSchedules } from "@/features/tutor/schedules/queries/schedule.queries";
+import { requireAuthUser } from "@/lib/auth/session";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -7,6 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  const schedules = await getSchedules();
+  const currentUser = await requireAuthUser();
+  const schedules = await getSchedules(currentUser.tutorId);
   return <TutorScheduleListPage initialSchedules={schedules} />;
 }

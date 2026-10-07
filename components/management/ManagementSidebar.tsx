@@ -14,7 +14,6 @@ import {
   BarChart3,
   Settings,
   LayoutDashboard,
-  Building2,
   LogOut,
   ShieldCheck,
   BookMarked,
@@ -23,34 +22,56 @@ import {
   PanelLeftClose,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ManagementSubrole } from "@/types/auth";
-import { canSubroleAccessRoute } from "@/lib/permissions";
+import type { Permission } from "@/types/auth";
+import { isOwnerRoleName } from "@/lib/permissions/resolver";
 import { useUiStore } from "@/stores/ui-store";
 import { Button } from "@/components/ui/button";
 
-const MANAGEMENT_MENU = [
+interface MenuItem {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  requiredPermission?: Permission;
+  requiredAnyPermissions?: Permission[];
+}
+
+const MANAGEMENT_MENU: MenuItem[] = [
   { label: "Dashboard", href: "/management/dashboard", icon: LayoutDashboard },
-  { label: "Data Murid", href: "/management/students", icon: Users },
-  { label: "Data Tutor", href: "/management/tutors", icon: GraduationCap },
-  { label: "Jadwal", href: "/management/schedules", icon: Calendar },
-  { label: "Sesi Belajar", href: "/management/sessions", icon: Clock },
-  { label: "Presensi", href: "/management/attendance", icon: ClipboardCheck },
-  { label: "Catatan Belajar", href: "/management/learning-records", icon: BookMarked },
-  { label: "Evaluasi Murid", href: "/management/progress-reports", icon: FileCheck2 },
-  { label: "Payroll / Honor", href: "/management/payroll", icon: CreditCard },
-  { label: "Laporan", href: "/management/reports/attendance", icon: BarChart3 },
-  { label: "Audit Log", href: "/management/audit-logs", icon: ShieldCheck },
-  { label: "Pengaturan", href: "/management/settings", icon: Settings },
+  { label: "Data Murid", href: "/management/students", icon: Users, requiredPermission: "student:read" },
+  { label: "Data Tutor", href: "/management/tutors", icon: GraduationCap, requiredPermission: "tutor:read" },
+  { label: "Jadwal", href: "/management/schedules", icon: Calendar, requiredPermission: "schedule:read" },
+  { label: "Sesi Belajar", href: "/management/sessions", icon: Clock, requiredPermission: "session:read" },
+  { label: "Presensi", href: "/management/attendance", icon: ClipboardCheck, requiredPermission: "attendance:read" },
+  { label: "Catatan Belajar", href: "/management/learning-records", icon: BookMarked, requiredPermission: "worksheet:read" },
+  { label: "Evaluasi Murid", href: "/management/progress-reports", icon: FileCheck2, requiredPermission: "progress_report:read" },
+  { label: "Payroll / Honor", href: "/management/payroll", icon: CreditCard, requiredPermission: "payroll:read" },
+  { label: "Laporan", href: "/management/reports/attendance", icon: BarChart3, requiredPermission: "reports:read" },
+  { label: "Audit Log", href: "/management/audit-logs", icon: ShieldCheck, requiredPermission: "audit:read" },
+  {
+    label: "Pengaturan & Akses",
+    href: "/management/settings",
+    icon: Settings,
+    requiredAnyPermissions: [
+      "settings:manage",
+      "roles:manage",
+      "rates:manage",
+      "curriculum:manage",
+    ],
+  },
 ];
 
 interface ManagementSidebarProps {
-  subrole?: ManagementSubrole | null;
+  roleName?: string | null;
+  permissions?: Permission[];
   userName?: string;
+  subrole?: string | null; // Kompatibilitas mundur
 }
 
 export function ManagementSidebar({
-  subrole: initialSubrole,
+  roleName: initialRoleName,
+  permissions: initialPermissions = [],
   userName: initialUserName,
+  subrole,
 }: ManagementSidebarProps = {}) {
   const pathname = usePathname();
   const {
@@ -60,9 +81,10 @@ export function ManagementSidebar({
     closeMobileMenu,
   } = useUiStore();
 
-  const [activeSubrole, setActiveSubrole] = useState<ManagementSubrole | null>(
-    initialSubrole || null
-  );
+  const effectiveRoleName = initialRoleName || subrole || "management";
+  const isOwner = isOwnerRoleName(effectiveRoleName);
+  const activePermissions = initialPermissions;
+
   const [activeName] = useState<string>(initialUserName || "Management");
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
@@ -83,36 +105,57 @@ export function ManagementSidebar({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [mobileMenuOpen, closeMobileMenu]);
 
-  // Filter menu berdasarkan subrole (HRD, Keuangan, Owner)
-  const filteredMenu = MANAGEMENT_MENU.filter((item) =>
-    canSubroleAccessRoute(activeSubrole, item.href)
-  );
-
-  const getSubroleLabel = (sub?: ManagementSubrole | null) => {
-    switch (sub) {
-      case "hrd":
-        return {
-          title: "HRD & Operasional",
-          desc: "Pengelolaan Murid, Tutor & Jadwal",
-          badgeColor: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
-        };
-      case "finance":
-        return {
-          title: "Keuangan & Payroll",
-          desc: "Pengelolaan Honor & Tarif",
-          badgeColor: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
-        };
-      case "owner":
-      default:
-        return {
-          title: "Owner / Super Admin",
-          desc: "Akses Penuh Seluruh Modul",
-          badgeColor: "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300",
-        };
+  // Filter menu dinamis berbasis database permissions (Owner memiliki akses penuh)
+  const filteredMenu = MANAGEMENT_MENU.filter((item) => {
+    if (isOwner) return true;
+    if (!item.requiredPermission && !item.requiredAnyPermissions) return true;
+    if (item.requiredPermission) {
+      return activePermissions.includes(item.requiredPermission);
     }
+    if (item.requiredAnyPermissions) {
+      return item.requiredAnyPermissions.some((perm) => activePermissions.includes(perm));
+    }
+    return false;
+  });
+
+  const getRoleBadgeInfo = () => {
+    if (isOwner) {
+      return {
+        title: "Owner / Pimpinan",
+        desc: "Akses Penuh & Kontrol Delegasi",
+        badge: "Owner",
+      };
+    }
+    const normalized = (effectiveRoleName || "").toLowerCase();
+    if (normalized === "hrd") {
+      return {
+        title: "Divisi HRD & Murid",
+        desc: "Manajemen Pengajar & Siswa",
+        badge: "HRD",
+      };
+    }
+    if (normalized === "curriculum") {
+      return {
+        title: "Divisi Kurikulum",
+        desc: "Materi, Silabus & Evaluasi",
+        badge: "Kurikulum",
+      };
+    }
+    if (normalized === "finance") {
+      return {
+        title: "Divisi Keuangan",
+        desc: "Payroll & Tarif Mengajar",
+        badge: "Keuangan",
+      };
+    }
+    return {
+      title: effectiveRoleName.charAt(0).toUpperCase() + effectiveRoleName.slice(1),
+      desc: "Hak Akses Terkonfigurasi",
+      badge: effectiveRoleName.toUpperCase(),
+    };
   };
 
-  const subroleInfo = getSubroleLabel(activeSubrole);
+  const roleInfo = getRoleBadgeInfo();
 
   return (
     <>
@@ -189,9 +232,9 @@ export function ManagementSidebar({
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Menu Utama
               </p>
-              {activeSubrole && (
+              {roleInfo.badge && (
                 <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                  {activeSubrole}
+                  {roleInfo.badge}
                 </span>
               )}
             </div>
@@ -241,11 +284,11 @@ export function ManagementSidebar({
             <div className="flex items-center justify-between">
               <span className="font-semibold text-foreground flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-                {subroleInfo.title}
+                {roleInfo.title}
               </span>
             </div>
             <p className="text-muted-foreground text-[11px] leading-tight">
-              {subroleInfo.desc}
+              {roleInfo.desc}
             </p>
             <p className="text-[10px] text-muted-foreground truncate pt-0.5 border-t border-border/40 mt-1">
               User: {activeName}

@@ -1,5 +1,6 @@
 import ManagementDashboardPage from "@/features/management/dashboard/components/ManagementDashboardPage";
 import { getDashboardData } from "@/features/management/dashboard/queries/dashboard.queries";
+import { requireAuthUser } from "@/lib/auth/session";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -7,6 +8,19 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  const dashboardData = await getDashboardData();
-  return <ManagementDashboardPage initialData={dashboardData} />;
+  const [currentUser, dashboardData] = await Promise.all([
+    requireAuthUser(),
+    getDashboardData(),
+  ]);
+
+  return (
+    <ManagementDashboardPage
+      initialData={dashboardData}
+      currentUser={{
+        name: currentUser.user.name,
+        roleName: currentUser.roleName,
+        permissions: currentUser.permissions,
+      }}
+    />
+  );
 }

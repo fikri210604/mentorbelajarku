@@ -3,7 +3,7 @@ import { getPayrollById } from "@/features/management/payroll/queries/payroll.qu
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Rincian Payroll | Bimbel Belajarku",
+  title: "Rincian Penggajian | Bimbel Belajarku",
 };
 
 export default async function Page({

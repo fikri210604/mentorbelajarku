@@ -24,7 +24,7 @@ const TUTOR_MENU = [
   { label: "Murid Saya", href: "/tutor/students", icon: Users },
   { label: "Jadwal Mengajar", href: "/tutor/schedules", icon: Calendar },
   { label: "Input Presensi", href: "/tutor/attendance", icon: ClipboardCheck },
-  { label: "Honor & Fee", href: "/tutor/payroll", icon: CreditCard },
+  { label: "Penggajian", href: "/tutor/payroll", icon: CreditCard },
   { label: "Profil & Akun", href: "/tutor/profile", icon: UserCog },
 ];
 

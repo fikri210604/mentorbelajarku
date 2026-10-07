@@ -43,8 +43,8 @@ export const MANAGEMENT_NAV: NavSection[] = [
       { title: "Paket Belajar Murid", href: "/management/settings/packages", icon: "PackageCheck" },
       { title: "Tarif Honor Tutor", href: "/management/settings/tutor-rates", icon: "Coins" },
       { title: "Gaji Manajemen (Owner)", href: "/management/settings/management-rates", icon: "Building2" },
-      { title: "Honor & Payroll", href: "/management/payroll", icon: "CreditCard" },
-      { title: "Laporan Payroll", href: "/management/reports/payroll", icon: "FileText" },
+      { title: "Penggajian", href: "/management/payroll", icon: "CreditCard" },
+      { title: "Laporan Penggajian", href: "/management/reports/payroll", icon: "FileText" },
     ],
   },
   {
@@ -67,7 +67,7 @@ export const TUTOR_NAV: NavSection[] = [
       { title: "Jadwal Mengajar", href: "/tutor/schedules", icon: "CalendarDays" },
       { title: "Presensi Kelas", href: "/tutor/attendance", icon: "Camera" },
       { title: "Murid Binaan", href: "/tutor/students", icon: "GraduationCap" },
-      { title: "Honor Saya", href: "/tutor/payroll", icon: "Coins" },
+      { title: "Penggajian", href: "/tutor/payroll", icon: "Coins" },
     ],
   },
 ];

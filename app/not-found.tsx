@@ -54,7 +54,7 @@ export default function NotFound() {
                   onClick={() => router.push("/tutor/payroll")}
                 >
                   <span className="w-4 h-4 mr-2 text-center">Rp</span>
-                  Ke Riwayat Honor
+                  Ke Penggajian
                 </Button>
               </CardContent>
             </Card>

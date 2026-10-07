@@ -3,7 +3,6 @@ import { z } from "zod";
 export const scheduleSchema = z.object({
   tutorId: z.string().min(1, "Tutor harus dipilih"),
   programId: z.string().min(1, "Program bimbel harus dipilih"),
-  bimbelTypeId: z.string().min(1, "Jenis bimbel harus dipilih"),
   studentId: z.string().optional().nullable(),
   studentIds: z
     .array(z.string())
@@ -23,3 +22,52 @@ export const scheduleSchema = z.object({
 });
 
 export type ScheduleInput = z.infer<typeof scheduleSchema>;
+
+const DAY_NAMES_ID = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"] as const;
+
+/**
+ * Cek apakah slot jadwal mingguan yang dipilih sudah lewat.
+ * Slot di-resolve ke kejadian pada HARI yang dipilih:
+ * - bila hari terpilih = hari ini dan jam mulai sudah terlewat -> sudah lewat;
+ * - hari lain pada minggu ini -> kejadian berikutnya jatuh minggu depan (masih akan datang).
+ * Memakai waktu lokal perangkat/server (konvensi WIB seperti util presensi).
+ */
+export function isScheduleSlotInPast(
+  dayOfWeek: number,
+  startTime: string,
+  now: Date = new Date()
+): { inPast: boolean; slotLabel: string } {
+  const dayName = DAY_NAMES_ID[dayOfWeek] ?? "Hari terpilih";
+  const slotLabel = `${dayName}, ${startTime} WIB`;
+
+  const [hourStr, minuteStr] = startTime.split(":");
+  const hour = Number(hourStr);
+  const minute = Number(minuteStr);
+  if (
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute) ||
+    dayOfWeek < 0 ||
+    dayOfWeek > 6 ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return { inPast: false, slotLabel };
+  }
+
+  if (dayOfWeek !== now.getDay()) {
+    return { inPast: false, slotLabel };
+  }
+
+  const slotStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    hour,
+    minute,
+    0,
+    0
+  );
+  return { inPast: slotStart.getTime() < now.getTime(), slotLabel };
+}

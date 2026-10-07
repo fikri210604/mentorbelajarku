@@ -42,29 +42,8 @@ export interface CurrentUserSession {
   tutorId: string | null;
 }
 
-const SUBROLE_NAMES: ManagementSubrole[] = [
-  'owner',
-  'curriculum',
-  'hrd',
-  'finance',
-  'general',
-];
-
 function resolvePortalRole(roleName: string, fallback: UserRole): UserRole {
   return portalRoleForRoleName(roleName) ?? fallback;
-}
-
-function resolveSubrole(
-  roleName: string,
-  portalRole: UserRole
-): ManagementSubrole | null {
-  if (portalRole === 'tutor') return null;
-  const normalized = (roleName || '').toLowerCase().trim();
-  if (SUBROLE_NAMES.includes(normalized as ManagementSubrole)) {
-    return normalized as ManagementSubrole;
-  }
-  if (normalized === 'management' || normalized === 'admin') return 'owner';
-  return 'general';
 }
 
 interface CachedUserSession {
@@ -167,10 +146,11 @@ export const getCurrentUser = cache(async (): Promise<CurrentUserSession | null>
       ((session.user as unknown as { role?: UserRole }).role) ||
       'tutor';
 
-    const roleId: string | null = userRowTyped?.role_id ?? null;
+    let roleId: string | null = userRowTyped?.role_id ?? null;
     let roleName: string = userRowTyped?.role || fallbackRole;
     let permissions: Permission[] = [];
 
+    // 1. Ambil data peran dan izin langsung dari database tabel roles & role_permissions
     if (roleId) {
       const { data: roleRow } = await db
         .from('roles')
@@ -189,8 +169,30 @@ export const getCurrentUser = cache(async (): Promise<CurrentUserSession | null>
           (rp) => rp.permission_id as Permission
         );
       }
+    } else {
+      // Bila role_id belum tercatat di baris user, cari dari database berdasarkan nama peran
+      const { data: roleByName } = await db
+        .from('roles')
+        .select('id, name, role_permissions(permission_id)')
+        .eq('name', roleName)
+        .maybeSingle();
+
+      const roleTyped = roleByName as {
+        id?: string;
+        name?: string;
+        role_permissions?: { permission_id: string }[];
+      } | null;
+
+      if (roleTyped?.name) {
+        roleId = roleTyped.id || null;
+        roleName = roleTyped.name;
+        permissions = (roleTyped.role_permissions || []).map(
+          (rp) => rp.permission_id as Permission
+        );
+      }
     }
 
+    // Fallback izin untuk super-role 'owner' dan 'tutor' bila tabel pivot belum lengkap
     if (permissions.length === 0) {
       permissions = resolvePermissionsForRoleName(roleName);
     }
@@ -229,7 +231,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUserSession | null>
       roleId,
       roleName,
       permissions,
-      subrole: resolveSubrole(roleName, portalRole),
+      subrole: portalRole === 'tutor' ? null : (roleName as ManagementSubrole),
       tutorId,
     };
 

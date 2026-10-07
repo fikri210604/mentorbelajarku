@@ -40,8 +40,9 @@ import PackagesPage from "./PackagesPage";
 import TutorRatesPage from "./TutorRatesPage";
 import ManagementRatesPage from "./ManagementRatesPage";
 import RolesManagementPage from "./RolesManagementPage";
-import { PermissionDefinition, RoleWithPermissions } from "@/types/auth";
-import { SETTINGS_DOMAINS, TabItem } from "./SettingsNavTabs";
+import { Permission, PermissionDefinition, RoleWithPermissions } from "@/types/auth";
+import { SETTINGS_DOMAINS, TabItem, isSettingTabAllowed } from "./SettingsNavTabs";
+import { isOwnerRoleName } from "@/lib/permissions/resolver";
 
 interface ManagementSettingsPageProps {
   initialBimbelTypes?: any[];
@@ -52,6 +53,8 @@ interface ManagementSettingsPageProps {
   initialRoles?: RoleWithPermissions[];
   initialPermissions?: PermissionDefinition[];
   tutorsList?: any[];
+  roleName?: string | null;
+  permissions?: Permission[];
   currentSubrole?: string | null;
   defaultTab?: string;
 }
@@ -65,12 +68,65 @@ export default function ManagementSettingsPage({
   initialRoles = [],
   initialPermissions = [],
   tutorsList = [],
+  roleName,
+  permissions = [],
   currentSubrole = "owner",
   defaultTab = "bimbel-types",
 }: ManagementSettingsPageProps) {
-  const [activeTab, setActiveTab] = useState<string>(defaultTab);
+  const isOwner = isOwnerRoleName(roleName);
+  const canManageRoles = isOwner || permissions.includes("roles:manage");
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDomainFilter, setSelectedDomainFilter] = useState<string>("all");
+
+  // Cari tab awal yang diizinkan untuk user
+  const allowedTabIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const d of SETTINGS_DOMAINS) {
+      for (const item of d.items) {
+        if (isSettingTabAllowed(item, roleName, permissions)) {
+          ids.push(item.id);
+        }
+      }
+    }
+    return ids;
+  }, [roleName, permissions]);
+
+  const initialAllowedTab = allowedTabIds.includes(defaultTab)
+    ? defaultTab
+    : allowedTabIds[0] || "attendance-window";
+
+  const [activeTab, setActiveTab] = useState<string>(initialAllowedTab);
+
+  // Filter items berdasarkan izin user (RBAC) dan pencarian/filter domain
+  const filteredDomains = useMemo(() => {
+    return SETTINGS_DOMAINS.map((domain) => {
+      if (selectedDomainFilter !== "all" && domain.id !== selectedDomainFilter) {
+        return null;
+      }
+
+      const allowedItems = domain.items.filter((item) =>
+        isSettingTabAllowed(item, roleName, permissions)
+      );
+
+      const matchingItems = allowedItems.filter((item) => {
+        if (!searchQuery) return true;
+        const q = searchQuery.toLowerCase();
+        return (
+          item.label.toLowerCase().includes(q) ||
+          item.desc.toLowerCase().includes(q) ||
+          domain.title.toLowerCase().includes(q)
+        );
+      });
+
+      if (matchingItems.length === 0) return null;
+
+      return {
+        ...domain,
+        items: matchingItems,
+      };
+    }).filter(Boolean) as typeof SETTINGS_DOMAINS;
+  }, [searchQuery, selectedDomainFilter, roleName, permissions]);
 
   // Tab yang mendukung inline editing di halaman utama
   const inlineTabs = [
@@ -92,32 +148,6 @@ export default function ManagementSettingsPage({
     roles: initialRoles.length,
     permissions: initialPermissions.length,
   };
-
-  // Filter items berdasarkan pencarian dan filter domain
-  const filteredDomains = useMemo(() => {
-    return SETTINGS_DOMAINS.map((domain) => {
-      if (selectedDomainFilter !== "all" && domain.id !== selectedDomainFilter) {
-        return null;
-      }
-
-      const matchingItems = domain.items.filter((item) => {
-        if (!searchQuery) return true;
-        const q = searchQuery.toLowerCase();
-        return (
-          item.label.toLowerCase().includes(q) ||
-          item.desc.toLowerCase().includes(q) ||
-          domain.title.toLowerCase().includes(q)
-        );
-      });
-
-      if (matchingItems.length === 0) return null;
-
-      return {
-        ...domain,
-        items: matchingItems,
-      };
-    }).filter(Boolean) as typeof SETTINGS_DOMAINS;
-  }, [searchQuery, selectedDomainFilter]);
 
   const activeTabDetails = useMemo(() => {
     for (const domain of SETTINGS_DOMAINS) {
@@ -403,17 +433,20 @@ export default function ManagementSettingsPage({
           />
         )}
 
-        {activeTab === "management-rates" && (
+        {activeTab === "management-rates" && isOwner && (
           <ManagementRatesPage
             initialRates={initialManagementRates}
+            roleName={roleName}
             currentSubrole={currentSubrole}
           />
         )}
 
-        {activeTab === "roles" && (
+        {activeTab === "roles" && canManageRoles && (
           <RolesManagementPage
             initialRoles={initialRoles}
             initialPermissions={initialPermissions}
+            roleName={roleName}
+            permissions={permissions}
             currentSubrole={currentSubrole}
           />
         )}

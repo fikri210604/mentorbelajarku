@@ -1,5 +1,6 @@
 import StudentFormPage from "@/features/management/students/components/StudentFormPage";
 import { getStudentById } from "@/features/management/students/queries/student.queries";
+import { createServerClient } from "@/lib/supabase/server";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -12,7 +13,22 @@ export default async function Page({
   params: Promise<{ studentId: string }>;
 }) {
   const { studentId } = await params;
-  const student = await getStudentById(studentId);
+  const supabase = createServerClient();
 
-  return <StudentFormPage initialData={student} isEdit />;
+  const [student, programsResult] = await Promise.all([
+    getStudentById(studentId),
+    supabase
+      .from("programs")
+      .select("id, name, level, status")
+      .eq("status", "active")
+      .order("name", { ascending: true }),
+  ]);
+
+  return (
+    <StudentFormPage
+      initialData={student}
+      programs={programsResult.data ?? []}
+      isEdit
+    />
+  );
 }

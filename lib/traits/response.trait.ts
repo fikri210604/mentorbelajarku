@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { ZodError } from "zod";
 
 /**
  * Metadata informasi paginasi standar
@@ -189,6 +190,40 @@ export function getSafeErrorMessage(
 }
 
 /**
+ * Mengubah ZodError menjadi pesan validasi yang ramah pengguna (Bahasa Indonesia),
+ * tanpa membocorkan struktur teknis. Pesan kustom dari schema (mis. "Program bimbel
+ * harus dipilih") dipertahankan; hanya error tipe/field hilang yang diberi label ramah.
+ */
+export function formatZodError(error: ZodError): string {
+  const FIELD_LABELS: Record<string, string> = {
+    programId: "Program bimbel",
+    bimbelType: "Jenis bimbel",
+    bimbelTypeId: "Jenis bimbel",
+    studentCode: "Kode murid",
+    name: "Nama murid",
+    level: "Jenjang pendidikan",
+    grade: "Kelas",
+    status: "Status",
+    tutorId: "Tutor pengajar",
+    studentIds: "Murid",
+    dayOfWeek: "Hari belajar",
+    startTime: "Jam mulai",
+    endTime: "Jam selesai",
+  };
+
+  const messages = error.issues.map((issue) => {
+    const fieldKey = String(issue.path[0] ?? "");
+    const label = FIELD_LABELS[fieldKey];
+    if (label && issue.code === "invalid_type") {
+      return `${label} wajib diisi.`;
+    }
+    return issue.message;
+  });
+
+  return messages.length > 0 ? messages.join(" ") : "Data formulir tidak valid.";
+}
+
+/**
  * Membuat object ErrorResult terstandarisasi dengan sanitasi pesan error
  */
 export function createErrorResult(
@@ -273,6 +308,7 @@ export const ResponseTrait = {
   paginated: createPaginatedResult,
   error: createErrorResult,
   safeErrorMessage: getSafeErrorMessage,
+  zodErrorMessage: formatZodError,
   apiSuccess,
   apiPaginated,
   apiError,

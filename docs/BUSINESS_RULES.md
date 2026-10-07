@@ -1,1129 +1,487 @@
 # BUSINESS_RULES.md — Aturan Bisnis Sistem Bimbel & Presensi
 
-Dokumen ini mendefinisikan seluruh aturan bisnis (*business rules*), invariant data, dan kebijakan perhitungan untuk sistem bimbingan belajar.
+Dokumen ini mendefinisikan seluruh aturan bisnis (*business rules*), invariant data, dan kebijakan perhitungan untuk sistem bimbingan belajar **Mentorbelajarku**.
+
+Dokumen ini diselaraskan dengan kondisi implementasi saat ini:
+
+* Schema: `supabase/migrations/0001_initial_schema.sql` … `0004_meeting_number_per_student.sql`
+* Master data & akun: `supabase/seed.sql`
+* Otorisasi: `lib/auth/session.ts`, `lib/auth/guards.ts`, `config/permissions.ts`, `lib/permissions/resolver.ts`
+* Keputusan bisnis terkunci: §18 (dikonfirmasi 28 September 2026)
+
+Jika terjadi konflik antara dokumen ini dengan `AGENTS.md`, aturan di `AGENTS.md` (engineering) berlaku untuk implementasi, sedangkan dokumen ini menjadi acuan domain/bisnis. Ketidakjelasan baru wajib diklarifikasi ke Management sebelum diasumsikan permanen.
 
 ---
 
-## 1. Identitas & Entitas Utama
+## 1. Aktor, Peran, & Otorisasi
 
-### 1.1. Student Identifier
-- `student_code` adalah business identifier unik bagi murid (contoh: `STD-2026-001`).
-- Nama murid (`name`) tidak boleh diasumsikan unik.
-- Primary key internal menggunakan UUID untuk menjaga relational integrity.
+### 1.1. Role Portal (untuk routing)
 
-### 1.2. Relasi Tutor – Murid
-- Hubungan bukan 1:1 kaku. Sistem mendukung:
-  - 1 tutor mengajar banyak murid.
-  - 1 murid dapat diajar oleh lebih dari 1 tutor untuk mata pelajaran/hari yang berbeda.
-  - Pergantian tutor permanen maupun tutor pengganti per sesi.
+Portal aplikasi hanya mengenal role portal berikut (`types/database.types.ts` → `UserRole`):
 
----
+```text
+management   # portal manajemen (default untuk owner/curriculum/hrd)
+tutor        # portal pengajar
+admin        # administrator operasional (portal tersendiri, area manajemen)
+finance      # dipetakan ke portal management
+```
 
-## 2. Pemisahan Schedule vs Session vs Attendance
+Pemetaan nama role dinamis → role portal: `tutor` → `tutor`; `finance` → `management`; `owner`/`curriculum`/`hrd`/`management` → `management`; `admin` → `admin` (`lib/permissions/resolver.ts`).
 
-Ketiga konsep ini **HARUS DIPISAHKAN** ke tabel/model tersendiri:
+Role portal hanya menentukan portal/routing, **bukan** hak akses granular.
 
-1. **Schedule (Rencana / Jadwal Rutin)**:
-   - Merepresentasikan rencana belajar berulang (misal: "Setiap Rabu jam 16:00, Reguler, Tutor Abi").
-   - Schedule bukan bukti bahwa belajar telah terjadi.
+### 1.2. RBAC Dinamis (source of truth hak akses)
 
-2. **Session (Kejadian Belajar Aktual)**:
-   - Merepresentasikan pertemuan nyata pada tanggal spesifik (misal: "Rabu, 9 September 2026 jam 16:00").
-   - Memiliki status: `scheduled`, `completed`, `rescheduled`, `cancelled`.
-   - Menyimpan `tutor_id` aktual yang mengajar (bukan semata-mata mengacu ke schedule).
+Hak akses bersifat **dinamis** dan tersimpan di database:
 
-3. **Attendance (Presensi Murid per Sesi)**:
-   - Status kehadiran murid individual terhadap sesi tersebut.
-   - Status: `present`, `absent`, `permission`, `sick`, `late`.
-   - Menyimpan foto presensi (`photo_path` di Supabase Storage), waktu absen, dan pencatat absensi (`checked_in_by`).
+```text
+roles
+permissions
+role_permissions
+user.role        # string kompatibel Better Auth & portal
+user.role_id     # FK ke roles (otoritatif untuk permission)
+```
 
----
+Role bawaan (`owner`, `tutor`) ber-`is_system = true` dan tidak boleh dihapus. Owner/Pimpinan dapat menambah role baru (mis. `curriculum`, `hrd`, `finance`, `admin`) dan mengatur permission-nya dari UI Pengaturan.
 
-## 3. Jenis Bimbel & Durasi
+Permission efektif pengguna = hasil query `role_permissions` untuk `user.role_id`; bila kosong, fallback ke pemetaan statis `config/permissions.ts`. Resolusi ini dibawa di session (`permissions[]`, `roleName`, `roleId`).
 
-Sistem mendukung jenis bimbel terkonfigurasi dengan durasi default:
-- **Reguler**: 60 menit
-- **Intensif**: 75 menit
-- **Private**: 90 menit
+### 1.3. Otorisasi Server (wajib)
 
-*Durasi dan tipe disimpan dalam database (`bimbel_types`) dan tidak di-hardcode dalam logika bisnis.*
-
----
-
-## 4. Kehadiran, Izin, & Rescheduling
-
-### 4.1. Kebijakan Izin (`permission`)
-- Sesi dengan status `permission` (atau `sick` sesuai kebijakan):
-  - **TIDAK** dihitung sebagai completed learning session bagi murid tersebut.
-  - **TIDAK** memotong kuota paket murid (`total_sessions`).
-  - Murid berhak dijadwalkan ulang (*rescheduled*).
-
-### 4.2. Integritas Rescheduling
-- Rescheduling **TIDAK BOLEH MENGHAPUS** riwayat sesi awal.
-- Sesi awal ditandai sebagai `rescheduled`, dan sesi pengganti baru dibuat dengan referensi riwayat sesi awal.
+* UI hiding dan `middleware.ts` **bukan** batas keamanan. `middleware.ts` hanya memeriksa keberadaan sesi Better Auth.
+* Setiap Server Component, Server Action, dan Route Handler sensitif wajib memanggil guard:
+  * `requireAuthUser()` — wajib login.
+  * `requirePermissionUser(permission)` — redirect bila permission kurang.
+  * `checkPermission(permission)` — untuk Server Action (mengembalikan `{ allowed, user }`).
+  * `requireApiUser()`, `requireManagementApi(permission?)`, `requirePermissionApi(permission)`, `requireTutorApi(permission?)` — untuk Route Handler (`lib/auth/guards.ts`).
+* Endpoint `/api/v1/tutor/*` **fail-closed**: akun tanpa `tutorId` ditolak (mencegah IDOR).
+* Owner (`roleName === 'owner'`) selalu lolos pemeriksaan permission.
 
 ---
 
-## 5. Perhitungan & Pengkodean Nomor Pertemuan ("P1, P2, ...")
+## 2. Identitas & Entitas Utama
 
-- **Format Pengkodean Pertemuan**: Pertemuan dikodekan secara baku menggunakan prefiks **P** diikuti nomor urut pertemuan efektif (contoh: pertemuan ke-1 dikodekan sebagai **P1**, pertemuan ke-2 sebagai **P2**, dst.).
-- Nomor pertemuan tidak boleh dihitung dari sekadar urutan jadwal yang telah lewat (`COUNT(schedules)`).
-- Nomor pertemuan dihitung secara dinamis dari **kehadiran riil yang sah** (`present` / status terhitung) dalam enrollment paket terkait.
-- Contoh alur:
-  - Sesi 1: Hadir -> **P1**
-  - Sesi 2: Hadir -> **P2**
-  - Sesi 3: Izin -> Tetap **P2** (kuota pertemuan utuh & tidak berkurang)
-  - Sesi 3 (Pengganti): Hadir -> **P3**
+### 2.1. Student Identifier
 
----
+* `student_code` adalah business identifier unik murid (contoh: `STD-2026-001`).
+* Nama murid (`name`) tidak boleh diasumsikan unik dan dapat berubah.
+* Primary key internal memakai UUID.
 
-## 6. Tarif Tutor & Integritas Historis (Historical Rates)
+### 2.2. Relasi Tutor – Murid
 
-### 6.1. Konfigurasi Tarif
-- Tarif tutor dikonfigurasi per jenis bimbel dalam database (`tutor_rates`).
-- Tarif tidak boleh di-hardcode dalam kode TypeScript/JavaScript.
+* Hubungan **bukan** 1:1 kaku. Sistem mendukung:
+  * 1 tutor mengajar banyak murid.
+  * 1 murid diajar lebih dari 1 tutor (mapel/hari berbeda).
+  * Pergantian tutor permanen maupun tutor pengganti per sesi.
+  * Kelas kelompok maupun sesi privat.
+* Tutor aktual yang mengajar disimpan pada `sessions.tutor_id` (bukan `schedules.tutor_id`) dan dikejar pada `attendance`/`learning_records`.
 
-### 6.2. Immutability Historis
-- Tarif yang sudah digunakan dalam periode payroll historis **TIDAK BOLEH BERUBAH SECARA RETROAKTIF**.
-- Pembaruan tarif menggunakan effective dating (`effective_from`, `effective_until`).
-- Pembaruan tarif baru membuat baris baru dengan `effective_from` baru, sehingga perhitungan honor sesi lampau tetap akurat.
+### 2.3. Pengguna & Profil
+
+* `user` (Better Auth) menyimpan `role` + `role_id`. Tabel `profiles` **tidak** menyimpan role.
+* `profiles.must_change_password` = `true` untuk akun hasil seeding; UI menampilkan notifikasi agar tutor mengganti password default.
 
 ---
 
-## 7. Kalkulasi Honor / Payroll Tutor
+## 3. Enrollment / Paket Belajar (Model Inti)
 
-### 7.1. Formula Perhitungan
-- Fee tutor dihitung berdasarkan jumlah murid yang menjadi dasar pembayaran pada sesi tersebut:
-  $$\text{Fee Sesi} = \text{Tarif Berlaku} \times \text{Jumlah Murid Terbayar}$$
-- Contoh:
-  - Tarif = Rp25.000 / murid.
-  - Murid hadir (payable) = 4 orang.
-  - Fee sesi = Rp100.000.
+### 3.1. Konsep
 
-### 7.2. Otoritas Server
-- **Seluruh perhitungan honor WAJIB dieksekusi di server** (Server Action / API Route).
-- Nilai fee dari browser/client tidak pernah dipercaya.
+`enrollments` merepresentasikan **keikutsertaan murid pada satu paket bimbel**. Satu murid dapat memiliki banyak enrollment (multi-mapel / multi-paket) sepanjang waktu.
 
----
-
-## 8. Verifikasi & Penyimpanan Foto Presensi
-
-- Foto absensi diambil melalui browser webcam (`react-webcam`) dan diunggah ke **Supabase Storage**.
-- Database PostgreSQL hanya menyimpan `photo_path` (misal: `attendance/{year}/{month}/{session_id}/{student_id}.jpg`).
-- Validasi wajib di server: validasi MIME type (`image/jpeg`, `image/png`, `image/webp`), batas ukuran file (maks 5MB), dan otentikasi pengunggah.
-
----
-## 9. Sesi dan biaya Bimbel
-
-Reguler
-- Calistung  (Anak TK) = 8 Sesi (per sesi 75 menit) = Rp. 350.000/bulan
-- SD  (kelas 1-6) = 8 Sesi (per sesi 75 menit) = Rp. 400.000/bulan
-- SMP  (kelas 7-9) = 8 Sesi (per sesi 90 menit) = Rp. 480.000/bulan
-- SMA  (kelas 11-12) = 8 Sesi (per sesi 90 menit) = Rp. 560.000/bulan
-Intensif
-- Calistung (Anak TK) = 12 Sesi (per sesi 75 menit) = Rp. 500.000/bulan
-- SD  (kelas 1-6) = 12 Sesi (per sesi 75 menit) = Rp. 600.000/bulan
-- SMP  (kelas 7-9) = 12 Sesi (per sesi 90 menit) = Rp. 700.000/bulan
-- SMA  (kelas 11-12) = 12 Sesi (per sesi 90 menit) = Rp. 800.000/bulan
-
-## 10. Audit Logging
-
-Setiap mutasi pada data sensitif wajib mencatat audit log di server:
-- Koreksi status presensi murid oleh Management.
-- Perubahan tarif tutor (`tutor_rates`).
-- Transisi status payroll (`draft` -> `finalized` -> `paid`).
-- Perubahan sesi/jadwal yang mempengaruhi kalkulasi honor.
-
-Record audit log minimal mencatat: `user_id`, `action`, `entity_type`, `entity_id`, `old_data`, `new_data`, `created_at`.
-
-## Alur sistem yang akan dimulai
-Karena sistem ini baru dan belum memiliki data, jadi pertama seluruh tutor dan murid akan didaftarkan oleh manajemen, manajemen memiliki akun seeder, ketika sudah dibuat, tutor akan memiliki email dan password default. Tutor masuk ke sistem kemudian akan muncul notifikasi (alert) yang menyarankan untuk mengganti password dari defaultnya. 
-
-Karena jadwal dll belum ada, manajemen perlu juga untuk membuat jadwal, dalam jadwal itu, juga bisa buat seed seperti ini. Ketika sudah dibuatkan jadwal, maka tutor bisa mengisikan jadwalnya. Ketika tutor sudah melakukan absen, maka akan terlihat bahwa murid tersebut sudah pertemuan ke berapanya 
-
-| No | Nama Murid         | Kelas & Materi | Waktu       | Mentor     |
-| -: | ------------------ | ------------ | ----------- | ---------- |
-|  1 | Ralisa             | 1 SD+ngaji   | 13.00–14.00 | Umi Fara   |
-|  2 | Arsyila            | 2 SD+ngaji   | 13.00–14.00 | Umi Fara   |
-|  3 | Rumaisaha          | 5 SD         | 14.00–15.15 | Umi Fara   |
-|  4 | Nadiv              | 9 SMP        | 16.00–17.15 | Umi Fara   |
-|  5 | Dhea               | 9 SMP        | 16.00–17.15 | Umi Fara   |
-|  5 | Zihan              | 9 SMP        | 16.00–17.15 | Umi Fara   |
-|  6 | Banita mtk         | 9 SMP        | 16.00–17.15 | Abi Yoko   |
-|  7 | Zaneta mtk         | 9 SMP        | 16.00–17.15 | Abi Yoko   |
-|  8 | Dero mtk           | 9 SMP        | 16.00–17.15 | Abi Yoko   |
-|  9 | Amira (B.Ing)      | TKA 9 SMP    | 16.30–17.45 | Abi Ihsan  |
-| 10 | Meysha             | TKA 9 SMP    | 16.30–17.45 | Abi Ihsan  |
-| 11 | Almaira            | TKA 9 SMP    | 16.30–17.45 | Abi Ihsan  |
-| 12 | Shafa              | TKA 9 SMP    | 16.30–17.45 | Abi Ihsan  |
-| 13 | Urfa               | TKA 9 SMP    | 16.30–17.45 | Abi Ihsan  |
-| 14 | Annisa SD          | 4 SD         | 08.00–09.15 | Abi Herwin |
-| 15 | Melody             | 4 SD         | 09.30–10.30 | Abi Herwin |
-| 16 | Miqdad             | 3 SD Menulis | 10.00–11.15 | Abi Herwin |
-| 17 | Alfatih            | calistung SD | 11.00–12.00 | Abi Herwin |
-| 18 | Tian               | Calistung SD | 13.00–14.15 | Abi Herwin |
-| 19 | Sena               | 1 SD         | 13.00–14.00 | Abi Herwin |
-| 20 | Mauza              | Calistung TK | 13.00–14.00 | Abi Herwin |
-| 21 | Kayla              | 9 SMP+ngaji  | 16.00–17.15 | Abi Herwin |
-| 23 | Nuri               | 5 SD         | 15.00–16.15 | Umi Anjel  |
-| 24 | Zoeya              | 2 SD         | 16.00–17.00 | Umi Anjel  |
-| 25 | Yasmin             | Calistung    | 16.30–17.30 | Umi Anjel  |
-| 26 | Rafa bimbel (TKA)  | 6 SD         | 16.00–17.15 | Abi Hanif  |
-| 27 | Salman (TKA)       | 6 SD         | 16.00–17.00 | Abi Hanif  |
-| 28 | Najmi (kimia)      | 10 SMA       | 14.00–15.30 | Abi Govin  |
-| 29 | Lionel             | 10 SMA       | 14.00–15.30 | Abi Govin  |
-| 30 | Fathan             | 8 SMP        | 16.00–17.15 | Abi Govin  |
-| 31 | Yani               | 12 SMA       | 16.00–17.30 | Abi Govin  |
-| 32 | Naufal             | 12 SMA       | 17.00–18.00 | Abi Govin  |
-| 33 | Inara privat       | Mengaji      | 15.00–16.15 | Umi Elsa   |
-| 34 | Cicam privat       | Calistung SD | 16.20–17.35 | Umi Elsa   |
-| 35 | Amirah privat      | 2 SD         | 18.30–20.00 | Umi Nabila |
-| 36 | Sesha privat ngaji | 3 SD         | 16.30–17.45 | Umi Nasywa |
-| 37 | Afsheena privat    | 5 SD         | 16.00–17.15 | Umi Firda  |
-
-* Ini Contoh untuk laporan bimbel
-
-ini seed untuk ke database nya
-insert into students (
-    name,
-    level
-)
-values
-    ('Ralisa', '1 SD'),
-    ('Arsyila', '2 SD'),
-    ('Rumaisaha', '5 SD'),
-    ('Nadiv', '9 SMP'),
-    ('Dhea', '9 SMP'),
-    ('Zihan', '9 SMP'),
-    ('Banita', '9 SMP'),
-    ('Zaneta', '9 SMP'),
-    ('Dero', '9 SMP'),
-    ('Amira', 'TKA 9 SMP'),
-    ('Meysha', 'TKA 9 SMP'),
-    ('Almaira', 'TKA 9 SMP'),
-    ('Shafa', 'TKA 9 SMP'),
-    ('Urfa', 'TKA 9 SMP'),
-    ('Annisa', '4 SD'),
-    ('Melody', '4 SD'),
-    ('Miqdad', '3 SD'),
-    ('Alfatih', 'Calistung SD'),
-    ('Tian', 'Calistung SD'),
-    ('Sena', '1 SD'),
-    ('Mauza', 'Calistung TK'),
-    ('Kayla', '9 SMP'),
-    ('Nuri', '5 SD'),
-    ('Zoeya', '2 SD'),
-    ('Yasmin', 'Calistung'),
-    ('Rafa', '6 SD'),
-    ('Salman', '6 SD'),
-    ('Najmi', '10 SMA'),
-    ('Lionel', '10 SMA'),
-    ('Fathan', '8 SMP'),
-    ('Yani', '12 SMA'),
-    ('Naufal', '12 SMA'),
-    ('Inara', 'Mengaji'),
-    ('Cicam', 'Calistung SD'),
-    ('Amirah', '2 SD'),
-    ('Sesha', '3 SD'),
-    ('Afsheena', '5 SD');
-
-
-insert into tutors (
-    name
-)
-values
-    ('Umi Fara'),
-    ('Abi Yoko'),
-    ('Abi Ihsan'),
-    ('Abi Herwin'),
-    ('Umi Anjel'),
-    ('Abi Hanif'),
-    ('Abi Govin'),
-    ('Umi Elsa'),
-    ('Umi Nabila'),
-    ('Umi Nasywa'),
-    ('Umi Firda');
-
-insert into programs (
-    code,
-    name
-)
-values
-    ('MTK', 'Matematika'),
-    ('BINDO', 'Bahasa Indonesia'),
-    ('BING', 'Bahasa Inggris'),
-    ('TKA', 'TKA'),
-    ('MENGAJI', 'Mengaji'),
-    ('CALISTUNG', 'Calistung'),
-    ('MENULIS', 'Menulis'),
-    ('KIMIA', 'Kimia');
-
-Nah, contoh ini justru mengungkap satu hal penting yang perlu kita revisi dari rancangan sebelumnya: konsep pertemuan ke-X ternyata tidak selalu merupakan counter global berdasarkan seluruh riwayat murid.
-
-Pada laporan ini:
-
-22 Oktober → pertemuan 12
-23 Oktober → kembali menjadi 1
-28 Oktober → 2
-30 Oktober → 3
-dan seterusnya.
-
-Artinya ada kemungkinan paket/periode/program bimbel baru yang memulai kembali hitungan pertemuan. Jadi kalau kita hanya membuat:
-
-COUNT(attendance WHERE status = present)
-
-sebagai meeting_number, desain tersebut tidak cukup.
-
-1. Yang saya tangkap dari laporan ini
-
-Struktur laporan sebenarnya mengandung beberapa informasi berbeda:
-
-Informasi	Contoh
-Tanggal	1 Oktober 2025
-Status kehadiran	Hadir, telat, terhitung masuk
-Materi	MTK, SBD, IPAS, B. Lampung
-Catatan pembelajaran	latihan soal, penguatan materi
-Pertemuan	2
-Tutor	Umi Novita
-Periode/paket	tersirat dari reset pertemuan
-Pencapaian	ada bagian evaluasi terpisah
-
-Jadi jangan jadikan satu kolom notes untuk semuanya.
-
-2. Saya akan mengubah konsep Enrollment
-
-Sebelumnya kita punya:
-
-student
-    ↓
-student_program
-
-Saya rasa perlu dibuat lebih eksplisit:
-
+```text
 Student
-   ↓
-Enrollment
-   ↓
-Sessions
-   ↓
-Attendance
+  └── Enrollment (paket) — max_meetings
+        └── Schedule → Session → Attendance
+```
 
-Enrollment berarti keikutsertaan murid pada suatu paket/program/periode bimbel tertentu.
+### 3.2. Perubahan Paket & Reset Nomor Pertemuan
 
-Contohnya:
+* Satu paket memiliki batas `max_meetings` (umumnya 8 atau 12 sesuai `bimbel_packages`).
+* Setelah pertemuan ke-`max_meetings` selesai, enrollment menjadi `completed`.
+* Paket berikutnya dibuat **oleh Management** dan nomor pertemuan **kembali dari 1**.
+* Tutor **tidak boleh** membuat paket baru otomatis.
 
-Alghazy
-│
-├── Enrollment #1
-│   ├── mulai: September 2026
-│   ├── program: TKA
-│   └── pertemuan: 1–12
-│
-└── Enrollment #2
-    ├── mulai: Oktober 2026
-    ├── program: MTK
-    └── pertemuan: 1–12
+### 3.3. Jenis Bimbel adalah Atribut PER MURID (per enrollment)
 
-Sehingga:
+Satu jadwal/kelas **boleh** memuat murid dengan jenis bimbel berbeda (mis. Reguler + Intensif pada jam mulai yang sama). Konsekuensi (migration `0003`):
 
-23 Oktober 2025 → Pertemuan 1
+* `schedules.bimbel_type_id` dan `sessions.bimbel_type_id` boleh `NULL` (di-drop `NOT NULL`).
+* Jam selesai sesi = jam mulai + durasi tipe **paling lama** di kelas tersebut; absensi cukup sekali pada jam selesai itu.
+* Rate honor dihitung per murid dari enrollment masing-masing (bukan dari tipe sesi).
+* View `v_schedule_bimbel_review` melaporkan jadwal dengan jenis bimbel beragam untuk ditinjau Management.
 
-bukan karena database menghitung ulang seluruh attendance, tetapi karena itu merupakan pertemuan pertama pada enrollment/periode baru.
+### 3.4. Data yang BOLEH disimpan vs TIDAK
 
-3. Schema yang lebih tepat
+| Boleh disimpan (atribut paket) | Dihitung dari transaksi (jangan disimpan) |
+|---|---|
+| `max_meetings`, `package_name`, `price`, `start_date`, `end_date`, `status` | `used_meetings`, `remaining_meetings`, `meeting_number`, `completed_sessions` |
 
-Saya akan mengubah:
+---
 
-student_programs
+## 4. Jenis Bimbel, Durasi, & Paket (Master Data)
 
-menjadi atau dilengkapi dengan:
+### 4.1. `bimbel_types` (master)
 
-enrollments
+```text
+Reguler   = 60 menit  (durasi default pada master)
+Intensif  = 75 menit
+Private   = 90 menit
+```
 
-Contoh:
+Durasi adalah data (`duration_minutes`), bukan hardcode. Jenis bimbel harus eksplisit, tidak boleh ditebak dari durasi jadwal.
 
-enrollments
------------------------------
-id
-student_id
-program_id
-bimbel_type_id
-start_date
-end_date
-total_meetings
-status
-created_at
-updated_at
+### 4.2. `bimbel_packages` (paket & harga)
 
-Misalnya:
+Paket per jenjang dapat menimpa durasi default master. Seed saat ini (`supabase/seed.sql`):
 
-Alghazy
-Enrollment #1
-MTK
-Regular
-01-09-2025
-30-09-2025
-12 meetings
+| Jenis | Paket | Jenjang | Max Pertemuan | Durasi | Harga / bulan |
+|---|---|---|---:|---:|---:|
+| Reguler | Reguler Calistung TK | TK | 8 | 75 m | Rp 350.000 |
+| Reguler | Reguler SD | SD (1–6) | 8 | 75 m | Rp 400.000 |
+| Reguler | Reguler SMP | SMP (7–9) | 8 | 90 m | Rp 480.000 |
+| Reguler | Reguler SMA | SMA (11–12) | 8 | 90 m | Rp 560.000 |
+| Intensif | Intensif Calistung TK | TK | 12 | 75 m | Rp 500.000 |
+| Intensif | Intensif SD | SD (1–6) | 12 | 75 m | Rp 600.000 |
+| Intensif | Intensif SMP | SMP (7–9) | 12 | 90 m | Rp 700.000 |
+| Intensif | Intensif SMA | SMA (11–12) | 12 | 90 m | Rp 800.000 |
+| Private | Private Personal | Semua Jenjang | 8 | 90 m | Rp 650.000 |
 
-Kemudian enrollment berikutnya:
+`enrollments.package_name` dan `enrollments.price` merupakan **snapshot** paket saat enrollment dibuat agar histori harga tidak berubah bila master paket diubah.
 
-Alghazy
-Enrollment #2
-MTK
-Regular
-23-10-2025
-...
-12 meetings
-4. meeting_number tetap tidak perlu menjadi source of truth
+### 4.3. Program / Mata Pelajaran
 
-Tetapi saya perlu sedikit mengoreksi pernyataan sebelumnya.
+`programs` (kode unik + nama + level) merepresentasikan bidang/mapel. Contoh seed: `MTK`, `BINDO`, `BING`, `TKA`, `MENGAJI`, `CALISTUNG`, `MENULIS`, `KIMIA`.
 
-Saya masih tidak menyarankan meeting_number bebas diedit oleh user.
+---
 
-Namun sistem membutuhkan cara menentukan:
+## 5. Pemisahan Schedule vs Session vs Attendance
 
-"Ini pertemuan keberapa dalam enrollment ini?"
+Ketiga konsep **HARUS DIPISAHKAN** ke tabel/model tersendiri.
 
-Maka:
+1. **Schedule (Rencana / Jadwal Rutin)**
+   * Rencana belajar berulang (mis. "Setiap Rabu 16:00, Reguler, Tutor Abi").
+   * Memuat tutor, program, hari, jam, serta peserta (`schedule_students`).
+   * Schedule bukan bukti belajar telah terjadi.
 
-Enrollment
-    ↓
-eligible attendance
-    ↓
-sequence
+2. **Session (Kejadian Belajar Aktual)**
+   * Pertemuan nyata pada tanggal spesifik.
+   * Status: `scheduled`, `completed`, `cancelled`, `rescheduled`.
+   * Menyimpan tutor aktual (`tutor_id`), peserta via `schedule_id` + `schedule_students`, serta `rescheduled_from_session_id` untuk histori reschedule.
+   * Memuat `attendance_deadline`, `allow_late_upload`, `late_upload_reason`.
+   * UNIQUE `(schedule_id, session_date)` mencegah duplikasi sesi hasil generator.
 
-Contohnya:
+3. **Attendance (Presensi Murid per Sesi)**
+   * Status kehadiran individual murid terhadap sesi.
+   * Menyimpan `enrollment_id`, `status`, `verification_status`, `photo_path`, `notes`, `checked_in_at`, `checked_in_by`.
+   * UNIQUE `(session_id, student_id)`.
 
-Enrollment #2
+---
 
-Attendance
-23 Okt → 1
-28 Okt → 2
-30 Okt → 3
-4 Nov  → 4
-5 Nov  → 5
-...
+## 6. Status Kehadiran & Konsumsi Paket
 
-Jadi secara konsep:
+Status kehadiran (`attendance_status`):
 
-meeting_number =
-jumlah pertemuan yang dihitung
-dalam enrollment tersebut
-
-Bukan:
-
-jumlah seluruh attendance sepanjang hidup murid
-5. Status kehadiran juga perlu dipisahkan
-
-Dari contoh:
-
-"Hadir, namun hanya sebentar karena telat"
-
-Ini sebenarnya bukan notes semata.
-
-Saya akan menggunakan:
-
-status
-
-dengan:
-
+```text
 present
 late
 permission
 sick
 absent
+```
 
-Kemudian:
+### 6.1. `consumes_meeting` (aturan eksplisit)
 
-notes
+| Status | Mengonsumsi pertemuan | Payable (honor) |
+|---|---|---|
+| `present` | **Ya** | **Ya** |
+| `late` | **Ya** | **Ya** |
+| `permission` | Tidak | Tidak |
+| `sick` | Tidak | Tidak |
+| `absent` | Tidak | Tidak |
 
-berisi:
+Aturan ini dijaga eksplisit di server/DB (bukan sekadar `WHERE status = 'present'`) agar mudah berkembang.
 
-Hanya mengikuti pembelajaran sebentar karena datang terlambat.
+### 6.2. Verification
 
-Sehingga:
+* Nilai `verification_status`: `submitted` (default), `verified`, `correction_requested`.
+* Untuk MVP, payroll **tidak mewajibkan** `verified`; attendance `submitted` sudah payable (lihat §18).
+* Koreksi oleh Management wajib menyentuh `attendance:update` dan dicatat di `audit_logs`.
 
-{
-  "status": "late",
-  "material": "MTK: pecahan, persen, desimal",
-  "notes": "Murid hadir tetapi terlambat."
-}
+---
 
-Ini jauh lebih mudah untuk laporan dan statistik.
+## 7. Nomor Pertemuan ("P1, P2, ...")
 
-6. Tetapi ada kasus "terhitung masuk"
+* Pertemuan dikodekan **P** + nomor urut efektif (P1, P2, …).
+* Nomor pertemuan **TIDAK** disimpan sebagai kolom dan **TIDAK** dihitung dari `COUNT(schedules)`.
+* Dihitung dinamis dari attendance valid dalam konteks **enrollment/paket murid** (migration `0004`):
+  * Partisi per `enrollment_id`.
+  * Bila `enrollment_id` NULL, fallback partisi per `student_id`.
+  * Hanya `present`/`late` yang dihitung; `permission`/`sick`/`absent` tidak menambah urutan.
+* View: `v_attendance_with_meeting_number` (menyediakan `meeting_number` & `meeting_code` = `'P' || n`).
 
 Contoh:
 
-3 Oktober → terhitung masuk
-
-Ini menarik.
-
-Kita jangan langsung menganggap:
-
-status = present
-
-karena secara bisnis bisa saja ada alasan khusus.
-
-Saya justru akan menambahkan:
-
-attendance_status
-
-dan:
-
-attendance_notes
-
-Misalnya:
-
-{
-  "status": "present",
-  "material": null,
-  "notes": "Terhitung masuk"
-}
-
-Jadi sistem tidak memaksa tutor mengisi materi ketika memang tidak ada materi yang dicatat.
-
-7. Pencapaian dan Evaluasi juga perlu masuk desain
-
-Ini sebelumnya belum cukup kita masukkan.
-
-Saya melihat ada dua kemungkinan desain.
-
-Opsi A — per pertemuan
-Attendance
-├── material
-├── notes
-├── achievement
-└── evaluation
-
-Misalnya:
-
-Materi:
-MTK: Pecahan
-
-Pencapaian:
-Murid mampu membandingkan pecahan.
-
-Evaluasi:
-Masih perlu latihan pada pecahan senilai.
-Opsi B — laporan perkembangan berkala
-
-Ini menurut saya lebih cocok dengan format spreadsheet yang kamu tunjukkan.
-
-Student
-   ↓
-Progress Reports
-   ↓
-Achievement
-Evaluation
-
-Karena "Pencapaian dan Evaluasi" kemungkinan merupakan kesimpulan perkembangan murid, bukan sekadar catatan satu kali pertemuan.
-
-Saya lebih condong ke Opsi B, tetapi tetap menyediakan notes pada attendance.
-
-8. Maka struktur domain kita menjadi seperti ini
-STUDENT
-   │
-   ├── ENROLLMENT
-   │       │
-   │       ├── Program
-   │       ├── Bimbel Type
-   │       ├── Total Meetings
-   │       └── Period
-   │
-   ├── SCHEDULE
-   │       │
-   │       └── Tutor
-   │
-   └── PROGRESS REPORT
-           │
-           ├── Achievement
-           └── Evaluation
-
-
-SCHEDULE
-   │
-   ▼
-SESSION
-   │
-   ▼
-ATTENDANCE
-   ├── Student
-   ├── Tutor
-   ├── Status
-   ├── Material
-   ├── Notes
-   └── Photo
-9. Ada satu hal lagi yang sangat penting: tutor bisa berganti
-
-Laporanmu menunjukkan:
-
-1 Okt → Umi Novita
-2 Okt → Umi Nopu
-3 Okt → Umi Nopu
-...
-9 Okt → Umi Novita
-...
-
-Ini memperkuat keputusan kita sebelumnya bahwa:
-
-students.tutor_id
-
-tidak boleh ada.
-
-Tutor yang mengajar harus ditentukan pada konteks schedule/session/attendance.
-
-Contohnya:
-
-Alghazy
-   │
-   ├── 1 Okt
-   │     └── Umi Novita
-   │
-   ├── 2 Okt
-   │     └── Umi Nopu
-   │
-   └── 9 Okt
-         └── Umi Novita
-
-Ini persis kebutuhan domain yang kamu jelaskan sejak awal.
-
-10. Struktur database yang sekarang lebih matang
-
-Saya akan arahkan ke:
-
-users
-│
-├── tutors
-└── management
-
-
-students
-│
-├── enrollments
-│     │
-│     ├── programs
-│     └── bimbel_types
-│
-├── student_programs
-│
-└── progress_reports
-
-
-tutors
-│
-├── tutor_students
-├── schedules
-└── tutor_rates
-
-
-schedules
-│
-├── tutor
-├── schedule_students
-└── sessions
-
-
-sessions
-│
-└── attendances
-       │
-       ├── student
-       ├── tutor
-       ├── status
-       ├── material
-       ├── notes
-       └── photo
-
-
-attendances
-│
-└── payroll_items
-11. Dan untuk synthetic data, contoh ini sangat berguna
-
-Sekarang kita punya edge case nyata yang bisa dimasukkan ke seed:
-
-Alghazy
-│
-├── Enrollment A
-│   ├── Meeting 1
-│   ├── Meeting 2
-│   ├── ...
-│   └── Meeting 12
-│
-└── Enrollment B
-    ├── Meeting 1  ← reset
-    ├── Meeting 2
-    ├── Meeting 3
-    └── ...
-
-Dengan tutor:
-
-Meeting 2 → Umi Novita
-Meeting 3 → Umi Nopu
-Meeting 4 → Umi Nopu
-Meeting 7 → Umi Novita
-
-Dan status:
-
-present
-present
-present
-late
-permission
-
-Ini jauh lebih realistis untuk mengetes sistem daripada synthetic data random.
-
-Jadi ada revisi penting terhadap PRD-mu
-
-Bagian:
-
-total_meetings / pertemuan ke-X tidak boleh disimpan sebagai angka bebas-edit — harus dihitung (COUNT(attendance WHERE status='present'))
-
-perlu diubah.
-
-Lebih tepat:
-
-Nomor pertemuan merupakan urutan kehadiran yang dihitung dalam konteks enrollment/periode bimbel tertentu. Nomor pertemuan tidak boleh diedit bebas oleh user. Attendance yang berstatus tidak mengonsumsi pertemuan, seperti izin/sakit, tidak menambah urutan pertemuan.
-
-Dengan perubahan ini, rancangan kita jauh lebih sesuai dengan laporan bimbel yang sebenarnya.
-
-Dan saya akan menahan diri untuk belum membuat SQL final sampai kita menentukan satu hal: apa sebenarnya yang menyebabkan pertemuan kembali dari 12 menjadi 1 pada 23 Oktober — apakah paket 12x selesai, pergantian bulan, atau memang admin membuat periode baru. Itu bukan detail kecil; itu menentukan desain enrollment dan perhitungan honor.
-
-jadi pertemuan itu tiap 12 kali, karena paket bimbel itu maksimal 12 kali, dan ketika sudah 12, maka akan reset ke 1
-
-Nah, kalau begitu sekarang konsepnya jelas. Ini justru membuat model enrollment/package jauh lebih kuat.
-
-Berarti aturan bisnis sebenarnya:
-
-Satu paket bimbel terdiri dari maksimal 12 pertemuan. Setelah pertemuan ke-12 selesai, paket tersebut berakhir dan pertemuan pada paket berikutnya kembali dihitung dari 1.
-
-Jadi meeting_number bukan counter global murid, tetapi counter di dalam satu paket bimbel.
-
-Contoh
-Alghazy
-│
-├── Paket #1
-│   ├── Pertemuan 1
-│   ├── Pertemuan 2
-│   ├── ...
-│   └── Pertemuan 12
-│
-└── Paket #2
-    ├── Pertemuan 1
-    ├── Pertemuan 2
-    ├── Pertemuan 3
-    └── ...
-
-Ini menjelaskan persis laporan yang kamu berikan:
-
-22 Okt 2025 → Pertemuan 12
-23 Okt 2025 → Pertemuan 1
-28 Okt 2025 → Pertemuan 2
-30 Okt 2025 → Pertemuan 3
-1. Saya akan ubah model enrollment
-
-Menurut saya nama yang lebih tepat bahkan bisa:
-
-enrollments
-
-dengan konsep:
-
-enrollment = 1 paket bimbel murid
-
-Misalnya:
-
-enrollment_id: ENR-001
-student: Alghazy
-package: 12 pertemuan
-start_date: 2025-09-01
-end_date: 2025-10-22
-status: completed
-
-Kemudian:
-
-ENR-002
-student: Alghazy
-package: 12 pertemuan
-start_date: 2025-10-23
-status: active
-2. Schema yang saya rekomendasikan
-enrollments
-------------------------------
-id
-student_id
-bimbel_type_id
-start_date
-end_date
-max_meetings
-status
-created_at
-updated_at
-
-Contoh:
-
-id              ENR-001
-student_id      STU-001
-bimbel_type     REGULAR
-start_date      2025-09-01
-end_date        2025-10-22
-max_meetings    12
-status          completed
-
-Kemudian paket kedua:
-
-id              ENR-002
-student_id      STU-001
-bimbel_type     REGULAR
-start_date      2025-10-23
-end_date        null
-max_meetings    12
-status          active
-3. Apakah max_meetings perlu disimpan?
-
-Ya.
-
-Ini berbeda dengan meeting_number.
-
-Sebelumnya saya mengatakan angka pertemuan jangan disimpan. Itu masih benar untuk meeting_number.
-
-Tetapi:
-
-max_meetings = 12
-
-boleh disimpan karena itu adalah atribut paket, bukan hasil transaksi.
-
-Bahkan saya sarankan:
-
-max_meetings
-
-bukan hardcode 12.
-
-Karena suatu saat Management mungkin membuat:
-
-Paket 4x
-Paket 8x
-Paket 12x
-Paket 16x
-
-Maka sistem tetap fleksibel.
-
-4. Bagaimana menghitung pertemuan?
-
-Misalnya:
-
-Enrollment #1
-max_meetings = 12
-
-Ada attendance:
-
-1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-
-Maka:
-
-remaining_meetings = 0
-
-Enrollment berubah:
-
-completed
-
-Ketika murid mengambil paket berikutnya:
-
-Enrollment #2
-
-maka:
-
-meeting_number = 1
-5. Status permission tidak menambah pertemuan
-
-Ini juga sesuai dengan aturan yang kamu jelaskan sebelumnya.
-
-Misalnya:
-
+```text
 Paket #1
-
-3 Sep → Present → Pertemuan 1
-5 Sep → Present → Pertemuan 2
-10 Sep → Permission
-12 Sep → Present → Pertemuan 3
-
-Bukan:
-
-10 Sep → Pertemuan 3
-12 Sep → Pertemuan 4 ❌
-
-Tetapi:
-
-10 Sep → Permission → tidak mengonsumsi paket
-12 Sep → Pertemuan 3
-
-Jadi kita perlu mendefinisikan eligible attendance.
-
-6. Jangan menghitung berdasarkan attendance secara sembarangan
-
-Ini bagian yang cukup penting.
-
-Misalnya:
-
-present
-late
-permission
-sick
-absent
-
-Yang mengonsumsi paket:
-
-present
-late
-
-Sedangkan:
-
-permission
-sick
-absent
-
-tidak mengonsumsi pertemuan.
-
-Namun kamu sebelumnya juga mengatakan kalau murid izin, jadwal bisa diganti/reschedule.
-
-Jadi secara domain:
-
-Attendance
-    ↓
-Apakah mengonsumsi paket?
-    │
-    ├── YES → meeting_number bertambah
-    │
-    └── NO  → tidak bertambah
-
-Saya bahkan akan membuat aturan ini eksplisit di backend, bukan sekadar:
-
-WHERE status = 'present'
-
-karena nanti status bisa berkembang.
-
-7. late bagaimana?
-
-Dari laporan:
-
-Hadir, namun hanya sebentar karena telat
-
-Maka saya akan perlakukan:
-
-status = late
-
-dan:
-
-consumes_meeting = true
-
-Jadi:
-
-late → tetap pertemuan
-
-Karena murid tetap menerima pembelajaran.
-
-8. Bagaimana dengan tutor berbeda?
-
-Ini tidak mengganggu konsep paket sama sekali.
-
-Misalnya:
-
-Enrollment Alghazy #1
-│
-├── Meeting 1 → Abi Yoko
-├── Meeting 2 → Abi Govin
-├── Meeting 3 → Abi Hanif
-├── Meeting 4 → Umi Nopu
-└── ...
-
-Jadi:
-
-Enrollment
-    │
-    └── Sessions
-           │
-           └── Attendance
-                  │
-                  └── Tutor
-
-Tutor ditentukan pada session/attendance, bukan pada enrollment sebagai pemilik tetap.
-
-9. Ini juga menyelesaikan masalah laporanmu
-
-Laporan:
-
-Tanggal	Materi	Pertemuan	Mentor
-1 Okt	MTK dan SBD ujian	2	Umi Novita
-2 Okt	IPAS dan B.Lampung	3	Umi Nopu
-3 Okt	Terhitung masuk	4	Umi Nopu
-...	...	...	...
-22 Okt	MTK pola gambar	12	Umi Nopu
-23 Okt	MTK pecahan senilai	1	Umi Nopu
-
-Di database:
-
-Enrollment #1
-    ↓
-Attendance 1–12
-    ↓
-COMPLETED
-
-Enrollment #2
-    ↓
-Attendance 1...
-
-Tidak perlu melakukan "reset counter" terhadap data lama.
-
-Ini penting.
-
-Jangan pernah melakukan:
-
-UPDATE attendance
-SET meeting_number = 1
-
-ketika paket baru dimulai.
-
-Data lama harus tetap immutable secara historis:
-
-Paket #1 → 1–12
-Paket #2 → 1–12
-Paket #3 → 1–12
-10. Bahkan API-nya jadi lebih jelas
-
-Untuk mendapatkan progres murid:
-
-GET /api/v1/students/:studentId/enrollments/current
-
-Response:
-
-{
-  "enrollment": {
-    "id": "enr_002",
-    "max_meetings": 12,
-    "used_meetings": 3,
-    "remaining_meetings": 9,
-    "status": "active"
-  }
-}
-
-Ketika tutor mencari Alghazy:
-
-Alghazy
-Kelas 6 SD
-
-Paket aktif
-3 / 12 pertemuan
-Sisa 9 pertemuan
-
-Kemudian tampilkan:
-
-Riwayat pertemuan
-
-#1 — Abi Yoko
-#2 — Abi Govin
-#3 — Abi Hanif
-
-Ini jauh lebih informatif daripada sekadar:
-
-Pertemuan ke-3
-11. Ada satu keputusan yang sekarang juga perlu kita kunci
-
-Siapa yang membuat enrollment/paket baru?
-
-Menurut saya:
-
-Management
-Management
-   ↓
-Buat paket baru
-   ↓
-Student
-   ↓
-12 pertemuan
-
-Tutor tidak boleh membuat paket baru ketika pertemuan ke-12 selesai.
-
-Ketika:
-
-used_meetings = 12
-
-sistem memberi status:
-
-COMPLETED
-
-dan Management kemudian membuat enrollment berikutnya.
-
-Ini mencegah tutor secara tidak sengaja membuat paket baru dan mengacaukan perhitungan honor.
-
-Jadi model domain kita sekarang
-STUDENT
-   │
-   ├───────────────┐
-   │               │
-   ▼               ▼
-ENROLLMENT     PROGRESS REPORT
-   │
-   │ max 12
-   ▼
-SCHEDULE
-   │
-   ▼
-SESSION
-   │
-   ▼
-ATTENDANCE
-   │
-   ├── status
-   ├── material
-   ├── notes
-   ├── photo
-   └── tutor
-
-Dengan:
-
-Enrollment #1
-    └── Meeting 1–12
-
-Enrollment #2
-    └── Meeting 1–12
-
-Enrollment #3
-    └── Meeting 1–12
-
-Ini menurut saya sudah jauh lebih sesuai dengan probis nyata bimbelmu.
-
-Dan setelah aturan ini dikunci, rancangan ERD + migration Supabase sebaiknya mengikuti model ini. Terutama kita perlu menentukan apakah Schedule berada di bawah Enrollment, karena kalau jadwal berubah/reschedule dan paket tetap sama, relasinya harus dirancang supaya histori tidak rusak.
+  3 Sep  present     → P1
+  5 Sep  present     → P2
+ 10 Sep  permission  → (tidak menambah)
+ 12 Sep  present     → P3
+...
+ 22 Okt  present     → P12  → paket COMPLETED
+
+Paket #2
+ 23 Okt  present     → P1   (reset)
+```
+
+Jangan pernah melakukan `UPDATE attendance SET meeting_number = 1` untuk reset; data lama immutable secara historis.
 
 ---
 
-## 11. Keputusan Bisnis Final (dikonfirmasi 28 September 2026)
+## 8. Izin, Sakit, & Rescheduling
+
+* `permission` dan `sick`:
+  * **Tidak** dihitung sebagai completed learning session.
+  * **Tidak** memotong kuota paket.
+  * Murid berhak dijadwalkan ulang.
+* `absent` juga tidak mengonsumsi paket (sesuai §6), namun tidak otomatis memberi hak reschedule kecuali diputuskan Management.
+* Rescheduling **tidak boleh menghapus** riwayat sesi awal:
+  * Sesi lama ditandai `rescheduled`.
+  * Sesi pengganti baru dibuat dengan `rescheduled_from_session_id` mengacu sesi awal.
+* Jangan mengurangi paket hanya karena tanggal jadwal telah lewat.
+
+---
+
+## 9. Tarif Tutor & Gaji Manajemen
+
+### 9.1. Tarif Tutor (`tutor_rates`)
+
+* Tarif = honor per murid, disimpan di database; tidak boleh di-hardcode.
+* Kolom: `tutor_id` (nullable = tarif global), `bimbel_type_id`, `level`, `rate_per_student`, `effective_from`, `effective_until`.
+* **Hierarki resolusi**: tarif tutor-spesifik menang atas tarif global untuk kombinasi `(bimbel_type, level)` yang sama; bila tidak ada, pakai tarif global.
+* Constraint `ex_tutor_rates_no_overlap` (EXCLUDE USING gist) menolak periode tarif yang tumpang tindih untuk scope yang sama.
+
+### 9.2. Gaji Manajemen (`management_rates`)
+
+* Untuk peran manajemen/owner (bukan tutor murid): `role_level` (`owner`/`hrd`/`finance`/`admin`/`curriculum`/`other`), `rate_type` (`monthly`/`allowance`/`hourly`/`project`), `amount`, effective dating, `status`.
+* Bersifat konfigurasi; tidak dipakai dalam kalkulasi fee per-sesi tutor.
+
+### 9.3. Immutability Historis
+
+* Tarif yang sudah dipakai payroll historis **tidak boleh berubah retroaktif**.
+* Jangan `UPDATE tutor_rates SET rate = ...` pada record historis. Buat baris baru dengan `effective_from` baru.
+* Contoh:
+
+```text
+Rp20.000  effective_from = 2026-01-01, effective_until = 2026-09-30
+Rp25.000  effective_from = 2026-10-01, effective_until = NULL
+```
+
+Payroll September tetap memakai tarif September.
+
+---
+
+## 10. Kalkulasi Honor / Payroll Tutor
+
+### 10.1. Formula
+
+```text
+fee sesi = tarif berlaku × jumlah murid payable
+```
+
+* Murid payable = `present` + `late`.
+* `payment_item` dapat menyimpan `bimbel_type_id`, `session_date`, `payable_students_count`, `rate_applied`, `amount`, `subtotal` agar dapat ditelusuri sampai sesi + murid + tarif.
+
+### 10.2. Otoritas Server
+
+* Seluruh perhitungan honor **WAJIB di server** (Server Action / Route Handler). Nilai dari browser tidak dipercaya.
+* Alur: otorisasi → ambil sesi valid → ambil attendance → tentukan payable → ambil tarif historis → hitung → persist.
+* Model tabel: `tutor_payments` (header, `gross_amount`/`bonus`/`deduction`/`net_amount`/`total_amount`, status `draft`/`processed`/`paid`) + `tutor_payment_items` (detail).
+* Trigger `set_tutor_payment_amounts` menyinkronkan `net_amount = gross + bonus - deduction` dan `total_amount = net_amount`.
+* UNIQUE `(tutor_id, period_start, period_end)` menjaga idempotensi periode.
+
+---
+
+## 11. Jendela Waktu Presensi (Attendance Window)
+
+Konfigurasi di `attendance_window_settings`:
+
+```text
+open_before_minutes      # form absensi dibuka sebelum jam mulai
+close_after_hours        # batas jam setelah sesi berakhir
+max_days_allowed         # toleransi hari backdate
+daily_cutoff_time        # batas jam harian
+allow_tutor_backdate     # izin tutor mengisi mundur
+status                   # active/inactive
+```
+
+* Validasi jendela dilakukan **murni di server**.
+* Tutor **tidak dapat** mem-bypass jendela dari input client (`allowTimeBypass` tidak ada di schema input).
+* Pengecualian hanya lewat operasi Management terpisah (`overrideAttendanceWindow`, permission `attendance:update`, wajib alasan, dan diaudit).
+
+---
+
+## 12. Verifikasi & Penyimpanan Foto Presensi
+
+* Foto absensi diambil via browser webcam (`react-webcam`), opsional dikompresi di klien (`browser-image-compression`), lalu diunggah ke **Supabase Storage**.
+* **Foto wajib** saat tutor submit presensi (lihat §18). Pengecualian hanya melalui operasi Management teraudit.
+* Bucket: `attendance` — **privat** (`public = false`), limit 5 MB, MIME allow-list `image/jpeg`, `image/png`, `image/webp`.
+* Database hanya menyimpan `photo_path`. Recommended path:
+
+```text
+attendance/{year}/{month}/{session_id}/{student_id}.jpg
+```
+
+* Validasi server minimal: estimasi ukuran pre-decode, deteksi magic bytes (JPEG/PNG/WebP), penolakan file spoofed. Jangan mempercayai `file.name`/`file.type` dari browser.
+* Akses foto hanya lewat signed URL yang dibuat server setelah otorisasi (`getAuthorizedAttendancePhotoUrl` / `signAttendancePhotoPath`).
+
+---
+
+## 13. Learning Record & Progress Report
+
+### 13.1. Learning Record (`learning_records`)
+
+* Satu per attendance (UNIQUE `attendance_id`), menyimpan `material` (wajib), `notes`, `homework`.
+* Materi pelajaran **tidak** disimpan di `attendance` (dipisahkan). `attendance.notes` untuk catatan kehadiran/proses, `learning_records.material` untuk konten pembelajaran.
+
+### 13.2. Progress Report (`progress_reports`)
+
+* Laporan perkembangan berkala per murid/enrollment: `period_title`, `achievement`, `evaluation`, `notes`.
+* Dipakai untuk laporan evaluasi yang dicetak A4 (Progress Report) di Management.
+
+---
+
+## 14. Kurikulum, Materi, & Worksheet
+
+* `subjects` — master mata pelajaran per jenjang.
+* `curriculum_topics` — bab silabus per `subject_id` + `grade`, memuat `chapter_number`, `title`, `description`, serta `worksheet_name`/`worksheet_url` (opsional).
+* Dikelola pusat oleh Management (bagian kurikulum) agar standar materi konsisten; tutor dapat melihat/mengunduh worksheet.
+* Penautan materi ke jadwal/sesi bersifat pengembangan (roadmap) dan belum menjadi gate absensi.
+
+---
+
+## 15. Audit Logging
+
+Setiap mutasi data sensitif wajib mencatat `audit_logs` di server/database layer:
+
+* Minimal kolom: `user_id`, `action`, `entity_type`, `entity_id`, `metadata` (`before`/`after`), `created_at`.
+* Data yang wajib diaudit minimal:
+  * Perubahan/koreksi attendance.
+  * Perubahan `tutor_rates` dan `management_rates`.
+  * Transisi status payroll (`draft` → `processed` → `paid`).
+  * Perubahan sesi/jadwal yang memengaruhi payroll.
+  * Mutasi role/permission dan penugasan role ke user.
+  * Koreksi learning record / progress report.
+* Presensi via RPC `submit_session_attendance` menulis audit di **transaksi yang sama**.
+
+---
+
+## 16. Alur Sistem Operasional (Onboarding)
+
+Sistem dimulai tanpa data. Alur awal:
+
+1. **Management seeder** tersedia (akun management hasil seed), lalu Management mendaftarkan seluruh tutor dan murid.
+2. Saat akun tutor dibuat, sistem memberikan **email + password default**.
+3. Tutor masuk; muncul **notifikasi (alert)** yang menyarankan mengganti password default (`profiles.must_change_password = true`).
+4. Karena jadwal belum ada, **Management membuat jadwal**. Saat membuat jadwal, Management menyertakan tutor dan peserta.
+5. Tutor melihat jadwalnya dan melakukan **absen** saat sesi.
+6. Setelah absen, sistem menampilkan murid tersebut sudah **pertemuan ke berapa** (P1, P2, …) sesuai paket berjalan.
+
+Catatan operasional:
+
+* Registrasi akun management tambahan dapat dibuat lewat `/register` (di luar alur seed normal).
+* Endpoint tutor fail-closed bila `profiles`/`tutors` tidak terpetakan ke `user` — wajib provisioning akun nyata via Better Auth (`supabase/seed-auth.ts` untuk password ter-hash).
+* Seed `supabase/seed.sql` melakukan `TRUNCATE` tabel operasional saat dijalankan ulang — aman untuk development, **hindari di produksi**.
+
+---
+
+## 17. Contoh Data Referensi (Operasional Nyata)
+
+Digunakan sebagai acuan seed & laporan (37 murid, 11 tutor, 8 program). Sebagian contoh jadwal:
+
+| No | Nama Murid | Kelas & Materi | Waktu | Mentor |
+| -: | --- | --- | --- | --- |
+| 1 | Ralisa | 1 SD + ngaji | 13.00–14.00 | Umi Fara |
+| 2 | Arsyila | 2 SD + ngaji | 13.00–14.00 | Umi Fara |
+| 3 | Rumaisaha | 5 SD | 14.00–15.15 | Umi Fara |
+| 4 | Nadiv | 9 SMP | 16.00–17.15 | Umi Fara |
+| 5 | Dhea | 9 SMP | 16.00–17.15 | Umi Fara |
+| 6 | Zihan | 9 SMP | 16.00–17.15 | Umi Fara |
+| 7 | Banita | 9 SMP (MTK) | 16.00–17.15 | Abi Yoko |
+| 8 | Zaneta | 9 SMP (MTK) | 16.00–17.15 | Abi Yoko |
+| 9 | Dero | 9 SMP (MTK) | 16.00–17.15 | Abi Yoko |
+| 10 | Amira | TKA 9 SMP | 16.30–17.45 | Abi Ihsan |
+| 11 | Meysha | TKA 9 SMP | 16.30–17.45 | Abi Ihsan |
+| 12 | Almaira | TKA 9 SMP | 16.30–17.45 | Abi Ihsan |
+| 13 | Shafa | TKA 9 SMP | 16.30–17.45 | Abi Ihsan |
+| 14 | Urfa | TKA 9 SMP | 16.30–17.45 | Abi Ihsan |
+| 15 | Annisa | 4 SD | 08.00–09.15 | Abi Herwin |
+| 16 | Melody | 4 SD | 09.30–10.30 | Abi Herwin |
+| 17 | Miqdad | 3 SD Menulis | 10.00–11.15 | Abi Herwin |
+| 18 | Alfatih | Calistung SD | 11.00–12.00 | Abi Herwin |
+| 19 | Tian | Calistung SD | 13.00–14.15 | Abi Herwin |
+| 20 | Sena | 1 SD | 13.00–14.00 | Abi Herwin |
+| 21 | Mauza | Calistung TK | 13.00–14.00 | Abi Herwin |
+| 22 | Kayla | 9 SMP + ngaji | 16.00–17.15 | Abi Herwin |
+| 23 | Nuri | 5 SD | 15.00–16.15 | Umi Anjel |
+| 24 | Zoeya | 2 SD | 16.00–17.00 | Umi Anjel |
+| 25 | Yasmin | Calistung | 16.30–17.30 | Umi Anjel |
+| 26 | Rafa | 6 SD (TKA) | 16.00–17.15 | Abi Hanif |
+| 27 | Salman | 6 SD (TKA) | 16.00–17.00 | Abi Hanif |
+| 28 | Najmi | 10 SMA (Kimia) | 14.00–15.30 | Abi Govin |
+| 29 | Lionel | 10 SMA (Kimia) | 14.00–15.30 | Abi Govin |
+| 30 | Fathan | 8 SMP | 16.00–17.15 | Abi Govin |
+| 31 | Yani | 12 SMA | 16.00–17.30 | Abi Govin |
+| 32 | Naufal | 12 SMA | 17.00–18.00 | Abi Govin |
+| 33 | Inara (privat) | Mengaji | 15.00–16.15 | Umi Elsa |
+| 34 | Cicam (privat) | Calistung SD | 16.20–17.35 | Umi Elsa |
+| 35 | Amirah (privat) | 2 SD | 18.30–20.00 | Umi Nabila |
+| 36 | Sesha (privat) | 3 SD (ngaji) | 16.30–17.45 | Umi Nasywa |
+| 37 | Afsheena (privat) | 5 SD | 16.00–17.15 | Umi Firda |
+
+Seed lengkap (students, tutors, programs, enrollments, schedules, contoh sesi, akun) berada di `supabase/seed.sql`.
+
+---
+
+## 18. Keputusan Bisnis Final (dikonfirmasi 28 September 2026)
 
 Bagian ini mengunci keputusan yang sebelumnya terbuka (lihat `docs/PROJECT_REVIEW_2026-09-28.md` §5). Implementasi server mengikuti aturan ini.
 
 | # | Pertanyaan | Keputusan |
 |---|---|---|
-| 1 | Apakah payroll wajib attendance `verified`? | **Tidak.** Attendance berstatus `submitted` sudah cukup untuk dihitung (verifikasi bersifat informatif/koreksi). |
-| 2 | Perlakuan status `late`? | **Payable dan mengurangi kuota paket.** `late` dihitung sebagai pertemuan efektif. |
-| 3 | Perlakuan status `sick`? | **Sama seperti `permission`.** Tidak mengurangi kuota paket, tidak payable, murid boleh reschedule. |
-| 4 | Hierarki tarif tutor? | **Override tutor > default global per (bimbel_type + level).** Tarif tutor-spesifik menang; jika tidak ada, pakai tarif global. |
-| 5 | Foto presensi wajib? | **Wajib** saat tutor submit. Pengecualian hanya melalui operasi Management terpisah yang diaudit (`overrideAttendanceWindow`). |
-| 6 | Durasi default Reguler? | **60 menit** pada master `bimbel_types`. Durasi paket per jenjang (`bimbel_packages`) dapat berbeda dan bersifat data-driven. |
+| 1 | Apakah payroll wajib attendance `verified`? | **Tidak.** Attendance `submitted` sudah cukup (verifikasi bersifat informatif/koreksi). |
+| 2 | Perlakuan status `late`? | **Payable dan mengurangi kuota paket.** `late` = pertemuan efektif. |
+| 3 | Perlakuan status `sick`? | **Sama seperti `permission`.** Tidak mengurangi kuota, tidak payable, boleh reschedule. |
+| 4 | Hierarki tarif tutor? | **Override tutor > global per (bimbel_type + level).** Tarif tutor-spesifik menang; jika tidak ada, pakai global. |
+| 5 | Foto presensi wajib? | **Wajib** saat tutor submit. Pengecualian via operasi Management teraudit (`overrideAttendanceWindow`). |
+| 6 | Durasi default Reguler? | **60 menit** pada master `bimbel_types`. Durasi paket per jenjang (`bimbel_packages`) dapat berbeda dan data-driven. |
+| 7 | Siapa yang membuat paket/enrollment baru? | **Management.** Tutor tidak membuat paket otomatis saat paket selesai. |
+| 8 | Kapan nomor pertemuan reset? | **Per paket/enrollment.** Setelah `max_meetings` tercapai, paket `completed`; paket berikutnya mulai dari P1. |
 
-### 11.1. Implikasi implementasi
+### 18.1. Implikasi Implementasi
 
-- **Attendance payable** (`present`, `late`) dipakai pada kalkulasi payroll.
-- **Paket/kuota**: hanya `present`/`late` yang menambah nomor pertemuan; `permission`/`sick`/`absent` tidak.
-- **Foto wajib**: `submitSessionAttendance` menolak submit tanpa foto; `allowTimeBypass` dihapus dari input client.
-- **Tarif**: query payroll memfilter `level` sesi dan memilih `effective_from` terbaru secara deterministik; periode tarif tumpang tindih ditolak oleh constraint `ex_tutor_rates_no_overlap`.
-- **Reguler 60 menit**: seed `bimbel_types` diselaraskan; override per paket tetap dimungkinkan.
+* **Attendance payable** (`present`, `late`) dipakai pada kalkulasi payroll.
+* **Kuota paket**: hanya `present`/`late` menambah nomor pertemuan; `permission`/`sick`/`absent` tidak.
+* **Foto wajib**: `submitSessionAttendance` menolak submit tanpa foto; tidak ada bypass jendela dari client.
+* **Tarif**: query payroll memfilter `level` sesi dan memilih `effective_from` terbaru secara deterministik; periode tumpang tindih ditolak `ex_tutor_rates_no_overlap`.
+* **Reguler 60 menit**: seed `bimbel_types` diselaraskan; override per paket tetap dimungkinkan.
+
+---
+
+## 19. Aturan yang Masih Terbuka / Backlog
+
+Beberapa hal **belum final** dan tidak boleh diasumsikan permanen tanpa keputusan Management:
+
+1. Apakah `absent` memberi hak reschedule otomatis.
+2. Formula fee khusus untuk group vs private (saat ini seragam `rate × payable`).
+3. Apakah rate dapat berbeda per murid/program dalam satu tipe+level.
+4. Apakah session yang di-reschedule memakai tarif tanggal sesi awal atau sesi pengganti.
+5. Apakah payroll item dikunci permanen setelah `processed`/`paid`.
+6. Kebutuhan `session_students` sebagai snapshot peserta sesi (agar perubahan membership jadwal tidak mengubah histori sesi lama).
+7. State machine formal untuk session/attendance/reschedule.
+8. Auto-generate sesi dari jadwal via cron/pg_cron.
+9. Notifikasi/pengingat presensi (Web Push / WhatsApp) dan kurikulum–worksheet penjadwalan terpusat (roadmap).
+10. `reports:read` direferensikan di `config/permissions.ts` tetapi belum terdaftar di master `permissions`/seed — perlu diselaraskan.
+
+Aturan terbuka ini harus diklarifikasi (AGENTS.md §31) sebelum diimplementasikan secara permanen karena berpotensi memengaruhi data historis atau payroll.

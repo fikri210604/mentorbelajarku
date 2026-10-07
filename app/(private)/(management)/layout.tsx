@@ -16,7 +16,11 @@ export default async function ManagementLayout({
 
   return (
     <div className="flex min-h-screen bg-background text-foreground relative">
-      <ManagementSidebar subrole={currentUser.subrole} userName={currentUser.user.name} />
+      <ManagementSidebar
+        roleName={currentUser.roleName}
+        permissions={currentUser.permissions}
+        userName={currentUser.user.name}
+      />
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         <ManagementHeader />
         <main className="flex-1 p-3 sm:p-6 overflow-y-auto max-w-full">{children}</main>

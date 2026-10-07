@@ -20,6 +20,8 @@ export default async function Page() {
     <RolesManagementPage
       initialRoles={rolesRes.data || []}
       initialPermissions={permissionsCatalog}
+      roleName={session.roleName}
+      permissions={session.permissions}
       currentSubrole={session.subrole}
     />
   );

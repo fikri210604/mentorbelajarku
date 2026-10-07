@@ -17,9 +17,17 @@ import { createStudent, updateStudent } from "../actions/student.actions";
 import { StudentWithPrograms } from "../types";
 import { toast } from "sonner";
 
+interface StudentProgramOption {
+  id: string;
+  name?: string | null;
+  level?: string | null;
+  status?: string | null;
+}
+
 interface StudentFormPageProps {
   initialData?: StudentWithPrograms | null;
   isEdit?: boolean;
+  programs?: StudentProgramOption[];
 }
 
 const EDUCATION_LEVELS = [
@@ -44,7 +52,7 @@ const BIMBEL_TYPE_OPTIONS = [
   { value: "Private", label: "Private (90 Menit - 1-on-1 Eksklusif)", duration: 90 },
 ] as const;
 
-export default function StudentFormPage({ initialData, isEdit = false }: StudentFormPageProps) {
+export default function StudentFormPage({ initialData, isEdit = false, programs = [] }: StudentFormPageProps) {
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
@@ -91,6 +99,7 @@ export default function StudentFormPage({ initialData, isEdit = false }: Student
       level: initialLevel,
       grade: initialData?.grade || GRADE_OPTIONS_BY_LEVEL[initialLevel][0],
       bimbelType: initialBimbelType,
+      programId: initialData?.enrollments?.[0]?.program_id || "",
       parentName: initialData?.parent_name || "",
       parentPhone: initialData?.parent_phone || "",
       address: initialData?.address || "",
@@ -101,6 +110,7 @@ export default function StudentFormPage({ initialData, isEdit = false }: Student
   const watchLevel = watch("level") || "SD";
   const watchGrade = watch("grade");
   const watchBimbelType = watch("bimbelType") || "Reguler";
+  const watchProgramId = watch("programId");
 
   const currentGradeOptions = GRADE_OPTIONS_BY_LEVEL[watchLevel] || GRADE_OPTIONS_BY_LEVEL["SD"];
 
@@ -268,6 +278,30 @@ export default function StudentFormPage({ initialData, isEdit = false }: Student
                   <p className="text-xs text-destructive mt-1">{errors.grade.message}</p>
                 )}
               </div>
+            </div>
+
+            {/* Program Bimbel (disimpan sebagai enrollment murid) */}
+            <div>
+              <label className="text-xs font-semibold text-foreground">Program Bimbel *</label>
+              <select
+                value={watchProgramId || ""}
+                onChange={(e) => setValue("programId", e.target.value)}
+                className="w-full mt-1 px-3 py-2 border rounded-md text-xs bg-background"
+              >
+                <option value="">Pilih Program Bimbel</option>
+                {programs.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} {p.level ? `(${p.level})` : ""}
+                  </option>
+                ))}
+              </select>
+              {errors.programId && (
+                <p className="text-xs text-destructive mt-1">{errors.programId.message}</p>
+              )}
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Program + jenis bimbel tersimpan sebagai enrollment murid (dipakai untuk durasi
+                jadwal &amp; tarif honor).
+              </p>
             </div>
 
             {/* Jenis Bimbel & Jenis Kelamin */}

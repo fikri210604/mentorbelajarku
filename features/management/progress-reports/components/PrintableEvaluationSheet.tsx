@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ReportBanner } from './ReportBanner';
+import { ReportBanner } from '@/components/shared/report-banner';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Edit } from 'lucide-react';

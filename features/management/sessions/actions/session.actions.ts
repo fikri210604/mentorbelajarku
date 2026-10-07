@@ -20,10 +20,11 @@ export async function generateSessionsAction(options: GenerateSessionsInput = {}
       return createErrorResult("Akses ditolak. Silakan login terlebih dahulu.", "FORBIDDEN");
     }
 
-    // Tutor hanya diizinkan memicu generasi untuk sesi hari ini
+    // Tutor hanya diizinkan memicu generasi untuk sesi hari ini (khusus jadwal tutor sendiri)
     if (session.role === "tutor") {
-      const todayStr = new Date().toISOString().split("T")[0];
-      options = { targetDate: todayStr };
+      // Tanggal "hari ini" memakai WIB agar konsisten dengan filter halaman presensi.
+      const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
+      options = { targetDate: todayStr, tutorId: session.tutorId || undefined };
     }
 
     const result = await SessionGeneratorService.generateSessions({

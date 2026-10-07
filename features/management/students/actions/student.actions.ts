@@ -3,8 +3,23 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { checkPermission } from "@/lib/auth/session";
+import { formatZodError, getSafeErrorMessage } from "@/lib/traits/response.trait";
 import { studentSchema, StudentInput } from "../schemas/student.schema";
 import { STUDENTS_CACHE_TAG } from "@/lib/cache/tags";
+
+/** Resolusi id jenis bimbel dari namanya (Reguler/Intensif/Private). */
+async function resolveBimbelTypeId(
+  supabase: ReturnType<typeof createServerClient>,
+  name: string
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("bimbel_types")
+    .select("id, name")
+    .ilike("name", name)
+    .order("status", { ascending: true })
+    .limit(1);
+  return data?.[0]?.id ?? null;
+}
 
 export async function createStudent(input: StudentInput) {
   const { allowed } = await checkPermission("student:create");
@@ -12,35 +27,74 @@ export async function createStudent(input: StudentInput) {
     return { success: false, error: "FORBIDDEN: Anda tidak memiliki hak menambah murid." };
   }
 
-  const validated = studentSchema.parse(input);
-  const supabase = createServerClient();
-
-  const { data, error } = await supabase
-    .from("students")
-    .insert({
-      student_code: validated.studentCode,
-      name: validated.name,
-      gender: validated.gender ?? null,
-      birth_date: validated.birthDate ?? null,
-      avatar_url: validated.avatarUrl ?? null,
-      school: validated.school ?? null,
-      level: validated.level ?? "SD",
-      grade: validated.grade ?? null,
-      parent_name: validated.parentName ?? null,
-      parent_phone: validated.parentPhone ?? null,
-      address: validated.address ?? null,
-      status: validated.status,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    return { success: false, error: "Gagal menambahkan murid. Periksa kembali data yang dimasukkan." };
+  // Validasi Zod TIDAK boleh dilempar mentah (raw ZodError -> 500 JSON).
+  // Gagal validasi dikembalikan sebagai pesan ramah untuk ditampilkan di form.
+  const parsed = studentSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: formatZodError(parsed.error) };
   }
+  const validated = parsed.data;
 
-  revalidateTag(STUDENTS_CACHE_TAG, "max");
-  revalidatePath("/management/students");
-  return { success: true, data, message: "Murid baru berhasil ditambahkan!" };
+  try {
+    const supabase = createServerClient();
+
+    const { data, error } = await supabase
+      .from("students")
+      .insert({
+        student_code: validated.studentCode,
+        name: validated.name,
+        gender: validated.gender ?? null,
+        birth_date: validated.birthDate ?? null,
+        avatar_url: validated.avatarUrl ?? null,
+        school: validated.school ?? null,
+        level: validated.level ?? "SD",
+        grade: validated.grade ?? null,
+        parent_name: validated.parentName ?? null,
+        parent_phone: validated.parentPhone ?? null,
+        address: validated.address ?? null,
+        status: validated.status,
+      })
+      .select()
+      .single();
+
+    if (error || !data) {
+      return { success: false, error: "Gagal menambahkan murid. Periksa kembali data yang dimasukkan." };
+    }
+
+    // Jenis bimbel per murid disimpan sebagai enrollment (program + jenis bimbel).
+    const bimbelTypeId = await resolveBimbelTypeId(supabase, validated.bimbelType);
+    if (!bimbelTypeId) {
+      await supabase.from("students").delete().eq("id", data.id);
+      return { success: false, error: "Jenis bimbel tidak dikenali. Hubungi admin sistem." };
+    }
+
+    const { error: enrollErr } = await supabase.from("enrollments").insert({
+      student_id: data.id,
+      program_id: validated.programId,
+      bimbel_type_id: bimbelTypeId,
+      package_name: "Paket Belajar",
+      max_meetings: 12,
+      price: 0,
+      status: "active",
+    });
+
+    if (enrollErr) {
+      // Batalkan murid yatim agar tidak ada murid tanpa enrollment.
+      await supabase.from("students").delete().eq("id", data.id);
+      return { success: false, error: "Gagal menyimpan program & jenis bimbel murid." };
+    }
+
+    revalidateTag(STUDENTS_CACHE_TAG, "max");
+    revalidatePath("/management/students");
+    revalidatePath("/management/schedules");
+    return { success: true, data, message: "Murid baru berhasil ditambahkan!" };
+  } catch (err: unknown) {
+    console.error("Create student error:", err);
+    return {
+      success: false,
+      error: getSafeErrorMessage(err, "Terjadi kesalahan sistem saat menambah murid."),
+    };
+  }
 }
 
 export async function updateStudent(id: string, input: Partial<StudentInput>) {
@@ -49,34 +103,80 @@ export async function updateStudent(id: string, input: Partial<StudentInput>) {
     return { success: false, error: "FORBIDDEN: Anda tidak memiliki hak mengubah data murid." };
   }
 
-  const supabase = createServerClient();
-  const { data, error } = await supabase
-    .from("students")
-    .update({
-      ...(input.name && { name: input.name }),
-      ...(input.gender !== undefined && { gender: input.gender }),
-      ...(input.birthDate !== undefined && { birth_date: input.birthDate }),
-      ...(input.school !== undefined && { school: input.school }),
-      ...(input.level !== undefined && { level: input.level }),
-      ...(input.grade !== undefined && { grade: input.grade }),
-      ...(input.parentName !== undefined && { parent_name: input.parentName }),
-      ...(input.parentPhone !== undefined && { parent_phone: input.parentPhone }),
-      ...(input.address !== undefined && { address: input.address }),
-      ...(input.status && { status: input.status }),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select()
-    .single();
+  try {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from("students")
+      .update({
+        ...(input.name && { name: input.name }),
+        ...(input.gender !== undefined && { gender: input.gender }),
+        ...(input.birthDate !== undefined && { birth_date: input.birthDate }),
+        ...(input.school !== undefined && { school: input.school }),
+        ...(input.level !== undefined && { level: input.level }),
+        ...(input.grade !== undefined && { grade: input.grade }),
+        ...(input.parentName !== undefined && { parent_name: input.parentName }),
+        ...(input.parentPhone !== undefined && { parent_phone: input.parentPhone }),
+        ...(input.address !== undefined && { address: input.address }),
+        ...(input.status && { status: input.status }),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select()
+      .single();
 
-  if (error) {
-    return { success: false, error: "Gagal memperbarui data murid." };
+    if (error) {
+      return { success: false, error: "Gagal memperbarui data murid." };
+    }
+
+    // Selaraskan jenis bimbel & program murid melalui enrollment.
+    if (input.programId || input.bimbelType) {
+      const bimbelTypeId = input.bimbelType
+        ? await resolveBimbelTypeId(supabase, input.bimbelType)
+        : null;
+
+      const { data: existing } = await supabase
+        .from("enrollments")
+        .select("id, program_id, bimbel_type_id")
+        .eq("student_id", id)
+        .eq("status", "active")
+        .order("start_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from("enrollments")
+          .update({
+            ...(input.programId && { program_id: input.programId }),
+            ...(bimbelTypeId && { bimbel_type_id: bimbelTypeId }),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+      } else if (input.programId && bimbelTypeId) {
+        await supabase.from("enrollments").insert({
+          student_id: id,
+          program_id: input.programId,
+          bimbel_type_id: bimbelTypeId,
+          package_name: "Paket Belajar",
+          max_meetings: 12,
+          price: 0,
+          status: "active",
+        });
+      }
+    }
+
+    revalidateTag(STUDENTS_CACHE_TAG, "max");
+    revalidatePath("/management/students");
+    revalidatePath(`/management/students/${id}`);
+    revalidatePath("/management/schedules");
+    return { success: true, data, message: "Data murid berhasil diperbarui!" };
+  } catch (err: unknown) {
+    console.error("Update student error:", err);
+    return {
+      success: false,
+      error: getSafeErrorMessage(err, "Terjadi kesalahan sistem saat memperbarui murid."),
+    };
   }
-
-  revalidateTag(STUDENTS_CACHE_TAG, "max");
-  revalidatePath("/management/students");
-  revalidatePath(`/management/students/${id}`);
-  return { success: true, data, message: "Data murid berhasil diperbarui!" };
 }
 
 export async function updateStudentStatus(id: string, status: "active" | "inactive") {

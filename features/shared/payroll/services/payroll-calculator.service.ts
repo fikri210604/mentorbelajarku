@@ -20,11 +20,35 @@ interface RateRow {
   effective_until: string | null;
 }
 
+interface SessionRow {
+  id: string;
+  session_date: string;
+  bimbel_type_id: string | null;
+  bimbel_types: { id?: string; name?: string } | null;
+  programs: { id?: string; name?: string; level?: string } | null;
+}
+
+interface AttendanceRow {
+  id: string;
+  session_id: string;
+  student_id: string;
+  status: string;
+  enrollment_id: string | null;
+  enrollments:
+    | {
+        bimbel_type_id: string | null;
+        bimbel_types: { id?: string; name?: string } | null;
+      }
+    | null;
+}
+
 const ANY_LEVEL = "Semua Jenjang";
 
 /**
  * Service kalkulasi payroll tutor.
  * - Fee = rate_per_student × jumlah murid payable.
+ * - Jenis bimbel adalah atribut PER MURID: diambil dari enrollment murid
+ *   (fallback ke tipe sesi bila enrollment tidak tersedia).
  * - Hierarki tarif: tarif khusus tutor > tarif global (bimbel_type + level).
  * - Hanya tarif dengan effective dating yang mencakup tanggal sesi.
  * - Payable = status present/late (keputusan bisnis 2026-09-28).
@@ -41,7 +65,7 @@ export class PayrollCalculatorService {
     const { data: sessions, error: sessionsError } = await supabase
       .from("sessions")
       .select(
-        "id, session_date, bimbel_type_id, program_id, bimbel_types (id, name), programs (id, name, level)"
+        "id, session_date, bimbel_type_id, bimbel_types (id, name), programs (id, name, level)"
       )
       .eq("tutor_id", tutorId)
       .eq("status", "completed")
@@ -55,18 +79,23 @@ export class PayrollCalculatorService {
       return { grossAmount: 0, items: [] };
     }
 
-    const sessionIds = sessions.map((s) => s.id);
+    const sessionRows = sessions as unknown as SessionRow[];
+    const sessionIds = sessionRows.map((s) => s.id);
 
-    // 2. Attendance payable (present/late). Kebijakan: cukup submitted.
+    // 2. Attendance payable (present/late) + jenis bimbel murid dari enrollment.
     const { data: attendances, error: attError } = await supabase
       .from("attendance")
-      .select("id, session_id, student_id, status")
+      .select(
+        "id, session_id, student_id, status, enrollment_id, enrollments ( bimbel_type_id, bimbel_types (id, name) )"
+      )
       .in("session_id", sessionIds)
       .in("status", ["present", "late"]);
 
     if (attError) {
       throw new Error("Gagal mengambil presensi sesi.");
     }
+
+    const attendanceRows = (attendances ?? []) as unknown as AttendanceRow[];
 
     // 3. Tarif tutor-spesifik maupun global
     const { data: rates, error: ratesError } = await supabase
@@ -108,35 +137,47 @@ export class PayrollCalculatorService {
     const items: PayableSessionItem[] = [];
     let grossAmount = 0;
 
-    for (const session of sessions) {
-      const bimbelName = (session.bimbel_types as { name?: string } | null)?.name || "Bimbel";
-      const programLevel = (session.programs as { level?: string } | null)?.level || ANY_LEVEL;
+    for (const session of sessionRows) {
+      const sessionBimbelId = session.bimbel_type_id;
+      const sessionBimbelName = session.bimbel_types?.name || "Bimbel";
+      const programLevel = session.programs?.level || ANY_LEVEL;
 
-      let matchingRate = findRate(session.bimbel_type_id, programLevel, session.session_date, true);
-      let isCustomTutorRate = true;
-
-      if (!matchingRate) {
-        matchingRate = findRate(session.bimbel_type_id, programLevel, session.session_date, false);
-        isCustomTutorRate = false;
-      }
-
-      if (!matchingRate) {
-        throw new Error(
-          `Tarif honor untuk tipe bimbel "${bimbelName}" pada tanggal ${session.session_date} belum diatur. Konfigurasikan tarif terlebih dahulu.`
-        );
-      }
-
-      const ratePerStudent = Number(matchingRate.rate_per_student);
-
-      const sessionAttendances = (attendances ?? []).filter((att) => att.session_id === session.id);
+      const sessionAttendances = attendanceRows.filter((att) => att.session_id === session.id);
 
       for (const att of sessionAttendances) {
+        // Jenis bimbel per murid (enrollment), fallback tipe sesi.
+        const enrollment = att.enrollments;
+        const bimbelTypeId = enrollment?.bimbel_type_id || sessionBimbelId;
+        const bimbelName = enrollment?.bimbel_types?.name || sessionBimbelName;
+
+        if (!bimbelTypeId) {
+          throw new Error(
+            `Jenis bimbel murid pada sesi ${session.session_date} belum dapat ditentukan. Lengkapi enrollment murid terlebih dahulu.`
+          );
+        }
+
+        let matchingRate = findRate(bimbelTypeId, programLevel, session.session_date, true);
+        let isCustomTutorRate = true;
+
+        if (!matchingRate) {
+          matchingRate = findRate(bimbelTypeId, programLevel, session.session_date, false);
+          isCustomTutorRate = false;
+        }
+
+        if (!matchingRate) {
+          throw new Error(
+            `Tarif honor untuk tipe bimbel "${bimbelName}" pada tanggal ${session.session_date} belum diatur. Konfigurasikan tarif terlebih dahulu.`
+          );
+        }
+
+        const ratePerStudent = Number(matchingRate.rate_per_student);
+
         grossAmount += ratePerStudent;
         items.push({
           sessionId: session.id,
           sessionDate: session.session_date,
           studentId: att.student_id,
-          bimbelTypeId: session.bimbel_type_id,
+          bimbelTypeId,
           bimbelTypeName: bimbelName,
           rate: ratePerStudent,
           amount: ratePerStudent,

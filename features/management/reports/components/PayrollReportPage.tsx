@@ -31,7 +31,7 @@ export default function PayrollReportPage({ initialData }: PayrollReportPageProp
       >
         <Button asChild size="sm" variant="outline" className="gap-1.5">
           <Link href="/management/payroll">
-            Kelola Payroll
+            Kelola Penggajian
             <ArrowUpRight className="w-4 h-4" />
           </Link>
         </Button>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -29,6 +30,9 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
+import type { Permission } from "@/types/auth";
+import { isOwnerRoleName } from "@/lib/permissions/resolver";
+
 export interface TabItem {
   id: string;
   label: string;
@@ -37,6 +41,19 @@ export interface TabItem {
   desc: string;
   badge?: string;
   count?: number;
+  requiredPermission?: Permission;
+  ownerOnly?: boolean;
+}
+
+export function isSettingTabAllowed(
+  item: TabItem,
+  roleName?: string | null,
+  permissions: Permission[] = []
+): boolean {
+  if (isOwnerRoleName(roleName)) return true;
+  if (item.ownerOnly) return false;
+  if (!item.requiredPermission) return true;
+  return permissions.includes(item.requiredPermission);
 }
 
 export interface DomainGroup {
@@ -60,6 +77,7 @@ export const SETTINGS_DOMAINS: DomainGroup[] = [
         href: "/management/settings/bimbel-types",
         icon: Layers,
         desc: "Kategori bimbel (Reguler, Intensif, Private) & durasi standar menit",
+        requiredPermission: "curriculum:manage",
       },
       {
         id: "programs",
@@ -67,6 +85,7 @@ export const SETTINGS_DOMAINS: DomainGroup[] = [
         href: "/management/settings/programs",
         icon: BookOpen,
         desc: "Jenjang program bimbingan (SD, SMP, SMA, Alumni)",
+        requiredPermission: "curriculum:manage",
       },
       {
         id: "subjects",
@@ -74,6 +93,7 @@ export const SETTINGS_DOMAINS: DomainGroup[] = [
         href: "/management/settings/subjects",
         icon: BookMarked,
         desc: "Daftar mapel dan silabus bab materi untuk jurnal belajar",
+        requiredPermission: "curriculum:manage",
       },
     ],
   },
@@ -89,6 +109,7 @@ export const SETTINGS_DOMAINS: DomainGroup[] = [
         href: "/management/settings/packages",
         icon: PackageCheck,
         desc: "Kuota sesi pertemuan, masa aktif, dan harga pendaftaran",
+        requiredPermission: "rates:manage",
       },
       {
         id: "tutor-rates",
@@ -96,6 +117,7 @@ export const SETTINGS_DOMAINS: DomainGroup[] = [
         href: "/management/settings/tutor-rates",
         icon: Coins,
         desc: "Standar tarif per murid hadir untuk perhitungan payroll otomatis",
+        requiredPermission: "rates:manage",
       },
       {
         id: "management-rates",
@@ -104,6 +126,7 @@ export const SETTINGS_DOMAINS: DomainGroup[] = [
         icon: Building2,
         desc: "Skema honor bulanan staf dan pimpinan manajemen",
         badge: "Owner",
+        ownerOnly: true,
       },
     ],
   },
@@ -119,14 +142,16 @@ export const SETTINGS_DOMAINS: DomainGroup[] = [
         href: "/management/settings/attendance-window",
         icon: Clock,
         desc: "Toleransi jam pengunggahan presensi & batas kunci absensi tutor",
+        requiredPermission: "settings:manage",
       },
       {
         id: "roles",
         label: "Peran & Hak Akses (RBAC)",
         href: "/management/settings/roles",
         icon: ShieldCheck,
-        desc: "Konfigurasi matriks wewenang operasional dinamis per sub-role",
+        desc: "Konfigurasi peran dan matriks wewenang operasional dinamis di database",
         badge: "Owner",
+        requiredPermission: "roles:manage",
       },
       {
         id: "users",
@@ -134,6 +159,7 @@ export const SETTINGS_DOMAINS: DomainGroup[] = [
         href: "/management/settings/users",
         icon: UserCog,
         desc: "Penetapan peran dan manajemen status akun staf manajemen",
+        requiredPermission: "roles:manage",
       },
       {
         id: "permissions",
@@ -141,13 +167,73 @@ export const SETTINGS_DOMAINS: DomainGroup[] = [
         href: "/management/settings/permissions",
         icon: KeyRound,
         desc: "Daftar kode wewenang keamanan sistem granular",
+        requiredPermission: "roles:manage",
       },
     ],
   },
 ];
 
-export function SettingsNavTabs() {
+export interface SettingsNavTabsProps {
+  roleName?: string | null;
+  permissions?: Permission[];
+}
+
+export function SettingsNavTabs({
+  roleName: initialRoleName,
+  permissions: initialPermissions,
+}: SettingsNavTabsProps = {}) {
   const pathname = usePathname();
+
+  // State resolusi peran dan izin aktif
+  const [sessionData, setSessionData] = useState<{
+    roleName: string | null;
+    permissions: Permission[];
+  }>({
+    roleName: initialRoleName ?? null,
+    permissions: initialPermissions ?? [],
+  });
+
+  useEffect(() => {
+    if (initialRoleName !== undefined && initialPermissions !== undefined) {
+      setSessionData({
+        roleName: initialRoleName ?? null,
+        permissions: initialPermissions ?? [],
+      });
+      return;
+    }
+
+    // Ambil sesi secara reaktif jika props belum dioper oleh halaman induk
+    let isMounted = true;
+    fetch("/api/v1/auth/session")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && data?.success && data?.data) {
+          setSessionData({
+            roleName: data.data.roleName || null,
+            permissions: (data.data.permissions || []) as Permission[],
+          });
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initialRoleName, initialPermissions]);
+
+  // Saring domain dan item tab berdasarkan izin user (RBAC)
+  const filteredDomains = useMemo(() => {
+    return SETTINGS_DOMAINS.map((domain) => {
+      const allowedItems = domain.items.filter((item) =>
+        isSettingTabAllowed(item, sessionData.roleName, sessionData.permissions)
+      );
+      if (allowedItems.length === 0) return null;
+      return {
+        ...domain,
+        items: allowedItems,
+      };
+    }).filter(Boolean) as typeof SETTINGS_DOMAINS;
+  }, [sessionData]);
 
   // Jika berada di root hub /management/settings, jangan render bar subpage ini
   // karena halaman utama sudah memiliki kartu dashboard master sendiri.
@@ -157,7 +243,8 @@ export function SettingsNavTabs() {
 
   // Cari domain aktif berdasarkan URL
   const activeDomain =
-    SETTINGS_DOMAINS.find((d) => d.items.some((item) => item.href === pathname)) ||
+    filteredDomains.find((d) => d.items.some((item) => item.href === pathname)) ||
+    filteredDomains[0] ||
     SETTINGS_DOMAINS[0];
 
   // Cari item aktif
@@ -206,14 +293,14 @@ export function SettingsNavTabs() {
 
       {/* 2. SELECTOR KATEGORI / DOMAIN UTAMA */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        {SETTINGS_DOMAINS.map((domain) => {
+        {filteredDomains.map((domain) => {
           const isDomainActive = domain.id === activeDomain.id;
           const DomainIcon = domain.icon;
 
           return (
             <Link
               key={domain.id}
-              href={domain.items[0].href}
+              href={domain.items[0]?.href || "/management/settings"}
               className={cn(
                 "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 border cursor-pointer",
                 isDomainActive

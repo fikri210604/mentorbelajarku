@@ -1,9 +1,9 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { ScheduleWithDetails } from "../types";
 
-export async function getSchedules(): Promise<ScheduleWithDetails[]> {
+export async function getSchedules(tutorId?: string | null): Promise<ScheduleWithDetails[]> {
   const supabase = createServerClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("schedules")
     .select(`
       *,
@@ -14,8 +14,13 @@ export async function getSchedules(): Promise<ScheduleWithDetails[]> {
         *,
         students (*)
       )
-    `)
-    .order("day_of_week", { ascending: true });
+    `);
+
+  if (tutorId) {
+    query = query.eq("tutor_id", tutorId);
+  }
+
+  const { data, error } = await query.order("day_of_week", { ascending: true });
 
   if (error) {
     console.error("Error fetching schedules:", error);

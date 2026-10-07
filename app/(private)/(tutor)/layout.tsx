@@ -28,7 +28,7 @@ export default async function TutorLayout({
       <TutorSidebar isManagement={isManagement} />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
-        <TutorHeader isManagement={isManagement} />
+        <TutorHeader isManagement={isManagement} user={currentUser} />
 
         {/* Konten Utama dengan safe area bottom padding di mobile untuk Bottom Nav (pb-24) */}
         <main className="flex-1 p-3 sm:p-6 pb-24 lg:pb-6 overflow-y-auto max-w-full">

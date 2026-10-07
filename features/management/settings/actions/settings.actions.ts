@@ -3,6 +3,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireAuthUser, checkPermission } from "@/lib/auth/session";
+import { isOwnerRoleName } from "@/lib/permissions/resolver";
 import { getSafeErrorMessage } from "@/lib/traits/response.trait";
 import { STUDENTS_CACHE_TAG } from "@/lib/cache/tags";
 import type { Permission } from "@/types/auth";
@@ -66,7 +67,11 @@ async function verifyManagementAuth() {
 
 async function verifyOwnerAuth() {
   const session = await requireAuthUser();
-  if (session.subrole !== "owner" && (session.role as string) !== "owner") {
+  if (
+    !isOwnerRoleName(session.roleName) &&
+    session.subrole !== "owner" &&
+    (session.role as string) !== "owner"
+  ) {
     throw new Error("Akses Ditolak: Hanya akun Owner yang berwenang mengatur gaji dan tarif manajemen.");
   }
   return session;

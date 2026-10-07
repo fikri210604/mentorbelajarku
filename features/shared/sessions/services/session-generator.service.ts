@@ -5,6 +5,7 @@ export interface GenerateSessionsInput {
   startDate?: string;
   endDate?: string;
   scheduleId?: string; // Opsional: hanya untuk satu jadwal tertentu
+  tutorId?: string;    // Opsional: hanya untuk tutor tertentu
   userId?: string;     // ID user yang memicu generasi (untuk audit log)
 }
 
@@ -113,6 +114,9 @@ export class SessionGeneratorService {
 
       if (options.scheduleId) {
         scheduleQuery = scheduleQuery.eq("id", options.scheduleId);
+      }
+      if (options.tutorId) {
+        scheduleQuery = scheduleQuery.eq("tutor_id", options.tutorId);
       }
 
       const { data: schedules, error: scheduleErr } = await scheduleQuery;

@@ -9,12 +9,9 @@ export function GlobalNavigationProgress() {
   const [isNavigating, setIsNavigating] = useState(false);
   const [, startTransition] = useTransition();
 
-  // Reset loading ketika rute/pathname/searchParams selesai berganti
   useEffect(() => {
     setIsNavigating(false);
   }, [pathname, searchParams]);
-
-  // Global click interceptor untuk mendeteksi navigasi link internal
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = (e.target as HTMLElement).closest("a");
