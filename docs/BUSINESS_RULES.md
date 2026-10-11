@@ -79,7 +79,37 @@ Permission efektif pengguna = hasil query `role_permissions` untuk `user.role_id
 ### 2.3. Pengguna & Profil
 
 * `user` (Better Auth) menyimpan `role` + `role_id`. Tabel `profiles` **tidak** menyimpan role.
-* `profiles.must_change_password` = `true` untuk akun hasil seeding; UI menampilkan notifikasi agar tutor mengganti password default.
+* `profiles.must_change_password` = `true` untuk akun hasil seeding dan onboarding tutor baru; UI menampilkan notifikasi/banner agar tutor mengganti password default setelah login.
+
+### 2.4. Manajemen Akun & Onboarding Tutor Baru (CRUD Otomatis)
+
+Sistem menyediakan fitur CRUD lengkap untuk Tutor bagi peran Management (Owner, Admin, HRD) dengan aturan operasional berikut:
+
+1. **Provisioning Akun Otomatis**:
+   - Saat tutor baru didaftarkan via form Manajemen, sistem secara otomatis membuat baris pada tabel `"user"`, `"account"` (kredensial login Better Auth), `profiles`, dan `tutors`.
+   - Single source of truth tetap berada pada Better Auth; sesi admin yang sedang aktif tidak terputus saat membuat akun baru.
+2. **Password Default Acak & Aman**:
+   - Jika kolom password tidak diisi oleh admin, sistem secara otomatis menghasilkan password default yang memenuhi kaidah keamanan dan mudah dibaca (format: `Mbk{4 digit acak}!{2 huruf acak}`, contoh: `Mbk4821!xK`).
+   - Password di-hash menggunakan algoritma scrypt Better Auth (`@better-auth/utils/password`). Kolom `profiles.must_change_password` otomatis diset `true`.
+3. **Pengiriman Email Kredensial Otomatis**:
+   - Sistem mengirimkan email transaksional resmi berisi nama tutor, email login, password sementara, dan tautan langsung (`/login`) menuju portal bimbel melalui Resend API (`RESEND_API_KEY`).
+   - Apabila API key belum dikonfigurasi (misal di lingkungan lokal/uji coba), sistem berjalan dalam **mode simulasi aman** (mencatat kredensial di console server) dan menampilkan ringkasan kredensial di UI lengkap dengan tombol **Salin Kredensial** serta **Salin Format WhatsApp** agar admin dapat mengirimkannya langsung ke tutor via WA.
+4. **Pembaruan & Reset Kredensial**:
+   - Manajemen dapat memperbarui biodata tutor (nama, email, nomor HP/WA, bio spesialisasi, status keaktifan).
+   - Tersedia tombol **Reset & Kirim Ulang Kredensial** bila tutor lupa password atau belum menerima email pertama kali.
+5. **Integritas Relasional & Proteksi Penghapusan (Hard vs Soft Delete)**:
+   - Tutor yang **sudah memiliki riwayat mengajar** (tercatat di `schedules`, `sessions`, atau `tutor_payments`) **TIDAK DAPAT DIHAPUS PERMANEN** demi menjaga integritas data historis akademik dan honorarium. Sistem menolak penghapusan dan menganjurkan perubahan status menjadi `inactive` (Nonaktif).
+   - Tutor baru yang belum memiliki riwayat sama sekali dapat dihapus permanen (menghapus `tutors`, `profiles`, `"user"`, dan `"account"` secara bersih).
+6. **Pencatatan Jejak Audit**:
+   - Setiap mutasi tutor (`CREATE_TUTOR`, `UPDATE_TUTOR`, `DELETE_TUTOR`, `RESET_TUTOR_PASSWORD`, `UPDATE_TUTOR_STATUS`) wajib dicatat ke tabel `audit_logs` di server layer.
+7. **Panggilan Kehormatan Islami & Pilihan Gender (Abi vs Umi)**:
+   - Kolom `gender` (`male` | `female`) tersimpan pada tabel `tutors` dan `profiles` (migration `0008_tutor_gender.sql`).
+   - Tutor laki-laki dipanggil **Abi**, tutor perempuan dipanggil **Umi**.
+   - Helper `formatTutorDisplayName` secara cerdas memformat sapaan tanpa duplikasi nama (misal nama yang diinput sudah memuat awalan "Abi" atau "Umi" tidak menjadi duplikat seperti "Abi Abi Ahmad" atau "Kak Abi Ahmad").
+   - Seluruh notifikasi pesan WhatsApp dan template email kredensial resmi menggunakan etika salam Islami:
+     - Pembuka: `Assalamu'alaikum Warahmatullahi Wabarakatuh`
+     - Sapaan: `Halo Abi [Nama]` / `Halo Umi [Nama]`
+     - Penutup: `Jazakumullah Khairan Katsiran` dan `Wassalamu'alaikum Warahmatullahi Wabarakatuh`.
 
 ---
 
@@ -176,6 +206,33 @@ Ketiga konsep **HARUS DIPISAHKAN** ke tabel/model tersendiri.
    * Menyimpan `enrollment_id`, `status`, `verification_status`, `photo_path`, `notes`, `checked_in_at`, `checked_in_by`.
    * UNIQUE `(session_id, student_id)`.
 
+### 5.1. Pengeditan Jadwal & Sesi ala Google Calendar (Edit Scope Pattern)
+
+Saat manajemen ingin mengubah sesi yang berasal dari jadwal berulang (misal mengganti hari/tanggal, jam, tutor, atau catatan materi untuk pertemuan ke depan), sistem menerapkan modal konfirmasi cakupan simpan (*Save Scope*) ala Google Calendar:
+
+1. **Hanya Sesi Ini (`this_session`)**:
+   * Memperbarui tanggal, jam mulai/selesai, tutor pengajar, dan catatan khusus pada sesi yang dipilih saja.
+   * Template jadwal master (`schedules`) dan sesi-sesi lain di masa lalu maupun mendatang tetap utuh tidak berubah.
+   * Sesi ditandai sebagai pengecualian/modifikasi ad-hoc.
+
+2. **Sesi Ini dan Seterusnya (`this_and_following` / Split Recurrence)**:
+   * Digunakan ketika terjadi perubahan permanen mulai dari minggu ini ke depan (misal murid ganti hari les atau pindah tutor permanen).
+   * **Pemotongan Seri Lama**: Jadwal master lama dipotong hingga sehari sebelum tanggal sesi yang diedit (`recurrence_until = sessionDate - 1 hari`).
+   * **Penerbitan Seri Baru**: Dibuat baris `schedules` baru dengan konfigurasi waktu, tutor, dan hari yang diperbarui, mulai berlaku sejak tanggal sesi yang diedit.
+   * **Re-linking Sesi Mendatang**: Sesi yang diedit dan sesi-sesi mendatang yang masih berstatus `scheduled` dipindahkan relasinya (`schedule_id`) ke jadwal master baru dan disinkronkan jam/tutor-nya.
+   * Sesi masa lalu yang sudah selesai (`completed`) tetap aman terikat pada jadwal master lama (menjaga integritas riwayat belajar dan honor tutor).
+
+3. **Seluruh Rangkaian Jadwal (`all_sessions`)**:
+   * Memperbarui konfigurasi jadwal master (`schedules`).
+   * Seluruh sesi mendatang yang masih berstatus `scheduled` diselaraskan jam, durasi, dan tutornya.
+   * **Proteksi Riwayat**: Sesi berstatus `completed` atau yang sudah memiliki presensi/honor **tidak akan pernah dimutasi secara retroaktif** demi menjamin prinsip *immutable history*.
+
+### 5.2. Halaman Edit Master Jadwal Rutin (`/management/schedules/[scheduleId]/edit`)
+
+* Manajemen memiliki akses penuh mengedit jadwal rutin yang telah dibuat melalui tombol **"Edit Jadwal"** di halaman detail jadwal.
+* Formulir mendukung pengubahan tutor, program, hari belajar, jam mulai/selesai, daftar murid (privat maupun multi-murid kelompok), lokasi, dan catatan.
+* Saat disimpan, server secara otomatis memvalidasi otorisasi `schedule:update`, memperbarui master `schedules`, menyinkronkan relasi murid `schedule_students`, menyelaraskan sesi-sesi mendatang yang berstatus `scheduled`, dan mencatat perubahan ke `audit_logs`.
+
 ---
 
 ## 6. Status Kehadiran & Konsumsi Paket
@@ -202,11 +259,16 @@ absent
 
 Aturan ini dijaga eksplisit di server/DB (bukan sekadar `WHERE status = 'present'`) agar mudah berkembang.
 
-### 6.2. Verification
+### 6.2. Verification & Audit Foto Presensi
 
 * Nilai `verification_status`: `submitted` (default), `verified`, `correction_requested`.
-* Untuk MVP, payroll **tidak mewajibkan** `verified`; attendance `submitted` sudah payable (lihat §18).
-* Koreksi oleh Management wajib menyentuh `attendance:update` dan dicatat di `audit_logs`.
+* **State Machine & Alur Presensi**:
+  * `submitted`: Status default saat tutor selesai mengisi absensi dan mengunggah foto bukti belajar.
+  * `verified`: Status telah diperiksa dan disetujui oleh Owner/Finance/Management.
+  * `correction_requested`: Status penolakan bukti foto oleh Manajemen (misal: foto buram, foto tidak menampilkan kegiatan belajar, atau foto salah). Catatan koreksi dicatat di kolom `notes`. Tutor menerima notifikasi perbaikan di dashboard.
+  * **Unggah Ulang Koreksi**: Ketika tutor mengunggah foto baru untuk presensi yang berstatus `correction_requested`, status presensi otomatis di-reset kembali menjadi `submitted` agar siap diverifikasi ulang oleh manajemen.
+* **Strategi Audit**: Untuk efisiensi operasional dan mencegah *approval fatigue*, verifikasi foto presensi tidak diwajibkan harian per sesi. Audit difokuskan berkala per tutor saat proses penggajian bulanan berlangsung (lihat §10.3).
+* Koreksi oleh Management wajib menyentuh permission `attendance:update` / `attendance:verify` dan dicatat di `audit_logs`.
 
 ---
 
@@ -300,6 +362,35 @@ fee sesi = tarif berlaku × jumlah murid payable
 * Model tabel: `tutor_payments` (header, `gross_amount`/`bonus`/`deduction`/`net_amount`/`total_amount`, status `draft`/`processed`/`paid`) + `tutor_payment_items` (detail).
 * Trigger `set_tutor_payment_amounts` menyinkronkan `net_amount = gross + bonus - deduction` dan `total_amount = net_amount`.
 * UNIQUE `(tutor_id, period_start, period_end)` menjaga idempotensi periode.
+
+### 10.3. Alur Audit Foto Presensi Bulanan per Tutor
+
+Sistem menerapkan prinsip **Hybrid Validation**:
+1. **Di Sisi Tutor (Real-time & Transparan)**:
+   * Sesi yang selesai diabsen langsung dihitung estimasi honornya di dashboard tutor agar progres kerja transparan.
+2. **Saat Penggajian (Audit Berkala oleh Owner/Finance)**:
+   * Finance membuat dokumen payroll bulanan (status: `draft`).
+   * Finance/Owner membuka halaman audit detail payroll (`/management/payroll/[id]`).
+   * Setiap baris sesi menampilkan thumbnail foto presensi yang dapat diperbesar melalui modal lightbox.
+   * **Tindakan Audit**:
+     * **Verifikasi**: Menyetujui foto presensi (`verification_status = 'verified'`).
+     * **Minta Koreksi**: Memberikan catatan penolakan (`correction_requested`) sehingga tutor dapat mengunggah ulang foto bukti.
+     * **Keluarkan Sesi dari Draft**: Menghapus item sesi tertentu dari draft payroll ini jika sesi dibatalkan/ditunda. Total honor dan jumlah sesi dihitung ulang secara transaksional.
+
+### 10.4. Siklus Status Penggajian & Flag Pembayaran
+
+Siklus status penggajian (`payroll_status`):
+```text
+draft ──(Finalisasi)──> processed ──(Tandai Telah Dibayar)──> paid
+```
+
+1. **`draft`**: Dokumen penggajian baru di-generate. Dapat dilakukan penyesuaian bonus/potongan, audit foto presensi, atau pengeluaran sesi bermasalah.
+2. **`processed`**: Dokumen telah diaudit dan difinalisasi oleh Finance/Owner (`finalized_at`, `finalized_by`). Data terkunci dari perubahan item.
+3. **`paid`**: **Flag resmi bahwa gaji telah ditransfer/dibayarkan ke tutor**:
+   * Mencatat timestamp pembayaran (`paid_at`) dan user eksekutor (`paid_by`).
+   * Menyimpan nomor referensi bukti bank/transfer (`payment_reference`, misal: `TRF-BCA-9201948`) dan catatan pembayaran (`notes`).
+   * Tutor dapat melihat nomor referensi bukti transfer ini secara langsung di portal penggajian tutor.
+   * Seluruh perubahan status dicatat ke `audit_logs`.
 
 ---
 
@@ -477,11 +568,133 @@ Beberapa hal **belum final** dan tidak boleh diasumsikan permanen tanpa keputusa
 2. Formula fee khusus untuk group vs private (saat ini seragam `rate × payable`).
 3. Apakah rate dapat berbeda per murid/program dalam satu tipe+level.
 4. Apakah session yang di-reschedule memakai tarif tanggal sesi awal atau sesi pengganti.
-5. Apakah payroll item dikunci permanen setelah `processed`/`paid`.
-6. Kebutuhan `session_students` sebagai snapshot peserta sesi (agar perubahan membership jadwal tidak mengubah histori sesi lama).
-7. State machine formal untuk session/attendance/reschedule.
-8. Auto-generate sesi dari jadwal via cron/pg_cron.
-9. Notifikasi/pengingat presensi (Web Push / WhatsApp) dan kurikulum–worksheet penjadwalan terpusat (roadmap).
-10. `reports:read` direferensikan di `config/permissions.ts` tetapi belum terdaftar di master `permissions`/seed — perlu diselaraskan.
+5. Kebutuhan `session_students` sebagai snapshot peserta sesi (agar perubahan membership jadwal tidak mengubah histori sesi lama).
+6. State machine formal untuk session/attendance/reschedule.
+7. Auto-generate sesi dari jadwal via cron/pg_cron.
+8. Notifikasi/pengingat presensi (Web Push / WhatsApp) dan kurikulum–worksheet penjadwalan terpusat (roadmap).
+9. `reports:read` direferensikan di `config/permissions.ts` tetapi belum terdaftar di master `permissions`/seed — perlu diselaraskan.
+10. Integrasi Payment Gateway Disbursement (pencairan honor mandiri via Payout Link / QR Code atau batch transfer otomatis pada tanggal cut-off tertentu) — roadmap pengembangan fintech.
 
 Aturan terbuka ini harus diklarifikasi (AGENTS.md §31) sebelum diimplementasikan secara permanen karena berpotensi memengaruhi data historis atau payroll.
+
+---
+
+## 20. Keputusan Jadwal Berulang / Recurring (dikonfirmasi 8 Oktober 2026)
+
+`schedule` adalah template + aturan pengulangan; `sessions` adalah materialisasi kejadian aktual. Migration `0005_recurring_schedules`.
+
+| # | Pertanyaan | Keputusan |
+|---|---|---|
+| 1 | Terminasi pengulangan | **Wajib COUNT xor UNTIL** untuk jadwal baru: setelah N kali ATAU sampai tanggal (semantik Google Calendar; keduanya sekaligus ditolak). Baris legacy (keduanya NULL) tetap jalan terus. Pengulangan **opsional di UI** (checkbox): tanpa centang = jadwal satu kali (`count=1` pada tanggal terpilih). |
+| 2 | Multi-hari per jadwal | **Ya, fase 1.** Satu jadwal boleh Senin & Rabu dst via `days_of_week[]`; `day_of_week` di-derive DB (hari pertama) agar read path lama tak berubah. |
+| 3 | Edit seri vs sesi ter-generate | **Dibiarkan + warning.** Ubah template hanya berlaku untuk sesi yang belum ter-generate; sesi future existing tidak diubah (jumlahnya dilaporkan); historis immutable. |
+| 4 | Pengecualian tanggal | **Ya, per jadwal fase 1** (`schedule_exceptions`); generator melewatinya dan kuota `count` tidak ikut terpakai. |
+| 5 | Permission laporan | **Pakai permission existing** (`attendance:read`, `student:read`, `payroll:read`); belum perlu `reports:read` baru. |
+
+### 20.1. Implikasi Implementasi
+
+* Rule: `recurrence_start_date` (≥ hari ini saat create), `days_of_week` 1–7 hari unik, `recurrence_interval` 1–12 minggu, `count` 1–520 xor `until` ≥ start (CHECK di DB + Zod shared client/server).
+* Ekspansi tanggal murni di `lib/utils/recurrence.ts` (`expandOccurrences`, UTC, teruji 11 kasus): dipakai pratinjau form DAN generator — satu sumber kebenaran. Kuota `count` dihitung dari `startDate` sehingga generate per jendela tak melebihi total.
+* Generator: occurrence per rule, skip `schedule_exceptions`, idempoten via UNIQUE `(schedule_id, session_date)` (cek batch 1 query, bukan per tanggal), batch insert + batch audit.
+* Saat create: materialisasi 30 hari ke depan otomatis; form menampilkan pratinjau tanggal sebelum simpan.
+* Interval multi-minggu dihitung dari minggu `startDate` (minggu ke-0 = minggu yang memuat startDate).
+
+---
+
+## 21. Keputusan Snapshot Peserta Sesi & Otomatisasi Sesi (dikonfirmasi 10 Oktober 2026)
+
+### 21.1. Snapshot Peserta Sesi (`session_students`) — Migration `0006`
+* **Latar Belakang**: `schedule_students` adalah relasi dinamis pada rencana jadwal rutin. Jika murid pindah kelas, nonaktif, atau jadwal diperbarui, data sesi dan presensi masa lalu tidak boleh terpengaruh.
+* **Aturan Mutlak**:
+  1. Setiap kali record `sessions` dibangkitkan dari `schedules`, daftar murid dibekukan secara atomik ke tabel `session_students` (`session_id`, `student_id`, `enrollment_id`, `bimbel_type_id`).
+  2. Presensi (`attendance.service.ts`) memprioritaskan validasi peserta terhadap `session_students` sebagai SSOT peserta sesi aktual.
+  3. Sesi warisan (*legacy*) yang belum memiliki baris `session_students` tetap didukung melalui *fallback* aman ke `schedule_students`.
+  4. Query sesi di portal manajemen dan tutor mengutamakan `session_students` sebelum jatuh ke `attendance` atau `schedule_students`.
+
+### 21.2. Pembangkitan Sesi Terjadwal via Cron (`/api/v1/sessions/cron-generate`)
+* **Mekanisme**: Endpoint khusus scheduler menerima otorisasi `CRON_SECRET` (header `Authorization: Bearer <secret>` atau `x-cron-secret`) atau sesi terautentikasi dengan hak `session:create`.
+* **Jendela Tanggal**: Default mengevaluasi hari ini hingga H+7 hari ke depan (WIB `Asia/Jakarta`).
+* **Audit Trail**: Setiap eksekusi otomatis mencatat record audit log `SESSION_CRON_GENERATED` di server.
+
+---
+
+## 22. Notifikasi Push Tutor (dikonfirmasi 10 Oktober 2026) — Migration `0007`
+
+### 22.1. Tujuan & Penerima
+* Penerima notifikasi adalah **tutor**. Tujuan utama: memberi tahu tutor saat Management menambahkan jadwal baru, dan mengingatkan sesi mengajar (sebelum & sesudah) agar presensi tidak terlambat.
+
+### 22.2. Pemicu Notifikasi
+1. **Jadwal Baru Ditambahkan**: Dikirim otomatis saat Server Action `createSchedule` sukses (best-effort). Berisi program, hari, dan jam sesi. Mengarah ke `/tutor/schedules`.
+2. **Pengingat Sebelum Sesi**: Dikirim relatif terhadap jam mulai.
+3. **Pengingat Setelah Sesi**: Dikirim bila presensi sesi tersebut belum di-submit. Mengarah ke `/tutor/attendance`.
+
+### 22.3. Parameter Konfigurasi (DATA, bukan hardcode)
+Dikelola Management lewat halaman `/management/settings/notifications` (tabel `notification_settings`):
+* `enabled` — sakelar utama seluruh notifikasi.
+* `schedule_created_enabled` — aktif/nonaktif notifikasi jadwal baru.
+* `before_minutes` — menit sebelum jam mulai untuk pengingat pertama.
+* `after_minutes` — menit setelah jam selesai untuk pengingat presensi.
+* `repeat_count` (1–10) — berapa kali pengingat sebelum sesi diulang.
+* `repeat_interval_minutes` — jeda antar pengingat sebelum sesi.
+
+Aturan pengulangan sebelum sesi: slot ke-`i` (`i = 0..repeat_count-1`) jatuh pada `mulai − before_minutes + i × repeat_interval_minutes`. Dispatcher memilih hanya slot terbaru yang sudah jatuh tempo per eksekusi; tiap slot dijamin terkirim sekali.
+
+### 22.4. Preferensi Tutor
+* Tutor dapat mengaktifkan/mematikan notifikasi dari `/tutor/profile` (toggle shadcn Switch, tabel `notification_preferences`).
+* Default preferensi **aktif** bila belum pernah diatur.
+* Mengaktifkan toggle akan mendaftarkan langganan push perangkat (`push_subscriptions`); mematikannya menghapus langganan perangkat tersebut.
+
+### 22.5. Otorisasi
+* Konfigurasi notifikasi dibatasi permission dinamis **`notification:manage`** (Sistem & Keamanan). Diberikan ke role `owner` dan `admin`.
+* Dispatcher `/api/v1/web-push/dispatch` dapat dipicu via `CRON_SECRET` (Bearer / `x-cron-secret` / `?token=`) atau sesi terautentikasi pemegang `notification:manage`.
+* Endpoint penyimpanan langganan selalu memakai identitas dari sesi server; endpoint tidak dapat dipindah ke user lain.
+
+### 22.6. Integritas & Keamanan
+* Foto/binary tidak terlibat. Tidak ada data sensitif baru selain endpoint push perangkat (disimpan di `push_subscriptions`).
+* Idempotensi dijamin `notification_logs.dedupe_key` (UNIQUE) — eksekusi cron ganda tidak mengirim ulang slot yang sama.
+* Pengiriman push bersifat **best-effort**: kegagalan notifikasi TIDAK boleh menggagalkan transaksi bisnis (mis. pembuatan jadwal).
+* Langganan yang ditolak push service (HTTP 404/410) otomatis dinonaktifkan (`is_active = false`).
+* VAPID: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` di environment.
+
+### 22.7. Tabel
+`notification_settings`, `push_subscriptions`, `notification_preferences`, `notification_logs` (semua RLS deny-by-default).
+
+### 22.8. Pusat Notifikasi In-App & Status Baca (Migration 0009)
+* Lonceng notifikasi di header tutor (`TutorHeader`) terhubung langsung ke tabel `notification_logs` (tidak membutuhkan webhook pihak ketiga karena seluruh pemicu berasal dari internal sistem).
+* Kolom baru di `notification_logs`: `read_at TIMESTAMPTZ` (waktu dibaca; NULL = belum dibaca) dan `metadata JSONB` (target URL navigasi seperti `/tutor/sessions/:id` atau `/tutor/schedules`).
+* Menampilkan badge angka unread merah dinamis (`1`, `2`, s.d. `9+`) saat ada notifikasi belum dibaca; bersih tanpa titik merah palsu saat semua sudah dibaca.
+* Dropdown popover menampilkan daftar riwayat notifikasi, ikon sesuai tipe (jadwal, pengingat, uji coba), format waktu relatif Indonesia, navigasi 1-klik ke sesi mengajar, serta aksi "Tandai dibaca" (per item dan massal).
+
+---
+
+## 23. Impor Riwayat Sesi dari Spreadsheet / Excel (dikonfirmasi 11 Oktober 2026)
+
+### 23.1. Latar Belakang & Tujuan
+* Saat bimbel bermigrasi dari Google Sheets / Excel ke aplikasi web baru, murid telah memiliki riwayat pertemuan sebelumnya (misal P1–P3 pada paket aktif, atau P1–P8 pada paket lama).
+* Sistem menyediakan jalur migrasi per murid melalui dialog impor di `/management/students/[studentId]`.
+* **Tujuan utama**: Memastikan pertemuan berikutnya yang dilakukan tutor di aplikasi baru otomatis melanjutkan urutan nomor pertemuan yang sah (`meeting_number`), serta riwayat materi terdahulu langsung tampil di lembar laporan perkembangan murid (PDF).
+
+### 23.2. Format Input & Parser Cerdas
+* Mendukung dua metode input:
+  1. **Salin-Tempel (Copy-Paste)** teks tabel langsung dari Google Sheets / Excel (tab-separated / CSV).
+  2. **Unggah File Excel (.xlsx / .xls)** dengan dukungan multi-sheet: sistem membaca seluruh lembar kerja di workbook, mengekstrak nama murid dari header lembar atau nama sheet, dan otomatis mengarahkan ke sheet murid yang cocok.
+* Mendeteksi otomatis:
+  1. Header metadata: `Nama Murid`, `Kelas`, `Jadwal`, `Mapel` (toleran terhadap tanda titik dua, petik, spasi, dan tab).
+  2. Tanggal Bahasa Indonesia: `Rabu, 3 September 2026`, `Jum'at, 02 Oktober 2026`, `23/09/2026` dikonversi ke ISO `YYYY-MM-DD`.
+  3. Pemisahan siklus paket (*batch cycles*): mendeteksi baris pemisah evaluasi (seperti `Pencapaian dan Evaluasi`) atau reset nomor pertemuan dari 8 ke 1.
+  4. Tombol pilihan filter cepat:
+     - **Pilih Paket Berjalan Saja (Rekomendasi)**: Memilih hanya sesi pada siklus paket aktif terakhir (misal 3 sesi terakhir) agar absensi tutor berikutnya otomatis menjadi **Pertemuan ke-4**.
+     - **Pilih Semua (Seluruh Riwayat)**: Mengimpor seluruh paket lama dan paket aktif.
+  5. Pencocokan otomatis nama mentor / tutor ke master database (`tutors` & `profiles.full_name`) dengan kemampuan override per baris di tabel pratinjau.
+
+### 23.3. Integritas Data Transaksional & Multi-Paket
+* Eksekusi melalui Server Action `importStudentHistoricalSessionsAction`:
+  1. **Pemisahan Paket**: Bila terdeteksi beberapa siklus paket (misal P1–P8 paket lama dan P1–P3 paket aktif), sesi paket lama otomatis dikaitkan ke enrollment dengan `status = 'completed'`, sedangkan sesi paket aktif dikaitkan ke enrollment `status = 'active'`.
+  2. `sessions`: Dibuat dengan tanggal masa lalu, status `completed`.
+  3. `session_students`: Dibekukan ke `student_id` dan `enrollment_id` masing-masing siklus paket.
+  4. `attendance`: Dibuat dengan status `present`, `verification_status = 'verified'` (karena data historis telah disetujui sebelumnya), tanpa mewajibkan foto bukti.
+  5. `learning_records`: Dicatat materi dan catatan evaluasi per pertemuan.
+  6. `audit_logs`: Dicatat aksi `HISTORICAL_SESSIONS_IMPORTED`.
+* Penomoran dinamis via view `v_attendance_with_meeting_number` menjamin sesi baru berikutnya otomatis bernomor $N + 1$ (misal Pertemuan ke-4).
+
+

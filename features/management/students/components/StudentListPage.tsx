@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, User, Eye, Pencil, UserX, UserCheck } from "lucide-react";
+import {
+  Plus,
+  Search,
+  User,
+  Eye,
+  Pencil,
+  UserX,
+  UserCheck,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,42 +33,58 @@ interface StudentListPageProps {
   initialStudents?: StudentWithPrograms[];
 }
 
-export default function StudentListPage({ initialStudents = [] }: StudentListPageProps) {
-  const [students, setStudents] = useState<StudentWithPrograms[]>(initialStudents);
-  const { search, setSearch, statusFilter, setStatusFilter, filteredStudents } = useStudentFilter(students);
+export default function StudentListPage({
+  initialStudents = [],
+}: StudentListPageProps) {
+  const [students, setStudents] =
+    useState<StudentWithPrograms[]>(initialStudents);
+  const { search, setSearch, statusFilter, setStatusFilter, filteredStudents } =
+    useStudentFilter(students);
   const [loadingStudentId, setLoadingStudentId] = useState<string | null>(null);
 
   const handleToggleStatus = async (student: StudentWithPrograms) => {
-    const nextStatus: "active" | "inactive" = student.status === "active" ? "inactive" : "active";
+    const nextStatus: "active" | "inactive" =
+      student.status === "active" ? "inactive" : "active";
     setLoadingStudentId(student.id);
 
     // Optimistically update local state immediately
     setStudents((prev) =>
-      prev.map((s) => (s.id === student.id ? { ...s, status: nextStatus } : s))
+      prev.map((s) => (s.id === student.id ? { ...s, status: nextStatus } : s)),
     );
 
     try {
       const res = await updateStudentStatus(student.id, nextStatus);
       if (res && res.success) {
         if (nextStatus === "inactive") {
-          toast.info(`Murid "${student.name}" dinonaktifkan (Data tetap tersimpan aman).`, {
-            description: "Tekan tombol aktif (ikon hijau) kapan saja untuk mengaktifkannya kembali.",
-          });
+          toast.info(
+            `Murid "${student.name}" dinonaktifkan (Data tetap tersimpan aman).`,
+            {
+              description:
+                "Tekan tombol aktif (ikon hijau) kapan saja untuk mengaktifkannya kembali.",
+            },
+          );
         } else {
-          toast.success(`Murid "${student.name}" berhasil diaktifkan kembali!`, {
-            description: "Status langganan murid kini aktif.",
-          });
+          toast.success(
+            `Murid "${student.name}" berhasil diaktifkan kembali!`,
+            {
+              description: "Status langganan murid kini aktif.",
+            },
+          );
         }
       } else {
         // Revert on failure
         setStudents((prev) =>
-          prev.map((s) => (s.id === student.id ? { ...s, status: student.status } : s))
+          prev.map((s) =>
+            s.id === student.id ? { ...s, status: student.status } : s,
+          ),
         );
         toast.error("Gagal memperbarui status murid.");
       }
     } catch {
       setStudents((prev) =>
-        prev.map((s) => (s.id === student.id ? { ...s, status: student.status } : s))
+        prev.map((s) =>
+          s.id === student.id ? { ...s, status: student.status } : s,
+        ),
       );
       toast.error("Terjadi kesalahan sistem saat memproses status murid.");
     } finally {
@@ -73,7 +97,9 @@ export default function StudentListPage({ initialStudents = [] }: StudentListPag
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href="/management/dashboard">Beranda</BreadcrumbLink>
+            <BreadcrumbLink href="/management/dashboard">
+              Beranda
+            </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -171,7 +197,8 @@ export default function StudentListPage({ initialStudents = [] }: StudentListPag
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredStudents.map((student) => {
-                  const enrollments = student.enrollments || student.student_programs || [];
+                  const enrollments =
+                    student.enrollments || student.student_programs || [];
                   const isActive = student.status === "active";
                   const isLoading = loadingStudentId === student.id;
 
@@ -182,7 +209,9 @@ export default function StudentListPage({ initialStudents = [] }: StudentListPag
                         !isActive ? "opacity-75 bg-muted/10" : ""
                       }`}
                     >
-                      <td className="px-4 py-3 font-mono font-medium">{student.student_code}</td>
+                      <td className="px-4 py-3 font-mono font-medium">
+                        {student.student_code}
+                      </td>
                       <td className="px-4 py-3 font-medium text-foreground">
                         <div className="flex items-center gap-2">
                           <span>{student.name}</span>
@@ -197,11 +226,19 @@ export default function StudentListPage({ initialStudents = [] }: StudentListPag
                         {enrollments.length > 0 ? (
                           <div className="flex flex-wrap gap-1.5">
                             {enrollments.map((enr: any, idx: number) => {
-                              const typeName = enr.bimbel_types?.name || "Reguler";
-                              const progName = enr.programs?.name || student.level || "Bimbel";
-                              const duration = enr.bimbel_types?.duration_minutes || (typeName === "Private" ? 90 : 75);
-                              const isPrivate = typeName.toLowerCase().includes("private");
-                              const isIntensif = typeName.toLowerCase().includes("intensif");
+                              const typeName =
+                                enr.bimbel_types?.name || "Reguler";
+                              const progName =
+                                enr.programs?.name || student.level || "Bimbel";
+                              const duration =
+                                enr.bimbel_types?.duration_minutes ||
+                                (typeName === "Private" ? 90 : 75);
+                              const isPrivate = typeName
+                                .toLowerCase()
+                                .includes("private");
+                              const isIntensif = typeName
+                                .toLowerCase()
+                                .includes("intensif");
 
                               return (
                                 <span
@@ -210,26 +247,35 @@ export default function StudentListPage({ initialStudents = [] }: StudentListPag
                                     isPrivate
                                       ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800"
                                       : isIntensif
-                                      ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800"
-                                      : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800"
+                                        ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800"
+                                        : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800"
                                   }`}
                                 >
                                   <span>{progName}</span>
                                   <span className="opacity-60">•</span>
-                                  <span className="font-semibold">{typeName} ({duration}m)</span>
+                                  <span className="font-semibold">
+                                    {typeName} ({duration}m)
+                                  </span>
                                 </span>
                               );
                             })}
                           </div>
                         ) : (
-                          <span className="text-muted-foreground text-xs">{student.level || "-"}</span>
+                          <span className="text-muted-foreground text-xs">
+                            {student.level || "-"}
+                          </span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        {student.school ? `${student.school} (${student.grade || "-"})` : "-"}
+                        {student.school
+                          ? `${student.school} (${student.grade || "-"})`
+                          : "-"}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        {student.parent_name || "-"} {student.parent_phone ? `(${student.parent_phone})` : ""}
+                        {student.parent_name || "-"}{" "}
+                        {student.parent_phone
+                          ? `(${student.parent_phone})`
+                          : ""}
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={student.status} />
@@ -259,7 +305,9 @@ export default function StudentListPage({ initialStudents = [] }: StudentListPag
                             title="Edit Data Murid"
                             aria-label="Edit Data Murid"
                           >
-                            <Link href={`/management/students/${student.id}/edit`}>
+                            <Link
+                              href={`/management/students/${student.id}/edit`}
+                            >
                               <Pencil className="w-4 h-4" />
                             </Link>
                           </Button>

@@ -1,7 +1,20 @@
 "use client";
 
-import { CheckCircle2, FileText, UserCheck, AlertTriangle, Clock, XCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  CheckCircle2,
+  FileText,
+  UserCheck,
+  AlertTriangle,
+  Clock,
+  XCircle,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { AttendanceReportData } from "../services/report.service";
@@ -10,7 +23,9 @@ interface AttendanceReportPageProps {
   initialData?: AttendanceReportData;
 }
 
-export default function AttendanceReportPage({ initialData }: AttendanceReportPageProps) {
+export default function AttendanceReportPage({
+  initialData,
+}: AttendanceReportPageProps) {
   const data: AttendanceReportData = initialData || {
     total: 0,
     present: 0,
@@ -43,8 +58,12 @@ export default function AttendanceReportPage({ initialData }: AttendanceReportPa
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-emerald-600">{data.presentPct}%</p>
-            <span className="text-xs text-muted-foreground">dari total {data.total} presensi</span>
+            <p className="text-2xl font-bold text-emerald-600">
+              {data.presentPct}%
+            </p>
+            <span className="text-xs text-muted-foreground">
+              dari total {data.total} presensi
+            </span>
           </CardContent>
         </Card>
 
@@ -56,8 +75,12 @@ export default function AttendanceReportPage({ initialData }: AttendanceReportPa
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-blue-600">{data.permissionSickPct}%</p>
-            <span className="text-xs text-muted-foreground">Izin: {data.permission}, Sakit: {data.sick}</span>
+            <p className="text-2xl font-bold text-blue-600">
+              {data.permissionSickPct}%
+            </p>
+            <span className="text-xs text-muted-foreground">
+              Izin: {data.permission}, Sakit: {data.sick}
+            </span>
           </CardContent>
         </Card>
 
@@ -70,7 +93,9 @@ export default function AttendanceReportPage({ initialData }: AttendanceReportPa
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-amber-600">{data.latePct}%</p>
-            <span className="text-xs text-muted-foreground">Hadir dengan toleransi</span>
+            <span className="text-xs text-muted-foreground">
+              Hadir dengan toleransi
+            </span>
           </CardContent>
         </Card>
 
@@ -83,7 +108,9 @@ export default function AttendanceReportPage({ initialData }: AttendanceReportPa
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-red-600">{data.absentPct}%</p>
-            <span className="text-xs text-muted-foreground">Tanpa keterangan izin</span>
+            <span className="text-xs text-muted-foreground">
+              Tanpa keterangan izin
+            </span>
           </CardContent>
         </Card>
       </div>
@@ -96,7 +123,8 @@ export default function AttendanceReportPage({ initialData }: AttendanceReportPa
             Ringkasan Tingkat Kehadiran per Program
           </CardTitle>
           <CardDescription>
-            Persentase kehadiran murid dihitung dari seluruh sesi yang telah terlaksana untuk masing-masing program.
+            Persentase kehadiran murid dihitung dari seluruh sesi yang telah
+            terlaksana untuk masing-masing program.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -109,7 +137,9 @@ export default function AttendanceReportPage({ initialData }: AttendanceReportPa
               {data.programBreakdown.map((prog) => (
                 <div key={prog.programName} className="space-y-1.5">
                   <div className="flex justify-between text-sm">
-                    <span className="font-medium text-foreground">{prog.programName}</span>
+                    <span className="font-medium text-foreground">
+                      {prog.programName}
+                    </span>
                     <span className="text-muted-foreground">
                       {prog.present}/{prog.total} pertemuan ({prog.rate}%)
                     </span>
@@ -150,12 +180,18 @@ export default function AttendanceReportPage({ initialData }: AttendanceReportPa
                 <tbody className="divide-y divide-border">
                   {data.recentRecords.map((r) => (
                     <tr key={r.id} className="hover:bg-muted/30">
-                      <td className="px-4 py-2.5 font-medium">{r.sessionDate}</td>
+                      <td className="px-4 py-2.5 font-medium">
+                        {r.sessionDate}
+                      </td>
                       <td className="px-4 py-2.5">
                         <span className="font-medium">{r.studentName}</span>
-                        <span className="text-xs text-muted-foreground block">{r.studentCode}</span>
+                        <span className="text-xs text-muted-foreground block">
+                          {r.studentCode}
+                        </span>
                       </td>
-                      <td className="px-4 py-2.5 text-muted-foreground">{r.programName}</td>
+                      <td className="px-4 py-2.5 text-muted-foreground">
+                        {r.programName}
+                      </td>
                       <td className="px-4 py-2.5">
                         <StatusBadge status={r.status} />
                       </td>

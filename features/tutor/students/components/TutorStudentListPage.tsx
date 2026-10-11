@@ -14,8 +14,11 @@ interface TutorStudentListPageProps {
   initialStudents?: StudentWithPrograms[];
 }
 
-export default function TutorStudentListPage({ initialStudents = [] }: TutorStudentListPageProps) {
-  const { search, setSearch, filteredStudents } = useStudentFilter(initialStudents);
+export default function TutorStudentListPage({
+  initialStudents = [],
+}: TutorStudentListPageProps) {
+  const { search, setSearch, filteredStudents } =
+    useStudentFilter(initialStudents);
 
   return (
     <div className="space-y-6">
@@ -58,20 +61,36 @@ export default function TutorStudentListPage({ initialStudents = [] }: TutorStud
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredStudents.map((student) => {
-                  const enrollments = student.enrollments || student.student_programs || [];
+                  const enrollments =
+                    student.enrollments || student.student_programs || [];
                   return (
-                    <tr key={student.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 font-mono font-medium">{student.student_code}</td>
-                      <td className="px-4 py-3 font-medium text-foreground">{student.name}</td>
+                    <tr
+                      key={student.id}
+                      className="hover:bg-muted/30 transition-colors"
+                    >
+                      <td className="px-4 py-3 font-mono font-medium">
+                        {student.student_code}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-foreground">
+                        {student.name}
+                      </td>
                       <td className="px-4 py-3">
                         {enrollments.length > 0 ? (
                           <div className="flex flex-wrap gap-1.5">
                             {enrollments.map((enr: any, idx: number) => {
-                              const typeName = enr.bimbel_types?.name || "Reguler";
-                              const progName = enr.programs?.name || student.level || "Bimbel";
-                              const duration = enr.bimbel_types?.duration_minutes || (typeName === "Private" ? 90 : 75);
-                              const isPrivate = typeName.toLowerCase().includes("private");
-                              const isIntensif = typeName.toLowerCase().includes("intensif");
+                              const typeName =
+                                enr.bimbel_types?.name || "Reguler";
+                              const progName =
+                                enr.programs?.name || student.level || "Bimbel";
+                              const duration =
+                                enr.bimbel_types?.duration_minutes ||
+                                (typeName === "Private" ? 90 : 75);
+                              const isPrivate = typeName
+                                .toLowerCase()
+                                .includes("private");
+                              const isIntensif = typeName
+                                .toLowerCase()
+                                .includes("intensif");
 
                               return (
                                 <span
@@ -80,23 +99,29 @@ export default function TutorStudentListPage({ initialStudents = [] }: TutorStud
                                     isPrivate
                                       ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800"
                                       : isIntensif
-                                      ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800"
-                                      : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800"
+                                        ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800"
+                                        : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800"
                                   }`}
                                 >
                                   <span>{progName}</span>
                                   <span className="opacity-60">•</span>
-                                  <span className="font-semibold">{typeName} ({duration}m)</span>
+                                  <span className="font-semibold">
+                                    {typeName} ({duration}m)
+                                  </span>
                                 </span>
                               );
                             })}
                           </div>
                         ) : (
-                          <span className="text-muted-foreground text-xs">{student.level || "-"}</span>
+                          <span className="text-muted-foreground text-xs">
+                            {student.level || "-"}
+                          </span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        {student.school ? `${student.school} (${student.grade || "-"})` : "-"}
+                        {student.school
+                          ? `${student.school} (${student.grade || "-"})`
+                          : "-"}
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={student.status} />

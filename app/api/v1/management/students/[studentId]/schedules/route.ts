@@ -20,8 +20,9 @@ export async function GET(
     .select(
       `id, schedule_id, student_id, enrollment_id,
        schedules (
-         id, tutor_id, program_id, bimbel_type_id, day_of_week,
-         start_time, end_time, location, status,
+          id, tutor_id, program_id, bimbel_type_id, day_of_week, days_of_week,
+          recurrence_start_date, recurrence_interval, recurrence_count, recurrence_until,
+          start_time, end_time, location, status,
          tutors (id, profile_id, profiles (id, full_name)),
          programs (id, code, name),
          bimbel_types (id, name, duration_minutes)

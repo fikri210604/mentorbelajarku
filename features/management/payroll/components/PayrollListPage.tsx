@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { CreditCard, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { formatCurrency } from "@/lib/utils";
@@ -58,7 +64,8 @@ export default function PayrollListPage({
             Dokumen Penggajian Tutor
           </CardTitle>
           <CardDescription className="text-xs">
-            Dokumen penggajian yang sudah dihitung/diproses beserta status pembayarannya.
+            Dokumen penggajian yang sudah dihitung/diproses beserta status
+            pembayarannya.
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
@@ -85,7 +92,10 @@ export default function PayrollListPage({
                   </thead>
                   <tbody className="divide-y divide-border">
                     {initialPayrolls.map((payroll) => (
-                      <tr key={payroll.id} className="hover:bg-muted/30 transition-colors">
+                      <tr
+                        key={payroll.id}
+                        className="hover:bg-muted/30 transition-colors"
+                      >
                         <td className="px-4 py-3 font-medium text-foreground">
                           {payroll.tutors?.profiles?.full_name || "Tutor"}
                         </td>
@@ -96,13 +106,20 @@ export default function PayrollListPage({
                           {formatCurrency(Number(payroll.gross_amount))}
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">
-                          +{formatCurrency(Number(payroll.bonus))} / -{formatCurrency(Number(payroll.deduction))}
+                          +{formatCurrency(Number(payroll.bonus))} / -
+                          {formatCurrency(Number(payroll.deduction))}
                         </td>
                         <td className="px-4 py-3 font-mono font-semibold text-primary">
                           {formatCurrency(Number(payroll.net_amount))}
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={payroll.status} />
+                          {payroll.status === "paid" &&
+                            payroll.payment_reference && (
+                              <span className="block text-[11px] text-muted-foreground font-mono mt-0.5">
+                                Ref: {payroll.payment_reference}
+                              </span>
+                            )}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <Button

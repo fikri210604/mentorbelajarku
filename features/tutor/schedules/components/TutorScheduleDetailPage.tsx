@@ -50,7 +50,8 @@ export default function TutorScheduleDetailPage({
       <div className="p-8 text-center space-y-4 max-w-md mx-auto">
         <h2 className="text-lg font-bold">Akses Ditolak</h2>
         <p className="text-xs text-muted-foreground">
-          Jadwal ini bukan jadwal mengajar Anda atau akun Anda belum dipetakan ke profil tutor.
+          Jadwal ini bukan jadwal mengajar Anda atau akun Anda belum dipetakan
+          ke profil tutor.
         </p>
         <Button asChild variant="outline" size="sm">
           <Link href="/tutor/schedules">
@@ -71,7 +72,8 @@ export default function TutorScheduleDetailPage({
         <div>
           <h2 className="text-lg font-bold">Jadwal Tidak Ditemukan</h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Data jadwal yang Anda tuju mungkin telah dihapus atau bukan jadwal Anda.
+            Data jadwal yang Anda tuju mungkin telah dihapus atau bukan jadwal
+            Anda.
           </p>
         </div>
         <Button asChild variant="outline" size="sm">
@@ -86,14 +88,23 @@ export default function TutorScheduleDetailPage({
 
   const startTime = schedule.start_time?.slice(0, 5) ?? "-";
   const endTime = schedule.end_time?.slice(0, 5) ?? "-";
+  const daysLabel =
+    schedule.days_of_week && schedule.days_of_week.length > 0
+      ? [...schedule.days_of_week]
+          .sort((a, b) => a - b)
+          .map((d) => DAYS[d] ?? "-")
+          .join(", ")
+      : (DAYS[schedule.day_of_week] ?? "-");
 
-  const totalPresent = sessions.flatMap((s) => s.attendance ?? []).filter((a) => a.status === "present").length;
+  const totalPresent = sessions
+    .flatMap((s) => s.attendance ?? [])
+    .filter((a) => a.status === "present").length;
   const totalSessions = sessions.length;
 
   return (
     <div className="space-y-5 max-w-4xl mx-auto">
       <PageHeader
-        title={`Jadwal: ${DAYS[schedule.day_of_week] ?? "-"}, ${startTime} - ${endTime} WIB`}
+        title={`Jadwal: ${daysLabel}, ${startTime} - ${endTime} WIB`}
         description={`${schedule.bimbel_types?.name || "Bimbel"} (${schedule.bimbel_types?.duration_minutes || 60}m) • ${schedule.programs?.name || "Program Bimbel"}`}
       >
         <Button asChild variant="outline" size="sm" className="h-8 text-xs">
@@ -115,7 +126,7 @@ export default function TutorScheduleDetailPage({
           <CardContent className="p-4 space-y-3 text-xs">
             <div className="flex justify-between items-center py-1 border-b border-border/50">
               <span className="text-muted-foreground font-medium">Hari:</span>
-              <span className="font-semibold">{DAYS[schedule.day_of_week] ?? "-"}</span>
+              <span className="font-semibold text-right">{daysLabel}</span>
             </div>
             <div className="flex justify-between items-center py-1 border-b border-border/50">
               <span className="text-muted-foreground font-medium">Jam:</span>
@@ -124,14 +135,21 @@ export default function TutorScheduleDetailPage({
               </span>
             </div>
             <div className="flex justify-between items-center py-1 border-b border-border/50">
-              <span className="text-muted-foreground font-medium">Jenis Bimbel:</span>
+              <span className="text-muted-foreground font-medium">
+                Jenis Bimbel:
+              </span>
               <Badge variant="outline" className="text-[11px] font-semibold">
-                {schedule.bimbel_types?.name} ({schedule.bimbel_types?.duration_minutes}m)
+                {schedule.bimbel_types?.name} (
+                {schedule.bimbel_types?.duration_minutes}m)
               </Badge>
             </div>
             <div className="flex justify-between items-center py-1 border-b border-border/50">
-              <span className="text-muted-foreground font-medium">Program:</span>
-              <span className="font-medium">{schedule.programs?.name || "-"}</span>
+              <span className="text-muted-foreground font-medium">
+                Program:
+              </span>
+              <span className="font-medium">
+                {schedule.programs?.name || "-"}
+              </span>
             </div>
             <div className="flex justify-between items-center py-1 border-b border-border/50">
               <span className="text-muted-foreground font-medium">Lokasi:</span>
@@ -163,26 +181,34 @@ export default function TutorScheduleDetailPage({
               </span>
             </div>
             <div className="py-1 border-b border-border/50 space-y-1.5">
-              <span className="text-muted-foreground font-medium block">Peserta Murid:</span>
+              <span className="text-muted-foreground font-medium block">
+                Peserta Murid:
+              </span>
               <div className="p-2.5 rounded-lg bg-muted/40 border border-border/60">
                 {schedule.student_names && schedule.student_names.length > 0 ? (
                   <p className="text-[11px] font-medium">
-                    {schedule.total_students || schedule.student_names.length} siswa:{" "}
-                    {schedule.student_names.join(", ")}
+                    {schedule.total_students || schedule.student_names.length}{" "}
+                    siswa: {schedule.student_names.join(", ")}
                   </p>
                 ) : (
-                  <span className="text-muted-foreground">Belum ada murid yang ditugaskan</span>
+                  <span className="text-muted-foreground">
+                    Belum ada murid yang ditugaskan
+                  </span>
                 )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2 pt-1">
               <div className="rounded-lg border bg-muted/30 p-2.5 text-center">
                 <p className="text-lg font-bold">{totalSessions}</p>
-                <p className="text-[11px] text-muted-foreground">Total sesi terlaksana</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Total sesi terlaksana
+                </p>
               </div>
               <div className="rounded-lg border bg-muted/30 p-2.5 text-center">
                 <p className="text-lg font-bold">{totalPresent}</p>
-                <p className="text-[11px] text-muted-foreground">Kehadiran (hadir)</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Kehadiran (hadir)
+                </p>
               </div>
             </div>
             {schedule.notes && (
@@ -209,10 +235,12 @@ export default function TutorScheduleDetailPage({
           {sessions.length === 0 ? (
             <div className="text-center py-8 space-y-2">
               <CalendarDays className="w-8 h-8 mx-auto text-muted-foreground/40" />
-              <p className="text-sm font-semibold">Belum ada sesi dari jadwal ini</p>
+              <p className="text-sm font-semibold">
+                Belum ada sesi dari jadwal ini
+              </p>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                Sesi pembelajaran (session) dibuat dari jadwal rutin ini. Setelah sesi diabsen,
-                bukti foto akan tampil di sini.
+                Sesi pembelajaran (session) dibuat dari jadwal rutin ini.
+                Setelah sesi diabsen, bukti foto akan tampil di sini.
               </p>
               <Button asChild size="sm" className="mt-2">
                 <Link href="/tutor/attendance">Buka Halaman Absensi</Link>
@@ -222,7 +250,10 @@ export default function TutorScheduleDetailPage({
             sessions.map((session) => {
               const attendances = session.attendance ?? [];
               return (
-                <div key={session.id} className="rounded-xl border border-border overflow-hidden">
+                <div
+                  key={session.id}
+                  className="rounded-xl border border-border overflow-hidden"
+                >
                   <div className="flex flex-wrap items-center gap-2 px-3.5 py-3 bg-muted/40 border-b border-border">
                     <div className="flex items-center gap-2 min-w-0">
                       <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -230,13 +261,21 @@ export default function TutorScheduleDetailPage({
                         {formatDate(session.session_date)}
                       </span>
                       <span className="text-[11px] font-mono text-muted-foreground">
-                        {session.start_time?.slice(0, 5)}-{session.end_time?.slice(0, 5)}
+                        {session.start_time?.slice(0, 5)}-
+                        {session.end_time?.slice(0, 5)}
                       </span>
                     </div>
                     <div className="ml-auto flex items-center gap-2">
                       <StatusBadge status={session.status} />
-                      <Button asChild variant="outline" size="sm" className="h-7 text-[11px]">
-                        <Link href={`/tutor/sessions/${session.id}`}>Lihat Sesi</Link>
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-[11px]"
+                      >
+                        <Link href={`/tutor/sessions/${session.id}`}>
+                          Lihat Sesi
+                        </Link>
                       </Button>
                     </div>
                   </div>
@@ -247,7 +286,10 @@ export default function TutorScheduleDetailPage({
                       {session.status === "scheduled" && (
                         <>
                           {" "}
-                          <Link href="/tutor/attendance" className="underline font-medium not-italic">
+                          <Link
+                            href="/tutor/attendance"
+                            className="underline font-medium not-italic"
+                          >
                             Isi absensi sekarang
                           </Link>
                           .
@@ -268,19 +310,25 @@ export default function TutorScheduleDetailPage({
                           >
                             <div className="space-y-1.5 text-xs min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="font-bold text-sm">{att.students?.name || "Murid"}</span>
+                                <span className="font-bold text-sm">
+                                  {att.students?.name || "Murid"}
+                                </span>
                                 <StatusBadge status={att.status} />
                                 <StatusBadge status={att.verification_status} />
                               </div>
                               <p className="text-muted-foreground font-mono text-[11px]">
                                 {att.students?.student_code || "-"} •{" "}
                                 {att.checked_in_at
-                                  ? new Date(att.checked_in_at).toLocaleString("id-ID")
+                                  ? new Date(att.checked_in_at).toLocaleString(
+                                      "id-ID",
+                                    )
                                   : "belum check-in"}
                               </p>
                               {material && (
                                 <p className="text-[11px]">
-                                  <span className="text-muted-foreground font-medium">Materi: </span>
+                                  <span className="text-muted-foreground font-medium">
+                                    Materi:{" "}
+                                  </span>
                                   {material}
                                 </p>
                               )}

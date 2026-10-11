@@ -2,7 +2,13 @@
 
 import { CreditCard, CheckCircle2, Clock, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +19,9 @@ interface PayrollReportPageProps {
   initialData?: PayrollReportData;
 }
 
-export default function PayrollReportPage({ initialData }: PayrollReportPageProps) {
+export default function PayrollReportPage({
+  initialData,
+}: PayrollReportPageProps) {
   const data: PayrollReportData = initialData || {
     totalPayroll: 0,
     totalPaid: 0,
@@ -67,7 +75,9 @@ export default function PayrollReportPage({ initialData }: PayrollReportPageProp
             <p className="text-2xl font-bold font-mono text-emerald-600">
               {formatCurrency(data.totalPaid)}
             </p>
-            <span className="text-xs text-muted-foreground">Status &apos;paid&apos; di sistem</span>
+            <span className="text-xs text-muted-foreground">
+              Status &apos;paid&apos; di sistem
+            </span>
           </CardContent>
         </Card>
 
@@ -82,7 +92,9 @@ export default function PayrollReportPage({ initialData }: PayrollReportPageProp
             <p className="text-2xl font-bold font-mono text-amber-600">
               {formatCurrency(data.totalPending)}
             </p>
-            <span className="text-xs text-muted-foreground">Status &apos;draft&apos; atau &apos;processed&apos;</span>
+            <span className="text-xs text-muted-foreground">
+              Status &apos;draft&apos; atau &apos;processed&apos;
+            </span>
           </CardContent>
         </Card>
       </div>
@@ -120,9 +132,15 @@ export default function PayrollReportPage({ initialData }: PayrollReportPageProp
                   {data.paymentRecords.map((p) => (
                     <tr key={p.id} className="hover:bg-muted/30">
                       <td className="px-4 py-2.5 font-medium">{p.tutorName}</td>
-                      <td className="px-4 py-2.5 text-muted-foreground text-xs">{p.period}</td>
-                      <td className="px-4 py-2.5 text-center">{p.totalSessions}</td>
-                      <td className="px-4 py-2.5 text-center">{p.totalStudents}</td>
+                      <td className="px-4 py-2.5 text-muted-foreground text-xs">
+                        {p.period}
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
+                        {p.totalSessions}
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
+                        {p.totalStudents}
+                      </td>
                       <td className="px-4 py-2.5 text-right font-mono font-medium">
                         {formatCurrency(p.totalAmount)}
                       </td>

@@ -8,6 +8,8 @@ Jika instruksi user bertentangan dengan aturan di dokumen ini, **jangan langsung
 
 Dokumen domain/bisnis pendamping: `docs/BUSINESS_RULES.md`, `docs/DESIGN.md`, `docs/PRD.md`. Untuk status implementasi terkini lihat `docs/DEVELOPMENT_STATUS_AND_RECOMMENDATIONS.md` dan `docs/IMPLEMENTATION_STATUS_2026-09-28.md`.
 
+**ATURAN MUTLAK DOKUMENTASI:** Setiap kali AI agent melakukan perubahan (fitur baru, refaktor, perbaikan bug, mutasi schema database, perubahan alur/workflow bisnis, dsb.), agent **WAJIB mencatat dan menyinkronkan perubahan tersebut ke folder `docs/`** (seperti `docs/BUSINESS_RULES.md`, `docs/DEVELOPMENT_STATUS_AND_RECOMMENDATIONS.md`, atau dokumen terkait lainnya). Perubahan kode tanpa pembaruan dokumentasi dianggap **tidak lengkap**.
+
 ---
 
 # 1. Project Context
@@ -493,7 +495,7 @@ Aturan konsumsi paket & payable (eksplisit, jangan hardcode `WHERE status='prese
 | sick | Tidak | Tidak |
 | absent | Tidak | Tidak |
 
-Verification (`verification_status`): `submitted` (default), `verified`, `correction_requested`. Untuk MVP, payroll tidak mewajibkan `verified`.
+Verification (`verification_status`): `submitted` (default), `verified`, `correction_requested`. Verifikasi foto presensi diaudit berkala per tutor saat proses penggajian bulanan (mencegah *approval fatigue* harian). Bila manajemen meminta koreksi (`correction_requested`), tutor mendapat notifikasi perbaikan dan dapat mengunggah ulang foto; status otomatis kembali menjadi `submitted` untuk diaudit ulang.
 
 Foto presensi **wajib** saat submit; bypass jendela waktu tidak boleh berasal dari input client.
 
@@ -662,7 +664,11 @@ Persist transaksi (header + items)
 
 Jangan percaya nilai fee yang dikirim dari browser.
 
-Model tabel: `tutor_payments` (dengan `gross_amount`/`bonus`/`deduction`/`net_amount`/`total_amount` serta status `draft`/`processed`/`paid`) dan `tutor_payment_items` (detail per sesi/murid/tarif). Trigger `set_tutor_payment_amounts` menyinkronkan `net_amount` dan `total_amount`. Idempotensi dijaga UNIQUE `(tutor_id, period_start, period_end)`.
+Model tabel: `tutor_payments` (dengan `gross_amount`/`bonus`/`deduction`/`net_amount`/`total_amount` serta status `draft`/`processed`/`paid`) dan `tutor_payment_items` (detail per sesi/murid/tarif).
+* `draft`: Tahap audit foto presensi per sesi/murid, penyesuaian bonus/potongan, dan opsi mengeluarkan sesi bermasalah.
+* `processed`: Difinalisasi oleh Finance/Owner (`finalized_at`, `finalized_by`).
+* `paid`: Flag bayar resmi setelah transfer dana dilakukan (`paid_at`, `paid_by`), menyimpan `payment_reference` (nomor transfer/bukti bank) dan `notes`.
+Trigger `set_tutor_payment_amounts` menyinkronkan `net_amount` dan `total_amount`. Idempotensi dijaga UNIQUE `(tutor_id, period_start, period_end)`.
 
 ---
 
@@ -1359,5 +1365,34 @@ Catatan agar agent berikutnya tidak salah asumsi:
 2. Permission `reports:read` direferensikan di `config/permissions.ts`/resolver tetapi belum ada di master `permissions`/seed — selaraskan sebelum dipakai sebagai enforcement.
 3. RLS saat ini **deny-by-default** (server memakai service_role). Bila ingin defense-in-depth berbasis identitas, perlu pemetaan Better Auth user → policy eksplisit.
 4. Cache session in-memory 45 detik (`lib/auth/session.ts`) harus diinvalidasi (`invalidateUserSessionCache`) setelah perubahan role/permission.
-5. Belum ada snapshot peserta sesi (`session_students`); perubahan membership jadwal dapat memengaruhi sesi lama.
-6. State machine formal session/attendance/reschedule dan auto-generate sesi (cron) masih backlog (lihat `docs/BUSINESS_RULES.md` §19).
+5. Snapshot peserta sesi (`session_students`) telah diimplementasikan pada migration `0006_session_students_snapshot.sql` dan dibekukan otomatis oleh `SessionGeneratorService`.
+6. Auto-generate sesi berkala via cron telah diimplementasikan di `/api/v1/sessions/cron-generate` dengan proteksi `CRON_SECRET` dan audit log server.
+7. State machine formal session/attendance/reschedule masih backlog (lihat `docs/BUSINESS_RULES.md` §19).
+8. Notifikasi push tutor telah diimplementasikan (migration `0007`, fitur `features/shared/web-push`, halaman `/management/settings/notifications`, toggle `/tutor/profile`, dispatcher `/api/v1/web-push/dispatch`). Permission konfigurasi: `notification:manage`. Parameter pengingat adalah data di `notification_settings`; jangan hardcode. Fallback WhatsApp gateway belum diimplementasikan.
+
+---
+
+# 38. Mandatory Documentation Sync Rule
+
+Seluruh AI agent yang bekerja pada project ini terikat oleh aturan mutlak berikut:
+
+1. **Sinkronisasi Wajib ke Dokumen**:
+   Setiap kali melakukan perubahan yang melibatkan:
+   * Penambahan fitur baru atau modifikasi fitur lama
+   * Perubahan skema database (migration/tabel/kolom/constraint/trigger/RPC)
+   * Perubahan alur otorisasi, role, permission, atau security boundary
+   * Perubahan aturan bisnis, formula honor, atau alur verifikasi presensi
+   * Perbaikan bug struktural atau perombakan arsitektur
+
+   Agent **WAJIB memperbarui dokumen terkait di folder `docs/`**:
+   * `docs/BUSINESS_RULES.md`: Aturan domain bisnis, status kehadiran, formula payroll, alur verifikasi, dsb.
+   * `docs/DEVELOPMENT_STATUS_AND_RECOMMENDATIONS.md`: Matriks kapabilitas fitur per peran dan status modul terkini.
+   * `docs/PRD.md` & `docs/DESIGN.md`: Cakupan produk dan spesifikasi UI/UX.
+   * `AGENTS.md`: Bila terdapat aturan teknis baru yang disepakati dengan user.
+
+2. **Dilarang Documentation Drift**:
+   Dokumentasi dan kode harus selalu selaras (*single source of truth*). Tugas implementasi kode dianggap **belum selesai (incomplete)** jika dokumen terkait belum diperbarui.
+
+3. **Dokumentasikan Keputusan Baru dari User**:
+   Setiap keputusan bisnis atau preferensi arsitektur yang disepakati bersama user selama percakapan wajib dicatat ke dokumen terkait agar agent pada sesi berikutnya memiliki konteks yang utuh.
+

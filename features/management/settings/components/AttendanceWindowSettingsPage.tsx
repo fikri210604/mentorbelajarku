@@ -24,7 +24,14 @@ import { DatePicker, TimePicker } from "@/components/ui/date-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SettingsNavTabs } from "./SettingsNavTabs";
 import {
@@ -50,7 +57,9 @@ export default function AttendanceWindowSettingsPage({
     close_after_hours: Number(initialSetting?.close_after_hours ?? 4),
     max_days_allowed: Number(initialSetting?.max_days_allowed ?? 1),
     daily_cutoff_time: initialSetting?.daily_cutoff_time || "23:59:59",
-    allow_tutor_backdate: Boolean(initialSetting?.allow_tutor_backdate ?? false),
+    allow_tutor_backdate: Boolean(
+      initialSetting?.allow_tutor_backdate ?? false,
+    ),
     description:
       initialSetting?.description ||
       "Konfigurasi baku batas waktu presensi dan upload foto sesi oleh tutor.",
@@ -75,7 +84,9 @@ export default function AttendanceWindowSettingsPage({
   const watchAllowBackdate = watch("allow_tutor_backdate", false);
 
   // State untuk kalkulator simulasi
-  const [simDate, setSimDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [simDate, setSimDate] = useState(
+    () => new Date().toISOString().split("T")[0],
+  );
   const [simTime, setSimTime] = useState("16:00");
 
   // Perhitungan simulasi jendela waktu
@@ -85,14 +96,27 @@ export default function AttendanceWindowSettingsPage({
       const [year, month, day] = simDate.split("-").map(Number);
       const startObj = new Date(year, month - 1, day, sh, sm);
 
-      const openObj = new Date(startObj.getTime() - (watchOpenBefore || 0) * 60 * 1000);
-      const normalCloseObj = new Date(startObj.getTime() + (watchCloseHours || 0) * 60 * 60 * 1000);
+      const openObj = new Date(
+        startObj.getTime() - (watchOpenBefore || 0) * 60 * 1000,
+      );
+      const normalCloseObj = new Date(
+        startObj.getTime() + (watchCloseHours || 0) * 60 * 60 * 1000,
+      );
 
-      const maxDayObj = new Date(year, month - 1, day + (watchMaxDays || 0), 23, 59, 59);
+      const maxDayObj = new Date(
+        year,
+        month - 1,
+        day + (watchMaxDays || 0),
+        23,
+        59,
+        59,
+      );
 
       const pad = (n: number) => String(n).padStart(2, "0");
-      const fmtTime = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      const fmtDate = (d: Date) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
+      const fmtTime = (d: Date) =>
+        `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const fmtDate = (d: Date) =>
+        `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
 
       return {
         openTime: `${fmtTime(openObj)} WIB`,
@@ -118,7 +142,9 @@ export default function AttendanceWindowSettingsPage({
     try {
       const res = await saveAttendanceWindowSetting(data);
       if (res.success) {
-        toast.success(res.message || "Master batas waktu absensi berhasil diperbarui.");
+        toast.success(
+          res.message || "Master batas waktu absensi berhasil diperbarui.",
+        );
         if (res.data?.id) {
           setValue("id", res.data.id);
         }
@@ -152,11 +178,15 @@ export default function AttendanceWindowSettingsPage({
               </h3>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl">
-              Aturan ini mengontrol kapan tombol presensi dibuka untuk tutor, berapa lama batas toleransi
-              pengunggahan foto bukti belajar, serta batas hari maksimal sebelum pengisian kedaluwarsa.
+              Aturan ini mengontrol kapan tombol presensi dibuka untuk tutor,
+              berapa lama batas toleransi pengunggahan foto bukti belajar, serta
+              batas hari maksimal sebelum pengisian kedaluwarsa.
             </p>
           </div>
-          <Badge variant="outline" className="self-start sm:self-center px-3 py-1 gap-1.5 border-primary/30 text-primary">
+          <Badge
+            variant="outline"
+            className="self-start sm:self-center px-3 py-1 gap-1.5 border-primary/30 text-primary"
+          >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Berlaku Global</span>
           </Badge>
@@ -173,7 +203,8 @@ export default function AttendanceWindowSettingsPage({
                 Konfigurasi Jendela Waktu
               </CardTitle>
               <CardDescription className="text-xs">
-                Sesuaikan parameter jam dan toleransi hari sesuai kebijakan operasional bimbel
+                Sesuaikan parameter jam dan toleransi hari sesuai kebijakan
+                operasional bimbel
               </CardDescription>
             </CardHeader>
 
@@ -191,7 +222,9 @@ export default function AttendanceWindowSettingsPage({
                     className="h-9 text-sm"
                   />
                   {errors.name && (
-                    <p className="text-[11px] text-destructive">{errors.name.message}</p>
+                    <p className="text-[11px] text-destructive">
+                      {errors.name.message}
+                    </p>
                   )}
                 </div>
 
@@ -199,7 +232,10 @@ export default function AttendanceWindowSettingsPage({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="open_before_minutes" className="text-xs font-semibold">
+                      <Label
+                        htmlFor="open_before_minutes"
+                        className="text-xs font-semibold"
+                      >
                         Buka Presensi Lebih Awal
                       </Label>
                       <span className="text-[11px] font-mono text-primary font-bold">
@@ -212,23 +248,33 @@ export default function AttendanceWindowSettingsPage({
                         type="number"
                         min={0}
                         max={180}
-                        {...register("open_before_minutes", { valueAsNumber: true })}
+                        {...register("open_before_minutes", {
+                          valueAsNumber: true,
+                        })}
                         className="h-9 text-sm"
                       />
-                      <span className="text-xs text-muted-foreground shrink-0">menit sebelum jadwal</span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        menit sebelum jadwal
+                      </span>
                     </div>
                     <p className="text-[11px] text-muted-foreground">
-                      Tutor bisa mulai membuka kamera {watchOpenBefore} menit sebelum jam mulai.
+                      Tutor bisa mulai membuka kamera {watchOpenBefore} menit
+                      sebelum jam mulai.
                     </p>
                     {errors.open_before_minutes && (
-                      <p className="text-[11px] text-destructive">{errors.open_before_minutes.message}</p>
+                      <p className="text-[11px] text-destructive">
+                        {errors.open_before_minutes.message}
+                      </p>
                     )}
                   </div>
 
                   {/* 3. Toleransi Jam Upload */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="close_after_hours" className="text-xs font-semibold">
+                      <Label
+                        htmlFor="close_after_hours"
+                        className="text-xs font-semibold"
+                      >
                         Toleransi Jam Upload
                       </Label>
                       <span className="text-[11px] font-mono text-primary font-bold">
@@ -241,16 +287,23 @@ export default function AttendanceWindowSettingsPage({
                         type="number"
                         min={1}
                         max={72}
-                        {...register("close_after_hours", { valueAsNumber: true })}
+                        {...register("close_after_hours", {
+                          valueAsNumber: true,
+                        })}
                         className="h-9 text-sm"
                       />
-                      <span className="text-xs text-muted-foreground shrink-0">jam setelah mulai</span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        jam setelah mulai
+                      </span>
                     </div>
                     <p className="text-[11px] text-muted-foreground">
-                      Batas waktu normal upload foto dan submit presensi setelah jam mengajar.
+                      Batas waktu normal upload foto dan submit presensi setelah
+                      jam mengajar.
                     </p>
                     {errors.close_after_hours && (
-                      <p className="text-[11px] text-destructive">{errors.close_after_hours.message}</p>
+                      <p className="text-[11px] text-destructive">
+                        {errors.close_after_hours.message}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -259,15 +312,21 @@ export default function AttendanceWindowSettingsPage({
                 <div className="p-4 rounded-xl border border-border/80 bg-muted/20 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-0.5">
-                      <Label htmlFor="max_days_allowed" className="text-xs font-semibold">
+                      <Label
+                        htmlFor="max_days_allowed"
+                        className="text-xs font-semibold"
+                      >
                         Toleransi Hari Keterlambatan Upload (H+N Hari)
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        Mengizinkan tutor yang memiliki kendala untuk upload di keesokan harinya
-                        hingga pukul 23:59.
+                        Mengizinkan tutor yang memiliki kendala untuk upload di
+                        keesokan harinya hingga pukul 23:59.
                       </p>
                     </div>
-                    <Badge variant="secondary" className="font-mono text-xs shrink-0">
+                    <Badge
+                      variant="secondary"
+                      className="font-mono text-xs shrink-0"
+                    >
                       H+{watchMaxDays} Hari
                     </Badge>
                   </div>
@@ -282,11 +341,17 @@ export default function AttendanceWindowSettingsPage({
                       className="h-9 text-sm"
                     />
                     <span className="text-xs text-muted-foreground">
-                      hari ({watchMaxDays === 0 ? "hanya hari H" : `s/d H+${watchMaxDays}`})
+                      hari (
+                      {watchMaxDays === 0
+                        ? "hanya hari H"
+                        : `s/d H+${watchMaxDays}`}
+                      )
                     </span>
                   </div>
                   {errors.max_days_allowed && (
-                    <p className="text-[11px] text-destructive">{errors.max_days_allowed.message}</p>
+                    <p className="text-[11px] text-destructive">
+                      {errors.max_days_allowed.message}
+                    </p>
                   )}
                 </div>
 
@@ -295,24 +360,35 @@ export default function AttendanceWindowSettingsPage({
                   <div className="space-y-0.5 pr-4">
                     <div className="flex items-center gap-2">
                       <ShieldAlert className="w-4 h-4 text-amber-600" />
-                      <Label htmlFor="allow_tutor_backdate" className="text-xs font-semibold text-foreground cursor-pointer">
+                      <Label
+                        htmlFor="allow_tutor_backdate"
+                        className="text-xs font-semibold text-foreground cursor-pointer"
+                      >
                         Izinkan Bebas Backdate Tanpa Batas (Mode Fleksibel)
                       </Label>
                     </div>
                     <p className="text-[11px] text-muted-foreground">
-                      Jika aktif, tutor dapat mengisi presensi sesi kapan saja tanpa batas kedaluwarsa waktu.
+                      Jika aktif, tutor dapat mengisi presensi sesi kapan saja
+                      tanpa batas kedaluwarsa waktu.
                     </p>
                   </div>
                   <Switch
                     id="allow_tutor_backdate"
                     checked={watchAllowBackdate}
-                    onCheckedChange={(checked) => setValue("allow_tutor_backdate", checked, { shouldDirty: true })}
+                    onCheckedChange={(checked) =>
+                      setValue("allow_tutor_backdate", checked, {
+                        shouldDirty: true,
+                      })
+                    }
                   />
                 </div>
 
                 {/* 6. Deskripsi / Catatan SOP */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="description" className="text-xs font-semibold">
+                  <Label
+                    htmlFor="description"
+                    className="text-xs font-semibold"
+                  >
                     Catatan Kebijakan & SOP Presensi
                   </Label>
                   <Textarea
@@ -361,13 +437,16 @@ export default function AttendanceWindowSettingsPage({
                 Simulator Jendela Waktu
               </CardTitle>
               <CardDescription className="text-xs">
-                Cek hasil perhitungan waktu presensi tutor berdasarkan simulasi sesi berikut
+                Cek hasil perhitungan waktu presensi tutor berdasarkan simulasi
+                sesi berikut
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="space-y-1">
-                  <Label className="text-[11px] text-muted-foreground">Contoh Tanggal Sesi</Label>
+                  <Label className="text-[11px] text-muted-foreground">
+                    Contoh Tanggal Sesi
+                  </Label>
                   <DatePicker
                     value={simDate}
                     onChange={(_, str) => setSimDate(str)}
@@ -376,7 +455,9 @@ export default function AttendanceWindowSettingsPage({
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[11px] text-muted-foreground">Jam Mulai Sesi</Label>
+                  <Label className="text-[11px] text-muted-foreground">
+                    Jam Mulai Sesi
+                  </Label>
                   <TimePicker
                     value={simTime}
                     onChange={(t) => setSimTime(t)}
@@ -388,16 +469,28 @@ export default function AttendanceWindowSettingsPage({
 
               <div className="space-y-2.5 p-3.5 rounded-xl border border-border bg-muted/30 text-xs">
                 <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                  <span className="text-muted-foreground">Waktu Buka Presensi:</span>
-                  <span className="font-semibold text-foreground font-mono">{simResult.openTime}</span>
+                  <span className="text-muted-foreground">
+                    Waktu Buka Presensi:
+                  </span>
+                  <span className="font-semibold text-foreground font-mono">
+                    {simResult.openTime}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                  <span className="text-muted-foreground">Batas Normal Sesi:</span>
-                  <span className="font-semibold text-foreground font-mono">{simResult.normalClose}</span>
+                  <span className="text-muted-foreground">
+                    Batas Normal Sesi:
+                  </span>
+                  <span className="font-semibold text-foreground font-mono">
+                    {simResult.normalClose}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Batas Maksimal Upload:</span>
-                  <span className="font-bold text-primary font-mono">{simResult.maxAllowed}</span>
+                  <span className="text-muted-foreground">
+                    Batas Maksimal Upload:
+                  </span>
+                  <span className="font-bold text-primary font-mono">
+                    {simResult.maxAllowed}
+                  </span>
                 </div>
               </div>
 
@@ -407,8 +500,9 @@ export default function AttendanceWindowSettingsPage({
                   <span>Dispensasi Override Per Sesi</span>
                 </div>
                 <p className="text-[10.5px] leading-relaxed opacity-90">
-                  Jika ada tutor yang terlambat upload melebihi batas di atas, Admin dapat membuka dispensasi
-                  tanggal khusus pada halaman detail sesi terkait tanpa perlu mengubah aturan global.
+                  Jika ada tutor yang terlambat upload melebihi batas di atas,
+                  Admin dapat membuka dispensasi tanggal khusus pada halaman
+                  detail sesi terkait tanpa perlu mengubah aturan global.
                 </p>
               </div>
             </CardContent>
@@ -426,22 +520,32 @@ export default function AttendanceWindowSettingsPage({
               <div className="flex items-start gap-2">
                 <Check className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
                 <p>
-                  <strong className="text-foreground">Sesi Reguler / Sore:</strong> Toleransi 4-6 jam
-                  memastikan tutor dapat submit absensi sebelum tengah malam di hari yang sama.
+                  <strong className="text-foreground">
+                    Sesi Reguler / Sore:
+                  </strong>{" "}
+                  Toleransi 4-6 jam memastikan tutor dapat submit absensi
+                  sebelum tengah malam di hari yang sama.
                 </p>
               </div>
               <div className="flex items-start gap-2">
                 <Check className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
                 <p>
-                  <strong className="text-foreground">Toleransi H+1 Hari:</strong> Direkomendasikan aktif
-                  agar tutor yang mengajar sesi malam (misal selesai 20.00) tetap dapat mengunggah foto di keesokan paginya.
+                  <strong className="text-foreground">
+                    Toleransi H+1 Hari:
+                  </strong>{" "}
+                  Direkomendasikan aktif agar tutor yang mengajar sesi malam
+                  (misal selesai 20.00) tetap dapat mengunggah foto di keesokan
+                  paginya.
                 </p>
               </div>
               <div className="flex items-start gap-2">
                 <Check className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
                 <p>
-                  <strong className="text-foreground">Integritas Payroll:</strong> Sesi yang absensinya
-                  terverifikasi tepat waktu menjadi dasar otomatis perhitungan payroll tutor di akhir bulan.
+                  <strong className="text-foreground">
+                    Integritas Payroll:
+                  </strong>{" "}
+                  Sesi yang absensinya terverifikasi tepat waktu menjadi dasar
+                  otomatis perhitungan payroll tutor di akhir bulan.
                 </p>
               </div>
             </CardContent>

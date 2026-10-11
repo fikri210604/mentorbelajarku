@@ -87,7 +87,6 @@ export function computeAttendancePermissions(params: {
     (currentTutorId && sessionTutorId && currentTutorId === sessionTutorId);
 
   if (isOwner) {
-    // If management has already verified the attendance, tutor cannot edit/delete anymore
     const isLocked = verificationStatus === 'verified';
     return {
       can_view: true,

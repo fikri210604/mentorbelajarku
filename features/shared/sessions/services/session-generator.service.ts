@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { expandOccurrences } from "@/lib/utils/recurrence";
 
 export interface GenerateSessionsInput {
   targetDate?: string; // Format: YYYY-MM-DD (default hari ini)
@@ -27,35 +28,37 @@ export interface GenerateSessionsResult {
   errors: string[];
 }
 
+interface ScheduleRow {
+  id: string;
+  tutor_id: string;
+  program_id: string;
+  bimbel_type_id: string | null;
+  day_of_week: number;
+  days_of_week: number[] | null;
+  recurrence_start_date: string | null;
+  recurrence_interval: number | null;
+  recurrence_count: number | null;
+  recurrence_until: string | null;
+  start_time: string;
+  end_time: string;
+  notes: string | null;
+  schedule_students?: { id: string; student_id: string; enrollment_id: string | null }[] | null;
+}
+
 /**
  * Service untuk men-generate record sesi pembelajaran aktual (sessions)
  * dari rancangan jadwal rutin (schedules).
- * 
+ *
  * Sesuai AGENTS.md Rule 6:
- * - Schedule: Rencana belajar rutin (hari & jam)
+ * - Schedule: Rencana belajar rutin + aturan pengulangan (migration 0005)
  * - Session: Kejadian pembelajaran aktual pada tanggal tertentu
+ *
+ * Kontrak edit seri: generator hanya MEMBUAT sesi yang belum ada; tidak pernah
+ * mengubah/menghapus sesi existing (sesi historis immutable).
  */
 export class SessionGeneratorService {
   /**
-   * Helper untuk mendapatkan daftar tanggal 'YYYY-MM-DD' dalam rentang tertentu
-   */
-  private static getDateRange(startDateStr: string, endDateStr: string): string[] {
-    const dates: string[] = [];
-    const current = new Date(startDateStr);
-    const end = new Date(endDateStr);
-
-    while (current <= end) {
-      const y = current.getFullYear();
-      const m = String(current.getMonth() + 1).padStart(2, "0");
-      const d = String(current.getDate()).padStart(2, "0");
-      dates.push(`${y}-${m}-${d}`);
-      current.setDate(current.getDate() + 1);
-    }
-    return dates;
-  }
-
-  /**
-   * Eksekusi pembangkitan sesi aktual dari jadwal aktif
+   * Eksekusi pembangkitan sesi aktual dari jadwal aktif.
    */
   static async generateSessions(
     options: GenerateSessionsInput = {}
@@ -71,37 +74,48 @@ export class SessionGeneratorService {
     };
 
     try {
-      // 1. Tentukan tanggal-tanggal yang akan diproses
-      let targetDates: string[] = [];
+      // 1. Tentukan jendela tanggal yang diproses
+      let windowStart: string;
+      let windowEnd: string;
       if (options.startDate && options.endDate) {
-        targetDates = this.getDateRange(options.startDate, options.endDate);
+        windowStart = options.startDate;
+        windowEnd = options.endDate;
       } else if (options.targetDate) {
-        targetDates = [options.targetDate];
+        windowStart = options.targetDate;
+        windowEnd = options.targetDate;
       } else {
         // Default hari ini (lokal)
         const now = new Date();
         const y = now.getFullYear();
         const m = String(now.getMonth() + 1).padStart(2, "0");
         const d = String(now.getDate()).padStart(2, "0");
-        targetDates = [`${y}-${m}-${d}`];
+        windowStart = `${y}-${m}-${d}`;
+        windowEnd = windowStart;
       }
 
-      if (targetDates.length === 0) {
+      if (windowEnd < windowStart) {
+        result.success = false;
+        result.errors.push("Rentang tanggal tidak valid (endDate < startDate).");
         return result;
       }
 
       // 2. Ambil seluruh jadwal aktif beserta relasi muridnya
       let scheduleQuery = supabase
         .from("schedules")
-        .select(`
+        .select(
+          `
           id,
           tutor_id,
           program_id,
           bimbel_type_id,
           day_of_week,
+          days_of_week,
+          recurrence_start_date,
+          recurrence_interval,
+          recurrence_count,
+          recurrence_until,
           start_time,
           end_time,
-          location,
           notes,
           status,
           schedule_students (
@@ -109,7 +123,8 @@ export class SessionGeneratorService {
             student_id,
             enrollment_id
           )
-        `)
+        `
+        )
         .eq("status", "active");
 
       if (options.scheduleId) {
@@ -119,112 +134,222 @@ export class SessionGeneratorService {
         scheduleQuery = scheduleQuery.eq("tutor_id", options.tutorId);
       }
 
-      const { data: schedules, error: scheduleErr } = await scheduleQuery;
+      const { data: scheduleRows, error: scheduleErr } = await scheduleQuery;
 
-      if (scheduleErr || !schedules) {
+      if (scheduleErr || !scheduleRows) {
         result.success = false;
         result.errors.push(`Gagal mengambil data jadwal: ${scheduleErr?.message || "Data kosong"}`);
         return result;
       }
 
+      const schedules = scheduleRows as unknown as ScheduleRow[];
       if (schedules.length === 0) {
         return result;
       }
+      const scheduleIds = schedules.map((s) => s.id);
 
-      // 3. Untuk setiap tanggal, cocokkan day_of_week dan cek duplikasi
-      for (const dateStr of targetDates) {
-        const [y, m, d] = dateStr.split("-").map(Number);
-        const dateObj = new Date(y, m - 1, d);
-        const dayOfWeek = dateObj.getDay(); // 0 = Minggu, 1 = Senin, ..., 6 = Sabtu
+      // 3. Ambil sesi existing + pengecualian dalam SATU query masing-masing
+      // (bukan per-tanggal seperti sebelumnya).
+      const [{ data: existingSessions, error: existErr }, { data: exceptions }] =
+        await Promise.all([
+          supabase
+            .from("sessions")
+            .select("schedule_id, session_date")
+            .gte("session_date", windowStart)
+            .lte("session_date", windowEnd)
+            .in("schedule_id", scheduleIds),
+          supabase
+            .from("schedule_exceptions")
+            .select("schedule_id, exception_date")
+            .gte("exception_date", windowStart)
+            .lte("exception_date", windowEnd)
+            .in("schedule_id", scheduleIds),
+        ]);
 
-        // Filter jadwal yang harinya cocok
-        const matchingSchedules = schedules.filter((s) => s.day_of_week === dayOfWeek);
+      if (existErr) {
+        result.success = false;
+        result.errors.push(`Gagal mengecek sesi eksisting: ${existErr.message}`);
+        return result;
+      }
 
-        if (matchingSchedules.length === 0) continue;
+      const existingSet = new Set(
+        (existingSessions || []).map(
+          (s) => `${(s as { schedule_id: string }).schedule_id}|${(s as { session_date: string }).session_date}`
+        )
+      );
+      const exceptBySchedule = new Map<string, string[]>();
+      for (const e of (exceptions || []) as { schedule_id: string; exception_date: string }[]) {
+        const list = exceptBySchedule.get(e.schedule_id) ?? [];
+        list.push(e.exception_date);
+        exceptBySchedule.set(e.schedule_id, list);
+      }
 
-        // Cek sesi yang sudah ada di tanggal ini untuk jadwal terkait
-        const scheduleIds = matchingSchedules.map((s) => s.id);
-        const { data: existingSessions, error: existErr } = await supabase
-          .from("sessions")
-          .select("id, schedule_id")
-          .eq("session_date", dateStr)
-          .in("schedule_id", scheduleIds);
+      // 4. Kembangkan occurrence per jadwal dari rule-nya (bukan day_of_week tunggal)
+      const toInsert: {
+        schedule_id: string;
+        tutor_id: string;
+        program_id: string;
+        bimbel_type_id: string | null;
+        session_date: string;
+        start_time: string;
+        end_time: string;
+        status: "scheduled";
+        notes: string | null;
+        created_by: string | null;
+      }[] = [];
+      const metaByKey = new Map<
+        string,
+        { schedule: ScheduleRow; studentCount: number }
+      >();
 
-        if (existErr) {
-          result.errors.push(`Gagal mengecek sesi eksisting tanggal ${dateStr}: ${existErr.message}`);
+      for (const schedule of schedules) {
+        let occurrences: string[];
+        try {
+          occurrences = expandOccurrences(
+            {
+              // Fallback legacy (pra-migration): mingguan tanpa akhir mulai jendela.
+              startDate: schedule.recurrence_start_date ?? windowStart,
+              daysOfWeek:
+                schedule.days_of_week && schedule.days_of_week.length > 0
+                  ? schedule.days_of_week
+                  : [schedule.day_of_week],
+              intervalWeeks: schedule.recurrence_interval ?? 1,
+              count: schedule.recurrence_count,
+              until: schedule.recurrence_until,
+            },
+            {
+              from: windowStart,
+              to: windowEnd,
+              except: exceptBySchedule.get(schedule.id) ?? [],
+            }
+          );
+        } catch (ruleErr) {
+          result.errors.push(
+            `Aturan pengulangan jadwal ${schedule.id} tidak valid: ${(ruleErr as Error).message}`
+          );
           continue;
         }
 
-        const existingScheduleIdSet = new Set((existingSessions || []).map((s) => s.schedule_id));
-
-        for (const schedule of matchingSchedules) {
+        const studentCount = schedule.schedule_students?.length || 0;
+        for (const dateStr of occurrences) {
           result.totalEvaluated++;
-
-          // Jika sesi untuk jadwal & tanggal ini sudah pernah dibuat, lewati (cegah duplikasi)
-          if (existingScheduleIdSet.has(schedule.id)) {
+          const key = `${schedule.id}|${dateStr}`;
+          // Idempoten: (schedule, tanggal) yang sudah ada dilewati.
+          if (existingSet.has(key)) {
             result.skippedCount++;
             continue;
           }
-
-          // Buat sesi baru
-          const { data: newSession, error: createErr } = await supabase
-            .from("sessions")
-            .insert({
-              schedule_id: schedule.id,
-              tutor_id: schedule.tutor_id,
-              program_id: schedule.program_id,
-              bimbel_type_id: schedule.bimbel_type_id,
-              session_date: dateStr,
-              start_time: schedule.start_time,
-              end_time: schedule.end_time,
-              status: "scheduled",
-              notes: schedule.notes || null,
-              created_by: options.userId || null,
-            })
-            .select("id, schedule_id, session_date, tutor_id, program_id")
-            .single();
-
-          if (createErr || !newSession) {
-            result.errors.push(
-              `Gagal membuat sesi jadwal ${schedule.id} tanggal ${dateStr}: ${createErr?.message || "Unknown"}`
-            );
-            continue;
-          }
-
-          result.createdCount++;
-          result.createdSessions.push({
-            id: newSession.id,
-            scheduleId: schedule.id,
-            sessionDate: dateStr,
-            tutorId: schedule.tutor_id,
-            programId: schedule.program_id,
-            studentCount: schedule.schedule_students?.length || 0,
+          existingSet.add(key); // cegah duplikat dalam batch yang sama
+          toInsert.push({
+            schedule_id: schedule.id,
+            tutor_id: schedule.tutor_id,
+            program_id: schedule.program_id,
+            bimbel_type_id: schedule.bimbel_type_id,
+            session_date: dateStr,
+            start_time: schedule.start_time,
+            end_time: schedule.end_time,
+            status: "scheduled" as const,
+            notes: schedule.notes || null,
+            created_by: options.userId || null,
           });
+          metaByKey.set(key, { schedule, studentCount });
+        }
+      }
 
-          // Audit log pencatatan pembuatan sesi aktual
-          try {
-            await supabase.from("audit_logs").insert({
-              user_id: options.userId || null,
-              action: "SESSION_GENERATED",
-              entity_type: "sessions",
-              entity_id: newSession.id,
-              metadata: {
-                schedule_id: schedule.id,
-                session_date: dateStr,
-                tutor_id: schedule.tutor_id,
-                student_count: schedule.schedule_students?.length || 0,
-              },
+      if (toInsert.length === 0) {
+        return result;
+      }
+
+      // 5. Batch insert sesi + batch audit (2 roundtrip, bukan 2N).
+      const { data: newSessions, error: createErr } = await supabase
+        .from("sessions")
+        .insert(toInsert)
+        .select("id, schedule_id, session_date, tutor_id, program_id");
+
+      if (createErr || !newSessions) {
+        result.success = false;
+        result.errors.push(`Gagal membuat sesi: ${createErr?.message || "Unknown"}`);
+        return result;
+      }
+
+      const sessionStudentsToInsert: {
+        session_id: string;
+        student_id: string;
+        enrollment_id: string | null;
+        bimbel_type_id: string | null;
+      }[] = [];
+
+      for (const s of newSessions as unknown as {
+        id: string;
+        schedule_id: string;
+        session_date: string;
+        tutor_id: string;
+        program_id: string;
+      }[]) {
+        const meta = metaByKey.get(`${s.schedule_id}|${s.session_date}`);
+        result.createdCount++;
+        result.createdSessions.push({
+          id: s.id,
+          scheduleId: s.schedule_id,
+          sessionDate: s.session_date,
+          tutorId: s.tutor_id,
+          programId: s.program_id,
+          studentCount: meta?.studentCount || 0,
+        });
+
+        if (meta?.schedule.schedule_students && meta.schedule.schedule_students.length > 0) {
+          for (const ss of meta.schedule.schedule_students) {
+            sessionStudentsToInsert.push({
+              session_id: s.id,
+              student_id: ss.student_id,
+              enrollment_id: ss.enrollment_id,
+              bimbel_type_id: meta.schedule.bimbel_type_id,
             });
-          } catch (auditErr) {
-            console.warn("Gagal merekam audit log session generation:", auditErr);
           }
         }
       }
 
+      // 6. Batch insert session_students snapshot (Point 3 - Frozen Session Enrollment)
+      if (sessionStudentsToInsert.length > 0) {
+        try {
+          const { error: ssErr } = await supabase
+            .from("session_students")
+            .insert(sessionStudentsToInsert);
+
+          if (ssErr) {
+            console.warn("Gagal membekukan snapshot session_students:", ssErr.message);
+            result.errors.push(`Catatan snapshot peserta: ${ssErr.message}`);
+          }
+        } catch (ssCatchErr: any) {
+          console.warn("Exception saat snapshot session_students:", ssCatchErr);
+        }
+      }
+
+      try {
+        await supabase.from("audit_logs").insert(
+          result.createdSessions.map((s) => ({
+            user_id: options.userId || null,
+            action: "SESSION_GENERATED",
+            entity_type: "sessions",
+            entity_id: s.id,
+            metadata: {
+              schedule_id: s.scheduleId,
+              session_date: s.sessionDate,
+              tutor_id: s.tutorId,
+              student_count: s.studentCount,
+            },
+          }))
+        );
+      } catch (auditErr) {
+        console.warn("Gagal merekam audit log session generation:", auditErr);
+      }
+
       return result;
-    } catch (err: any) {
+    } catch (err: unknown) {
       result.success = false;
-      result.errors.push(err.message || "Terjadi kesalahan pada session generator");
+      result.errors.push(
+        err instanceof Error ? err.message : "Terjadi kesalahan pada session generator"
+      );
       return result;
     }
   }

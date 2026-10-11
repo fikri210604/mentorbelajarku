@@ -1,10 +1,10 @@
-import Link from 'next/link';
-import { Clock, User, BookOpen, AlertCircle, FileText } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { StatusBadge } from '@/components/shared/status-badge';
-import type { StudentMeetingHistoryItem } from '../types';
+import Link from "next/link";
+import { Clock, User, BookOpen, AlertCircle, FileText } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/shared/status-badge";
+import type { StudentMeetingHistoryItem } from "../types";
 
 interface StudentHistoryListProps {
   history: StudentMeetingHistoryItem[];
@@ -15,8 +15,8 @@ interface StudentHistoryListProps {
 
 export function StudentHistoryList({
   history,
-  title = 'Riwayat Sesi Pembelajaran & Pertemuan',
-  description = 'Daftar pertemuan riil yang telah terlaksana beserta nomor urut pertemuan dan tutor pengajar.',
+  title = "Riwayat Sesi Pembelajaran & Pertemuan",
+  description = "Daftar pertemuan riil yang telah terlaksana beserta nomor urut pertemuan dan tutor pengajar.",
   studentId,
 }: StudentHistoryListProps) {
   if (history.length === 0) {
@@ -40,9 +40,9 @@ export function StudentHistoryList({
 
   const getStatusBadge = (item: StudentMeetingHistoryItem) => {
     switch (item.status) {
-      case 'permission':
+      case "permission":
         return <Badge variant="warning">Izin (Kuota Utuh)</Badge>;
-      case 'sick':
+      case "sick":
         return <Badge variant="info">Sakit (Kuota Utuh)</Badge>;
       default:
         return <StatusBadge status={item.status} />;
@@ -58,7 +58,9 @@ export function StudentHistoryList({
               <Clock className="w-4 h-4 text-primary" />
               {title}
             </CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {description}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="text-xs">
@@ -71,7 +73,9 @@ export function StudentHistoryList({
                 size="xs"
                 className="h-7 text-xs text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border-emerald-300 gap-1.5"
               >
-                <Link href={`/management/students/${studentId}/progress-report`}>
+                <Link
+                  href={`/management/students/${studentId}/progress-report`}
+                >
                   <FileText className="w-3.5 h-3.5" />
                   <span>Cetak Rapor Perkembangan</span>
                 </Link>
@@ -113,7 +117,8 @@ export function StudentHistoryList({
 
                     {item.startTime && (
                       <span className="text-xs text-muted-foreground font-mono">
-                        ({item.startTime.slice(0, 5)} - {item.endTime?.slice(0, 5) || ''})
+                        ({item.startTime.slice(0, 5)} -{" "}
+                        {item.endTime?.slice(0, 5) || ""})
                       </span>
                     )}
 
@@ -124,7 +129,9 @@ export function StudentHistoryList({
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <User className="w-3.5 h-3.5 text-primary" />
                     <span>Tutor Pengajar: </span>
-                    <strong className="text-foreground">{item.tutorName}</strong>
+                    <strong className="text-foreground">
+                      {item.tutorName}
+                    </strong>
                   </div>
 
                   {/* Materi Pembelajaran */}
@@ -132,7 +139,7 @@ export function StudentHistoryList({
                     <div className="flex items-start gap-1.5 text-xs">
                       <BookOpen className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
                       <span className="font-medium text-foreground">
-                        {item.material || 'Materi belum diinput'}
+                        {item.material || "Materi belum diinput"}
                       </span>
                     </div>
 

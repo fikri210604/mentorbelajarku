@@ -61,7 +61,7 @@ Sistem ini dirancang untuk menjawab tantangan operasional bimbel yang biasanya m
 Sistem dimodelkan menggunakan notasi standar **UML Use Case Diagram** (*Stickman Actor*, *System Boundary Subject*, *Use Case Oval/Ellipse*, asosiasi langsung, serta relasi `<<include>>` dan `<<extend>>`):
 
 <p align="center">
-  <img src="public/docs/usecase-diagram.svg" alt="UML Use Case Diagram Mentor Belajarku" width="100%" style="border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);" />
+  <img src="public/docs/usecase-diagram.svg" alt="UML Use Case Diagram Mentor Belajarku" width="100%" />
 </p>
 
 ### 📋 Tabel Spesifikasi Use Case Per Aktor

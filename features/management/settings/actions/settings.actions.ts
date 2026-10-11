@@ -5,7 +5,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { requireAuthUser, checkPermission } from "@/lib/auth/session";
 import { isOwnerRoleName } from "@/lib/permissions/resolver";
 import { getSafeErrorMessage } from "@/lib/traits/response.trait";
-import { STUDENTS_CACHE_TAG } from "@/lib/cache/tags";
+import { STUDENTS_CACHE_TAG, ATTENDANCE_WINDOW_CACHE_TAG, NOTIFICATION_SETTINGS_CACHE_TAG } from "@/lib/cache/tags";
 import type { Permission } from "@/types/auth";
 import {
   bimbelTypeSchema,
@@ -23,6 +23,10 @@ import {
   sessionAttendanceDeadlineSchema,
   SessionAttendanceDeadlineInput,
 } from "../schemas/settings.schema";
+import {
+  notificationSettingSchema,
+  type NotificationSettingInput,
+} from "@/features/shared/web-push/schemas/notification.schema";
 
 interface ActionResponse<T = any> {
   success: boolean;
@@ -710,6 +714,8 @@ export async function saveAttendanceWindowSetting(
     revalidatePath("/management/settings/attendance-window");
     revalidatePath("/management/settings");
     revalidatePath("/tutor/attendance");
+    // Invalidasi cache setting jendela yang dipakai submit presensi tutor.
+    revalidateTag(ATTENDANCE_WINDOW_CACHE_TAG, "max");
 
     return {
       success: true,
@@ -777,6 +783,127 @@ export async function updateSessionAttendanceDeadline(
     return {
       success: false,
       error: getSafeErrorMessage(err, "Gagal memperpanjang batas waktu absensi sesi."),
+    };
+  }
+}
+
+// ==============================================================================
+// 8. PENGATURAN NOTIFIKASI PUSH (permission: notification:manage)
+// ==============================================================================
+// Nilai default tampilan bila belum ada konfigurasi tersimpan. Bukan sumber
+// data; hanya mengisi form saat database kosong.
+const DEFAULT_NOTIFICATION_SETTING = {
+  id: "notification-default",
+  name: "Pengaturan Notifikasi Standar",
+  enabled: true,
+  schedule_created_enabled: true,
+  before_minutes: 30,
+  after_minutes: 15,
+  repeat_count: 1,
+  repeat_interval_minutes: 10,
+  description: "Konfigurasi baku notifikasi push untuk tutor.",
+  status: "active" as const,
+  updated_at: new Date().toISOString(),
+};
+
+export async function getNotificationSetting(): Promise<ActionResponse> {
+  try {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from("notification_settings")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      return {
+        success: false,
+        error: getSafeErrorMessage(error, "Gagal memuat pengaturan notifikasi."),
+      };
+    }
+
+    return { success: true, data: data ?? DEFAULT_NOTIFICATION_SETTING };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: getSafeErrorMessage(err, "Gagal memuat pengaturan notifikasi."),
+    };
+  }
+}
+
+export async function saveNotificationSetting(
+  input: NotificationSettingInput
+): Promise<ActionResponse> {
+  try {
+    const session = await verifyPermission("notification:manage");
+    const validated = notificationSettingSchema.parse(input);
+    const supabase = createServerClient();
+
+    const payload = {
+      name: validated.name,
+      enabled: validated.enabled,
+      schedule_created_enabled: validated.schedule_created_enabled,
+      before_minutes: validated.before_minutes,
+      after_minutes: validated.after_minutes,
+      repeat_count: validated.repeat_count,
+      repeat_interval_minutes: validated.repeat_interval_minutes,
+      description: validated.description || null,
+      status: validated.status,
+      updated_by: session.user.id,
+      updated_at: new Date().toISOString(),
+    };
+
+    let savedId: string | null = null;
+
+    if (validated.id && validated.id !== DEFAULT_NOTIFICATION_SETTING.id) {
+      const { data, error } = await supabase
+        .from("notification_settings")
+        .update(payload)
+        .eq("id", validated.id)
+        .select()
+        .single();
+
+      if (error || !data) {
+        return {
+          success: false,
+          error: getSafeErrorMessage(error, "Gagal memperbarui pengaturan notifikasi."),
+        };
+      }
+      savedId = data.id;
+    } else {
+      const { data, error } = await supabase
+        .from("notification_settings")
+        .insert(payload)
+        .select()
+        .single();
+
+      if (error || !data) {
+        return {
+          success: false,
+          error: getSafeErrorMessage(error, "Gagal menyimpan pengaturan notifikasi."),
+        };
+      }
+      savedId = data.id;
+    }
+
+    await supabase.from("audit_logs").insert({
+      user_id: session.user.id,
+      action: validated.id ? "UPDATE_NOTIFICATION_SETTINGS" : "CREATE_NOTIFICATION_SETTINGS",
+      entity_type: "notification_settings",
+      entity_id: savedId ?? DEFAULT_NOTIFICATION_SETTING.id,
+      metadata: validated as unknown as import("@/types/database.types").Json,
+    });
+
+    revalidatePath("/management/settings/notifications");
+    revalidateTag(NOTIFICATION_SETTINGS_CACHE_TAG, "max");
+
+    return { success: true, message: "Pengaturan notifikasi berhasil disimpan." };
+  } catch (err: unknown) {
+    console.error("[saveNotificationSetting] error:", err);
+    return {
+      success: false,
+      error: getSafeErrorMessage(err, "Gagal menyimpan pengaturan notifikasi."),
     };
   }
 }

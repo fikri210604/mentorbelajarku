@@ -3,6 +3,7 @@ import {
   getStudentById,
   getStudentProgressData,
 } from "@/features/management/students/queries/student.queries";
+import { getTutors } from "@/features/management/tutors/queries/tutor.queries";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -15,9 +16,10 @@ export default async function Page({
   params: Promise<{ studentId: string }>;
 }) {
   const { studentId } = await params;
-  const [student, progressData] = await Promise.all([
+  const [student, progressData, tutors] = await Promise.all([
     getStudentById(studentId),
     getStudentProgressData(studentId),
+    getTutors(),
   ]);
 
   return (
@@ -25,6 +27,8 @@ export default async function Page({
       student={student}
       activePackage={progressData.activePackage}
       history={progressData.history}
+      tutors={tutors}
     />
   );
 }
+

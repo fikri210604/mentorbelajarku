@@ -22,7 +22,13 @@ import {
   ChevronRight,
   Sparkles,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
 import { Calendar } from "@/components/ui/calendar";
@@ -37,6 +43,7 @@ import {
 import dynamic from "next/dynamic";
 import { ChartSkeleton } from "./charts/ChartSkeleton";
 import { formatDate } from "@/lib/utils";
+import { scheduleOccursOnDay } from "@/lib/utils/recurrence";
 import type { DashboardData } from "../queries/dashboard.queries";
 import type { Permission } from "@/types/auth";
 import { isOwnerRoleName } from "@/lib/permissions/resolver";
@@ -46,7 +53,7 @@ const WeeklyBarChart = dynamic(
   {
     loading: () => <ChartSkeleton height="h-72" />,
     ssr: false,
-  }
+  },
 );
 
 const BimbelPieChart = dynamic(
@@ -54,7 +61,7 @@ const BimbelPieChart = dynamic(
   {
     loading: () => <ChartSkeleton height="h-56" />,
     ssr: false,
-  }
+  },
 );
 
 interface CurrentUserProp {
@@ -72,7 +79,9 @@ export default function ManagementDashboardPage({
   initialData,
   currentUser,
 }: ManagementDashboardPageProps) {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    new Date(),
+  );
 
   const effectiveRoleName = currentUser?.roleName || "management";
   const isOwner = isOwnerRoleName(effectiveRoleName);
@@ -97,7 +106,7 @@ export default function ManagementDashboardPage({
     if (initialData?.allScheduledDates?.includes(dateStr)) return true;
     const dayOfWeek = date.getDay();
     return (initialData?.todaySchedules || []).some(
-      (sch) => sch.day_of_week === dayOfWeek && sch.status === "active"
+      (sch) => scheduleOccursOnDay(sch, dayOfWeek) && sch.status === "active",
     );
   };
 
@@ -120,7 +129,11 @@ export default function ManagementDashboardPage({
   // Jika tidak ada sesi tanggal spesifik, generate tampilan dari jadwal rutin aktif hari itu
   const recurringForDay = selectedDate
     ? (initialData?.todaySchedules || [])
-        .filter((sch) => sch.day_of_week === selectedDate.getDay() && sch.status === "active")
+        .filter(
+          (sch) =>
+            scheduleOccursOnDay(sch, selectedDate.getDay()) &&
+            sch.status === "active",
+        )
         .map((sch) => {
           const studentItems = (sch.schedule_students || [])
             .map((ss: { students?: { name?: string } | null }) => ss.students)
@@ -140,7 +153,8 @@ export default function ManagementDashboardPage({
         })
     : [];
 
-  const displaySessions = actualSessions.length > 0 ? actualSessions : recurringForDay;
+  const displaySessions =
+    actualSessions.length > 0 ? actualSessions : recurringForDay;
 
   // =========================================================================
   // VIEW KHUSUS OWNER (ABI HERWIN): EKSEKUTIF, DELEGASI & MAKRO
@@ -167,7 +181,12 @@ export default function ManagementDashboardPage({
           description="Pusat kendali eksekutif bimbingan belajar. Pantau performa makro, status kapasitas pengajar, dan delegasikan wewenang operasional melalui Manajemen Peran."
         >
           <div className="flex items-center gap-2 flex-wrap">
-            <Button asChild variant="outline" size="sm" className="gap-1.5 shadow-xs">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="gap-1.5 shadow-xs"
+            >
               <Link href="/management/schedules">
                 <CalendarDays className="w-4 h-4 text-muted-foreground" />
                 <span>Lihat Semua Jadwal</span>
@@ -194,22 +213,32 @@ export default function ManagementDashboardPage({
                 Fokus pada Pengambilan Keputusan & Pertumbuhan Bimbel
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                Sebagai Owner, Anda tidak perlu terbebani oleh entri jadwal atau absensi harian satu per satu.
-                Seluruh operasional teknis telah didelegasikan kepada divisi{" "}
-                <span className="font-semibold text-foreground">Kurikulum</span>,{" "}
-                <span className="font-semibold text-foreground">HRD</span>, dan{" "}
-                <span className="font-semibold text-foreground">Keuangan</span> sesuai hak akses mereka di database.
+                Sebagai Owner, Anda tidak perlu terbebani oleh entri jadwal atau
+                absensi harian satu per satu. Seluruh operasional teknis telah
+                didelegasikan kepada divisi{" "}
+                <span className="font-semibold text-foreground">Kurikulum</span>
+                , <span className="font-semibold text-foreground">HRD</span>,
+                dan{" "}
+                <span className="font-semibold text-foreground">Keuangan</span>{" "}
+                sesuai hak akses mereka di database.
               </p>
             </div>
 
             <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full md:w-auto shrink-0">
-              <Button asChild className="gap-2 shadow-xs text-xs sm:text-sm w-full sm:w-auto">
+              <Button
+                asChild
+                className="gap-2 shadow-xs text-xs sm:text-sm w-full sm:w-auto"
+              >
                 <Link href="/management/settings/roles">
                   <KeyRound className="w-4 h-4" />
                   <span>Atur Hak Akses Peran</span>
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="gap-2 text-xs sm:text-sm w-full sm:w-auto">
+              <Button
+                asChild
+                variant="outline"
+                className="gap-2 text-xs sm:text-sm w-full sm:w-auto"
+              >
                 <Link href="/management/settings/users">
                   <Users className="w-4 h-4" />
                   <span>Tugaskan Staf</span>
@@ -231,8 +260,12 @@ export default function ManagementDashboardPage({
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{initialData?.stats?.totalStudents ?? 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">Siswa terdaftar dalam paket belajar</p>
+              <div className="text-2xl font-bold">
+                {initialData?.stats?.totalStudents ?? 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Siswa terdaftar dalam paket belajar
+              </p>
             </CardContent>
           </Card>
 
@@ -246,8 +279,12 @@ export default function ManagementDashboardPage({
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{initialData?.stats?.totalTutors ?? 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">Tenaga pendidik terverifikasi</p>
+              <div className="text-2xl font-bold">
+                {initialData?.stats?.totalTutors ?? 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Tenaga pendidik terverifikasi
+              </p>
             </CardContent>
           </Card>
 
@@ -261,9 +298,12 @@ export default function ManagementDashboardPage({
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{initialData?.stats?.todaySessions ?? 0}</div>
+              <div className="text-2xl font-bold">
+                {initialData?.stats?.todaySessions ?? 0}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {initialData?.stats?.todayCompletedSessions ?? 0} sesi telah diselesaikan
+                {initialData?.stats?.todayCompletedSessions ?? 0} sesi telah
+                diselesaikan
               </p>
             </CardContent>
           </Card>
@@ -278,8 +318,12 @@ export default function ManagementDashboardPage({
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{initialData?.stats?.pendingPayroll ?? 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">Siap direview bagian Keuangan</p>
+              <div className="text-2xl font-bold">
+                {initialData?.stats?.pendingPayroll ?? 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Siap direview bagian Keuangan
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -296,7 +340,8 @@ export default function ManagementDashboardPage({
                     Tren Beban Belajar Mingguan
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Perbandingan sesi selesai vs total terjadwal selama 7 hari terakhir
+                    Perbandingan sesi selesai vs total terjadwal selama 7 hari
+                    terakhir
                   </CardDescription>
                 </div>
               </div>
@@ -304,7 +349,8 @@ export default function ManagementDashboardPage({
             <CardContent>
               <WeeklyBarChart
                 data={
-                  initialData?.weeklyTrends && initialData.weeklyTrends.length > 0
+                  initialData?.weeklyTrends &&
+                  initialData.weeklyTrends.length > 0
                     ? initialData.weeklyTrends
                     : [
                         { day: "Senin", selesai: 0, terjadwal: 0 },
@@ -334,7 +380,8 @@ export default function ManagementDashboardPage({
             <CardContent>
               <BimbelPieChart
                 data={
-                  initialData?.bimbelTypeDistribution && initialData.bimbelTypeDistribution.length > 0
+                  initialData?.bimbelTypeDistribution &&
+                  initialData.bimbelTypeDistribution.length > 0
                     ? initialData.bimbelTypeDistribution
                     : [
                         { name: "Reguler (60m)", value: 0, color: "#3b82f6" },
@@ -346,7 +393,8 @@ export default function ManagementDashboardPage({
 
               {/* Legend */}
               <div className="space-y-1.5 pt-2 border-t border-border/40 text-xs">
-                {(initialData?.bimbelTypeDistribution && initialData.bimbelTypeDistribution.length > 0
+                {(initialData?.bimbelTypeDistribution &&
+                initialData.bimbelTypeDistribution.length > 0
                   ? initialData.bimbelTypeDistribution
                   : [
                       { name: "Reguler (60m)", value: 0, color: "#3b82f6" },
@@ -354,7 +402,10 @@ export default function ManagementDashboardPage({
                       { name: "Private (90m)", value: 0, color: "#a855f7" },
                     ]
                 ).map((item) => (
-                  <div key={item.name} className="flex items-center justify-between">
+                  <div
+                    key={item.name}
+                    className="flex items-center justify-between"
+                  >
                     <div className="flex items-center gap-2">
                       <span
                         className="w-3 h-3 rounded-full shrink-0"
@@ -362,7 +413,9 @@ export default function ManagementDashboardPage({
                       />
                       <span className="text-muted-foreground">{item.name}</span>
                     </div>
-                    <span className="font-semibold text-foreground">{item.value} Sesi</span>
+                    <span className="font-semibold text-foreground">
+                      {item.value} Sesi
+                    </span>
                   </div>
                 ))}
               </div>
@@ -379,31 +432,56 @@ export default function ManagementDashboardPage({
                 Pusat Rekapitulasi & Laporan Eksekutif
               </CardTitle>
               <CardDescription className="text-xs">
-                Akses ringkasan performa bulanan bimbel tanpa repot membuka entri satu per satu
+                Akses ringkasan performa bulanan bimbel tanpa repot membuka
+                entri satu per satu
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2.5">
-              <Button asChild variant="outline" className="w-full justify-between h-10">
+              <Button
+                asChild
+                variant="outline"
+                className="w-full justify-between h-10"
+              >
                 <Link href="/management/reports/attendance">
-                  <span className="text-xs font-semibold">Laporan Rekapitulasi Presensi</span>
+                  <span className="text-xs font-semibold">
+                    Laporan Rekapitulasi Presensi
+                  </span>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="w-full justify-between h-10">
+              <Button
+                asChild
+                variant="outline"
+                className="w-full justify-between h-10"
+              >
                 <Link href="/management/reports/payroll">
-                  <span className="text-xs font-semibold">Laporan Penggajian & Honor Tutor</span>
+                  <span className="text-xs font-semibold">
+                    Laporan Penggajian & Honor Tutor
+                  </span>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="w-full justify-between h-10">
+              <Button
+                asChild
+                variant="outline"
+                className="w-full justify-between h-10"
+              >
                 <Link href="/management/reports/students">
-                  <span className="text-xs font-semibold">Laporan Pertumbuhan & Paket Siswa</span>
+                  <span className="text-xs font-semibold">
+                    Laporan Pertumbuhan & Paket Siswa
+                  </span>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="w-full justify-between h-10">
+              <Button
+                asChild
+                variant="outline"
+                className="w-full justify-between h-10"
+              >
                 <Link href="/management/audit-logs">
-                  <span className="text-xs font-semibold">Audit Log Keamanan & Jejak Digital</span>
+                  <span className="text-xs font-semibold">
+                    Audit Log Keamanan & Jejak Digital
+                  </span>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </Link>
               </Button>
@@ -424,19 +502,34 @@ export default function ManagementDashboardPage({
               <div className="flex items-start gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                 <p>
-                  <strong className="text-foreground">Hak Akses Dinamis:</strong> Setiap peran operasional (Kurikulum, HRD, Keuangan) hanya dapat melihat modul dan tombol yang diizinkan oleh Owner di database.
+                  <strong className="text-foreground">
+                    Hak Akses Dinamis:
+                  </strong>{" "}
+                  Setiap peran operasional (Kurikulum, HRD, Keuangan) hanya
+                  dapat melihat modul dan tombol yang diizinkan oleh Owner di
+                  database.
                 </p>
               </div>
               <div className="flex items-start gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                 <p>
-                  <strong className="text-foreground">Kalkulasi Honor Sisi Server:</strong> Perhitungan honor tutor terkunci dan deterministik berdasarkan tarif aktif saat sesi berlangsung dikalikan jumlah anak hadir aktual.
+                  <strong className="text-foreground">
+                    Kalkulasi Honor Sisi Server:
+                  </strong>{" "}
+                  Perhitungan honor tutor terkunci dan deterministik berdasarkan
+                  tarif aktif saat sesi berlangsung dikalikan jumlah anak hadir
+                  aktual.
                 </p>
               </div>
               <div className="flex items-start gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                 <p>
-                  <strong className="text-foreground">Audit Log Otomatis:</strong> Seluruh mutasi data sensitif seperti penambahan peran, penguncian payroll, dan koreksi presensi dicatat dengan timestamp server.
+                  <strong className="text-foreground">
+                    Audit Log Otomatis:
+                  </strong>{" "}
+                  Seluruh mutasi data sensitif seperti penambahan peran,
+                  penguncian payroll, dan koreksi presensi dicatat dengan
+                  timestamp server.
                 </p>
               </div>
             </CardContent>
@@ -493,8 +586,12 @@ export default function ManagementDashboardPage({
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{initialData?.stats?.totalStudents ?? 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">Terdaftar dalam program aktif</p>
+              <div className="text-2xl font-bold">
+                {initialData?.stats?.totalStudents ?? 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Terdaftar dalam program aktif
+              </p>
             </CardContent>
           </Card>
         )}
@@ -510,8 +607,12 @@ export default function ManagementDashboardPage({
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{initialData?.stats?.totalTutors ?? 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">Pengajar aktif di sistem</p>
+              <div className="text-2xl font-bold">
+                {initialData?.stats?.totalTutors ?? 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Pengajar aktif di sistem
+              </p>
             </CardContent>
           </Card>
         )}
@@ -527,7 +628,9 @@ export default function ManagementDashboardPage({
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{initialData?.stats?.todaySessions ?? 0}</div>
+              <div className="text-2xl font-bold">
+                {initialData?.stats?.todaySessions ?? 0}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {initialData?.stats?.todayCompletedSessions ?? 0} sesi selesai
               </p>
@@ -546,8 +649,12 @@ export default function ManagementDashboardPage({
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{initialData?.stats?.pendingPayroll ?? 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">Batch menunggu review</p>
+              <div className="text-2xl font-bold">
+                {initialData?.stats?.pendingPayroll ?? 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Batch menunggu review
+              </p>
             </CardContent>
           </Card>
         )}
@@ -562,7 +669,9 @@ export default function ManagementDashboardPage({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CalendarIcon className="w-4 h-4 text-primary" />
-                  <CardTitle className="text-base">Kalender Sesi Belajar</CardTitle>
+                  <CardTitle className="text-base">
+                    Kalender Sesi Belajar
+                  </CardTitle>
                 </div>
                 <Button
                   variant="ghost"
@@ -591,7 +700,9 @@ export default function ManagementDashboardPage({
               <div className="flex items-center justify-center flex-wrap gap-x-3.5 gap-y-1.5 text-[11px] text-muted-foreground pt-1">
                 <div className="flex items-center gap-1.5">
                   <span className="size-2.5 rounded bg-slate-200/90 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 shadow-2xs inline-block" />
-                  <span className="font-medium text-foreground">Ada Jadwal</span>
+                  <span className="font-medium text-foreground">
+                    Ada Jadwal
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="size-2.5 rounded bg-primary inline-block" />
@@ -617,7 +728,12 @@ export default function ManagementDashboardPage({
                   </CardDescription>
                 </div>
                 {hasPerm("schedule:read") && (
-                  <Button asChild variant="outline" size="sm" className="h-8 text-xs gap-1">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs gap-1"
+                  >
                     <Link href="/management/schedules">
                       <span>Lihat Semua Jadwal</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -637,11 +753,17 @@ export default function ManagementDashboardPage({
                       Belum Ada Jadwal Sesi pada Tanggal Ini
                     </h4>
                     <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                      Tidak ada sesi belajar yang terjadwal untuk {selectedDate ? formatDate(selectedDate) : "tanggal ini"}.
+                      Tidak ada sesi belajar yang terjadwal untuk{" "}
+                      {selectedDate ? formatDate(selectedDate) : "tanggal ini"}.
                     </p>
                   </div>
                   {hasPerm("schedule:create") && (
-                    <Button asChild size="sm" variant="outline" className="gap-1.5 text-xs shadow-xs mt-1">
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 text-xs shadow-xs mt-1"
+                    >
                       <Link href="/management/schedules/new">
                         <Plus className="w-3.5 h-3.5" />
                         <span>Buat Jadwal Baru</span>
@@ -651,8 +773,12 @@ export default function ManagementDashboardPage({
                 </div>
               ) : (
                 displaySessions.map((session) => {
-                  const isIntensive = session.bimbel_type_name?.toLowerCase().includes("intensif");
-                  const isPrivate = session.bimbel_type_name?.toLowerCase().includes("privat");
+                  const isIntensive = session.bimbel_type_name
+                    ?.toLowerCase()
+                    .includes("intensif");
+                  const isPrivate = session.bimbel_type_name
+                    ?.toLowerCase()
+                    .includes("privat");
 
                   return (
                     <div
@@ -663,18 +789,20 @@ export default function ManagementDashboardPage({
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-xs font-bold text-foreground flex items-center gap-1">
                             <Clock className="w-3 h-3 text-muted-foreground" />
-                            {session.start_time.slice(0, 5)} - {session.end_time.slice(0, 5)}
+                            {session.start_time.slice(0, 5)} -{" "}
+                            {session.end_time.slice(0, 5)}
                           </span>
                           <span
                             className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
                               isIntensive
                                 ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300"
                                 : isPrivate
-                                ? "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-300"
-                                : "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border-blue-300"
+                                  ? "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-300"
+                                  : "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border-blue-300"
                             }`}
                           >
-                            {session.bimbel_type_name} ({session.duration_minutes}m)
+                            {session.bimbel_type_name} (
+                            {session.duration_minutes}m)
                           </span>
                           <StatusBadge status={session.status} />
                         </div>
@@ -699,12 +827,21 @@ export default function ManagementDashboardPage({
                       </div>
 
                       <div className="flex items-center gap-2 self-end sm:self-center">
-                        <Button asChild variant="outline" size="sm" className="h-8 text-xs">
-                          <Link href={`/management/sessions/${session.id}`}>Detail</Link>
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs"
+                        >
+                          <Link href={`/management/sessions/${session.id}`}>
+                            Detail
+                          </Link>
                         </Button>
                         {hasPerm("attendance:create") && (
                           <Button asChild size="sm" className="h-8 text-xs">
-                            <Link href={`/management/attendance`}>Presensi</Link>
+                            <Link href={`/management/attendance`}>
+                              Presensi
+                            </Link>
                           </Button>
                         )}
                       </div>
@@ -722,37 +859,63 @@ export default function ManagementDashboardPage({
         <Card className="shadow-xs">
           <CardHeader>
             <CardTitle className="text-base">Pintasan Kerja</CardTitle>
-            <CardDescription className="text-xs">Aksi cepat sesuai wewenang peran Anda</CardDescription>
+            <CardDescription className="text-xs">
+              Aksi cepat sesuai wewenang peran Anda
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2.5">
             {hasPerm("student:create") && (
-              <Button asChild variant="outline" className="w-full justify-between h-10">
+              <Button
+                asChild
+                variant="outline"
+                className="w-full justify-between h-10"
+              >
                 <Link href="/management/students/new">
-                  <span className="text-xs font-semibold">Daftarkan Murid Baru</span>
+                  <span className="text-xs font-semibold">
+                    Daftarkan Murid Baru
+                  </span>
                   <ArrowRight className="w-4 h-4 text-muted-foreground" />
                 </Link>
               </Button>
             )}
             {hasPerm("schedule:create") && (
-              <Button asChild variant="outline" className="w-full justify-between h-10">
+              <Button
+                asChild
+                variant="outline"
+                className="w-full justify-between h-10"
+              >
                 <Link href="/management/schedules/new">
-                  <span className="text-xs font-semibold">Buat Jadwal Belajar Baru</span>
+                  <span className="text-xs font-semibold">
+                    Buat Jadwal Belajar Baru
+                  </span>
                   <ArrowRight className="w-4 h-4 text-muted-foreground" />
                 </Link>
               </Button>
             )}
             {hasPerm("payroll:read") && (
-              <Button asChild variant="outline" className="w-full justify-between h-10">
+              <Button
+                asChild
+                variant="outline"
+                className="w-full justify-between h-10"
+              >
                 <Link href="/management/payroll">
-                  <span className="text-xs font-semibold">Buka Modul Penggajian Tutor</span>
+                  <span className="text-xs font-semibold">
+                    Buka Modul Penggajian Tutor
+                  </span>
                   <ArrowRight className="w-4 h-4 text-muted-foreground" />
                 </Link>
               </Button>
             )}
             {hasPerm("curriculum:manage") && (
-              <Button asChild variant="outline" className="w-full justify-between h-10">
+              <Button
+                asChild
+                variant="outline"
+                className="w-full justify-between h-10"
+              >
                 <Link href="/management/settings/subjects">
-                  <span className="text-xs font-semibold">Kelola Mata Pelajaran & Program</span>
+                  <span className="text-xs font-semibold">
+                    Kelola Mata Pelajaran & Program
+                  </span>
                   <ArrowRight className="w-4 h-4 text-muted-foreground" />
                 </Link>
               </Button>
@@ -763,19 +926,29 @@ export default function ManagementDashboardPage({
         <Card className="shadow-xs">
           <CardHeader>
             <CardTitle className="text-base">Integritas Operasional</CardTitle>
-            <CardDescription className="text-xs">Aturan sistem & validasi bisnis bimbel</CardDescription>
+            <CardDescription className="text-xs">
+              Aturan sistem & validasi bisnis bimbel
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-xs text-muted-foreground">
             <div className="flex items-start gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
               <p>
-                <strong className="text-foreground">Pemisahan Schedule & Session:</strong> Jadwal adalah rencana rutin, sedangkan sesi merupakan bukti pelaksanaan aktual untuk dasar presensi & payroll.
+                <strong className="text-foreground">
+                  Pemisahan Schedule & Session:
+                </strong>{" "}
+                Jadwal adalah rencana rutin, sedangkan sesi merupakan bukti
+                pelaksanaan aktual untuk dasar presensi & payroll.
               </p>
             </div>
             <div className="flex items-start gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
               <p>
-                <strong className="text-foreground">Kalkulasi Honor Sisi Server:</strong> Tarif dihitung otomatis oleh server berdasarkan kehadiran valid murid.
+                <strong className="text-foreground">
+                  Kalkulasi Honor Sisi Server:
+                </strong>{" "}
+                Tarif dihitung otomatis oleh server berdasarkan kehadiran valid
+                murid.
               </p>
             </div>
           </CardContent>

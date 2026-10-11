@@ -36,7 +36,8 @@ export function PrintablePayrollSheet({
           Daftar Penggajian Tutor Bimbel
         </h2>
         <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-          Periode: <span className="font-semibold text-slate-800">{monthLabel}</span>
+          Periode:{" "}
+          <span className="font-semibold text-slate-800">{monthLabel}</span>
         </p>
       </div>
 
@@ -114,8 +115,8 @@ export function PrintablePayrollSheet({
         <div className="pt-4 space-y-2">
           {!summary.configured ? (
             <p className="text-xs italic text-amber-700 border border-amber-300 bg-amber-50 rounded-sm px-3 py-2">
-              Tarif honor untuk periode ini belum diatur manajemen, sehingga total honor belum dapat
-              dihitung.
+              Tarif honor untuk periode ini belum diatur manajemen, sehingga
+              total honor belum dapat dihitung.
             </p>
           ) : (
             <div className="flex justify-end">
@@ -141,7 +142,8 @@ export function PrintablePayrollSheet({
                     summary.breakdown.map((b) => (
                       <tr key={b.bimbelTypeName}>
                         <td className="border border-slate-800 px-3 py-1.5 text-slate-700">
-                          {b.bimbelTypeName} · {formatCurrency(b.rate)} × {b.count}
+                          {b.bimbelTypeName} · {formatCurrency(b.rate)} ×{" "}
+                          {b.count}
                         </td>
                         <td className="border border-slate-800 px-3 py-1.5 text-right font-medium">
                           {formatCurrency(b.subtotal)}
@@ -167,11 +169,14 @@ export function PrintablePayrollSheet({
       <div className="pt-6 flex justify-between items-end text-xs text-slate-600 print:pt-8">
         <div className="space-y-1">
           <p className="italic text-[11px] text-slate-500">
-            * Dokumen ini digenerate resmi dari sistem presensi dan penggajian Bimbel Mentorbelajarku.
+            * Dokumen ini digenerate resmi dari sistem presensi dan penggajian
+            Bimbel Mentorbelajarku.
           </p>
         </div>
         <div className="text-center pr-4 space-y-12">
-          <p className="font-medium text-slate-800">Manajemen Mentorbelajarku,</p>
+          <p className="font-medium text-slate-800">
+            Manajemen Mentorbelajarku,
+          </p>
           <div className="w-32 border-b border-slate-800 mx-auto" />
         </div>
       </div>

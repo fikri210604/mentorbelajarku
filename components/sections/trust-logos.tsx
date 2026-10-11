@@ -1,23 +1,24 @@
-import { Marquee } from '@/components/shared/marquee';
-import { GraduationCap } from 'lucide-react';
+import { Marquee } from "@/components/shared/marquee";
+import { GraduationCap } from "lucide-react";
 
 export function TrustLogos() {
   // TODO_CONTENT: sesuaikan dengan data riil sekolah asal siswa Mentor Belajarku di Bandar Lampung
   const schools = [
-    'SMAN 1 Bandar Lampung',
-    'SMAN 2 Bandar Lampung',
-    'SMAN 9 Bandar Lampung',
-    'SMPN 1 Bandar Lampung',
-    'SMPN 2 Bandar Lampung',
-    'SD & SMP Al-Kautsar Lampung',
-    'SMP Labschool Kemiling',
+    "SMAN 1 Bandar Lampung",
+    "SMAN 2 Bandar Lampung",
+    "SMAN 9 Bandar Lampung",
+    "SMPN 1 Bandar Lampung",
+    "SMPN 2 Bandar Lampung",
+    "SD & SMP Al-Kautsar Lampung",
+    "SMP Labschool Kemiling",
   ];
 
   return (
     <section className="border-y border-border/60 bg-muted/40 py-7">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <p className="mb-5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Dipercaya oleh Siswa & Orang Tua dari Berbagai Sekolah Unggulan di Bandar Lampung
+          Dipercaya oleh Siswa & Orang Tua dari Berbagai Sekolah Unggulan di
+          Bandar Lampung
         </p>
 
         <Marquee speed={28} className="py-1">

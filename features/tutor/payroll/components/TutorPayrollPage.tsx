@@ -1,12 +1,21 @@
 "use client";
 
 import { CreditCard } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { formatCurrency } from "@/lib/utils";
 import { PayrollSheetWorkspace } from "@/features/shared/payroll/components/PayrollSheetWorkspace";
-import type { PayrollHonorSummary, PayrollSheetRow } from "@/features/shared/payroll/types";
+import type {
+  PayrollHonorSummary,
+  PayrollSheetRow,
+} from "@/features/shared/payroll/types";
 import { PayrollWithDetails, TutorSessionEarning } from "../types";
 import { TutorTeachingHistory } from "@/features/tutor/attendance/components/TutorTeachingHistory";
 
@@ -49,7 +58,8 @@ export default function TutorPayrollPage({
             Ringkasan Honor per Periode
           </CardTitle>
           <CardDescription className="text-xs">
-            Dokumen penggajian yang sudah dibuat manajemen beserta status pembayarannya.
+            Dokumen penggajian yang sudah dibuat manajemen beserta status
+            pembayarannya.
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
@@ -74,7 +84,10 @@ export default function TutorPayrollPage({
                   </thead>
                   <tbody className="divide-y divide-border">
                     {initialPayrolls.map((payroll) => (
-                      <tr key={payroll.id} className="hover:bg-muted/30 transition-colors">
+                      <tr
+                        key={payroll.id}
+                        className="hover:bg-muted/30 transition-colors"
+                      >
                         <td className="px-4 py-3 font-medium">
                           {payroll.period_start} s/d {payroll.period_end}
                         </td>
@@ -82,13 +95,31 @@ export default function TutorPayrollPage({
                           {formatCurrency(Number(payroll.gross_amount))}
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">
-                          +{formatCurrency(Number(payroll.bonus))} / -{formatCurrency(Number(payroll.deduction))}
+                          +{formatCurrency(Number(payroll.bonus))} / -
+                          {formatCurrency(Number(payroll.deduction))}
                         </td>
                         <td className="px-4 py-3 font-mono font-semibold text-primary">
                           {formatCurrency(Number(payroll.net_amount))}
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={payroll.status} />
+                          {payroll.status === "paid" && (
+                            <div className="mt-1 space-y-0.5 text-[11px] text-muted-foreground">
+                              {payroll.paid_at && (
+                                <p>
+                                  Tgl:{" "}
+                                  {new Date(payroll.paid_at).toLocaleDateString(
+                                    "id-ID",
+                                  )}
+                                </p>
+                              )}
+                              {payroll.payment_reference && (
+                                <p className="font-mono text-emerald-700 dark:text-emerald-400 font-semibold">
+                                  Ref: {payroll.payment_reference}
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}

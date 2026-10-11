@@ -61,12 +61,52 @@ export type Database = {
           referencedColumns: string[];
         }[];
       };
+      account: {
+        Row: {
+          id: string;
+          account_id: string;
+          provider_id: string;
+          user_id: string;
+          access_token: string | null;
+          refresh_token: string | null;
+          id_token: string | null;
+          access_token_expires_at: string | null;
+          refresh_token_expires_at: string | null;
+          scope: string | null;
+          password: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          account_id: string;
+          provider_id: string;
+          user_id: string;
+          access_token?: string | null;
+          refresh_token?: string | null;
+          id_token?: string | null;
+          access_token_expires_at?: string | null;
+          refresh_token_expires_at?: string | null;
+          scope?: string | null;
+          password?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne?: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
+      };
       profiles: {
         Row: {
           id: string;
           user_id: string;
           full_name: string;
           phone: string | null;
+          gender: 'male' | 'female' | null;
           avatar_url: string | null;
           role: UserRole;
           must_change_password: boolean;
@@ -78,6 +118,7 @@ export type Database = {
           user_id: string;
           full_name: string;
           phone?: string | null;
+          gender?: 'male' | 'female' | null;
           avatar_url?: string | null;
           role?: UserRole;
           must_change_password?: boolean;
@@ -97,6 +138,7 @@ export type Database = {
           id: string;
           profile_id: string;
           bio: string | null;
+          gender: 'male' | 'female' | null;
           status: TutorStatus;
           created_at: string;
           updated_at: string;
@@ -105,6 +147,7 @@ export type Database = {
           id?: string;
           profile_id: string;
           bio?: string | null;
+          gender?: 'male' | 'female' | null;
           status?: TutorStatus;
           created_at?: string;
           updated_at?: string;
@@ -503,6 +546,11 @@ export type Database = {
           program_id: string;
           bimbel_type_id: string | null;
           day_of_week: number;
+          days_of_week: number[];
+          recurrence_start_date: string;
+          recurrence_interval: number;
+          recurrence_count: number | null;
+          recurrence_until: string | null;
           start_time: string;
           end_time: string;
           location: string | null;
@@ -518,7 +566,11 @@ export type Database = {
           tutor_id: string;
           program_id: string;
           bimbel_type_id?: string | null;
-          day_of_week: number;
+          days_of_week: number[];
+          recurrence_start_date: string;
+          recurrence_interval?: number;
+          recurrence_count?: number | null;
+          recurrence_until?: string | null;
           start_time: string;
           end_time: string;
           location?: string | null;
@@ -548,6 +600,31 @@ export type Database = {
           schedule_id: string;
           student_id: string;
           enrollment_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne?: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
+      };
+      schedule_exceptions: {
+        Row: {
+          id: string;
+          schedule_id: string;
+          exception_date: string;
+          reason: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          schedule_id: string;
+          exception_date: string;
+          reason?: string | null;
+          created_by?: string | null;
           created_at?: string;
         };
         Relationships: {
@@ -600,6 +677,31 @@ export type Database = {
           updated_by?: string | null;
           created_at?: string;
           updated_at?: string;
+        };
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne?: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
+      };
+      session_students: {
+        Row: {
+          id: string;
+          session_id: string;
+          student_id: string;
+          enrollment_id: string | null;
+          bimbel_type_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          student_id: string;
+          enrollment_id?: string | null;
+          bimbel_type_id?: string | null;
+          created_at?: string;
         };
         Relationships: {
           foreignKeyName: string;
@@ -933,6 +1035,138 @@ export type Database = {
           entity_id: string;
           metadata?: Json;
           created_at?: string;
+        };
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne?: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
+      };
+      notification_settings: {
+        Row: {
+          id: string;
+          name: string;
+          enabled: boolean;
+          schedule_created_enabled: boolean;
+          before_minutes: number;
+          after_minutes: number;
+          repeat_count: number;
+          repeat_interval_minutes: number;
+          description: string | null;
+          status: string;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name?: string;
+          enabled?: boolean;
+          schedule_created_enabled?: boolean;
+          before_minutes?: number;
+          after_minutes?: number;
+          repeat_count?: number;
+          repeat_interval_minutes?: number;
+          description?: string | null;
+          status?: string;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne?: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
+      };
+      push_subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          tutor_id: string | null;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent: string | null;
+          is_active: boolean;
+          last_seen_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          tutor_id?: string | null;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent?: string | null;
+          is_active?: boolean;
+          last_seen_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne?: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
+      };
+      notification_preferences: {
+        Row: {
+          user_id: string;
+          notifications_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          notifications_enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne?: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
+      };
+      notification_logs: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          session_id: string | null;
+          type: string;
+          dedupe_key: string;
+          title: string | null;
+          body: string | null;
+          status: string;
+          error: string | null;
+          read_at: string | null;
+          metadata: Json | null;
+          sent_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          session_id?: string | null;
+          type: string;
+          dedupe_key: string;
+          title?: string | null;
+          body?: string | null;
+          status?: string;
+          error?: string | null;
+          read_at?: string | null;
+          metadata?: Json | null;
+          sent_at?: string;
         };
         Relationships: {
           foreignKeyName: string;

@@ -68,6 +68,20 @@ const SESSION_SELECT_COLUMNS = `
       status
     )
   ),
+  session_students (
+    id,
+    student_id,
+    enrollment_id,
+    bimbel_type_id,
+    students (
+      id,
+      student_code,
+      name,
+      school,
+      grade,
+      status
+    )
+  ),
   schedules (
     id,
     schedule_students (
@@ -88,13 +102,16 @@ const SESSION_SELECT_COLUMNS = `
 
 function attachStudentsToSession(session: unknown): SessionWithDetails {
   const row = session as {
+    session_students?: Array<{ students?: unknown }>;
     attendance?: Array<{ students?: unknown }>;
     schedules?: { schedule_students?: Array<{ students?: unknown }> };
     students?: unknown[];
   };
 
   let studentsList: unknown[] = [];
-  if (row.attendance && row.attendance.length > 0) {
+  if (row.session_students && row.session_students.length > 0) {
+    studentsList = row.session_students.map((ss) => ss.students).filter(Boolean);
+  } else if (row.attendance && row.attendance.length > 0) {
     studentsList = row.attendance.map((att) => att.students).filter(Boolean);
   } else if (row.schedules?.schedule_students && row.schedules.schedule_students.length > 0) {
     studentsList = row.schedules.schedule_students.map((ss) => ss.students).filter(Boolean);

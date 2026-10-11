@@ -1,8 +1,20 @@
 "use client";
 
-import { UserCheck, CalendarCheck, Users, Phone, ArrowUpRight } from "lucide-react";
+import {
+  UserCheck,
+  CalendarCheck,
+  Users,
+  Phone,
+  ArrowUpRight,
+} from "lucide-react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
@@ -44,8 +56,12 @@ export default function TutorReportPage({ initialData }: TutorReportPageProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-emerald-600">{data.activeTutors}</p>
-            <span className="text-xs text-muted-foreground">Tutor siap mengajar</span>
+            <p className="text-2xl font-bold text-emerald-600">
+              {data.activeTutors}
+            </p>
+            <span className="text-xs text-muted-foreground">
+              Tutor siap mengajar
+            </span>
           </CardContent>
         </Card>
 
@@ -57,8 +73,12 @@ export default function TutorReportPage({ initialData }: TutorReportPageProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-blue-600">{data.totalSessionsThisMonth}</p>
-            <span className="text-xs text-muted-foreground">Pertemuan pembelajaran terjadwal</span>
+            <p className="text-2xl font-bold text-blue-600">
+              {data.totalSessionsThisMonth}
+            </p>
+            <span className="text-xs text-muted-foreground">
+              Pertemuan pembelajaran terjadwal
+            </span>
           </CardContent>
         </Card>
 
@@ -70,8 +90,12 @@ export default function TutorReportPage({ initialData }: TutorReportPageProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-purple-600">{data.avgStudentsPerSession}</p>
-            <span className="text-xs text-muted-foreground">Rasio kapasitas mengajar</span>
+            <p className="text-2xl font-bold text-purple-600">
+              {data.avgStudentsPerSession}
+            </p>
+            <span className="text-xs text-muted-foreground">
+              Rasio kapasitas mengajar
+            </span>
           </CardContent>
         </Card>
       </div>
@@ -84,7 +108,8 @@ export default function TutorReportPage({ initialData }: TutorReportPageProps) {
             Rekap Kinerja Pengajar
           </CardTitle>
           <CardDescription>
-            Jumlah akumulasi sesi mengajar dan murid yang telah diajar oleh masing-masing tutor.
+            Jumlah akumulasi sesi mengajar dan murid yang telah diajar oleh
+            masing-masing tutor.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -100,7 +125,9 @@ export default function TutorReportPage({ initialData }: TutorReportPageProps) {
                     <th className="px-4 py-2.5">Nama Tutor</th>
                     <th className="px-4 py-2.5">Kontak</th>
                     <th className="px-4 py-2.5 text-center">Total Sesi</th>
-                    <th className="px-4 py-2.5 text-center">Total Murid Diajar</th>
+                    <th className="px-4 py-2.5 text-center">
+                      Total Murid Diajar
+                    </th>
                     <th className="px-4 py-2.5 text-right">Status</th>
                   </tr>
                 </thead>

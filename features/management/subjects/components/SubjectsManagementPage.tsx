@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { useState, useMemo, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import React, { useState, useMemo, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   BookOpen,
   Plus,
@@ -18,17 +18,23 @@ import {
   Sparkles,
   ChevronRight,
   Filter,
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { PageHeader } from '@/components/shared/page-header';
-import { StatusBadge } from '@/components/shared/status-badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from "lucide-react";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/shared/page-header";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -36,7 +42,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,28 +52,28 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { SettingsNavTabs } from '@/features/management/settings/components/SettingsNavTabs';
-import { Subject, CurriculumTopic } from '@/types/subjects';
+} from "@/components/ui/select";
+import { SettingsNavTabs } from "@/features/management/settings/components/SettingsNavTabs";
+import { Subject, CurriculumTopic } from "@/types/subjects";
 import {
   subjectSchema,
   SubjectInput,
   curriculumTopicSchema,
   CurriculumTopicInput,
-} from '../schemas/subject.schema';
+} from "../schemas/subject.schema";
 import {
   saveSubjectAction,
   deleteSubjectAction,
   saveCurriculumTopicAction,
   deleteCurriculumTopicAction,
-} from '../actions/subject.actions';
+} from "../actions/subject.actions";
 
 interface SubjectsManagementPageProps {
   initialSubjects: Subject[];
@@ -75,22 +81,22 @@ interface SubjectsManagementPageProps {
 }
 
 const GRADE_OPTIONS = [
-  'PAUD / KB',
-  'TK A',
-  'TK B',
-  '1 SD',
-  '2 SD',
-  '3 SD',
-  '4 SD',
-  '5 SD',
-  '6 SD',
-  '7 SMP',
-  '8 SMP',
-  '9 SMP',
-  '10 SMA',
-  '11 SMA',
-  '12 SMA',
-  'Umum',
+  "PAUD / KB",
+  "TK A",
+  "TK B",
+  "1 SD",
+  "2 SD",
+  "3 SD",
+  "4 SD",
+  "5 SD",
+  "6 SD",
+  "7 SMP",
+  "8 SMP",
+  "9 SMP",
+  "10 SMA",
+  "11 SMA",
+  "12 SMA",
+  "Umum",
 ];
 
 export default function SubjectsManagementPage({
@@ -100,18 +106,19 @@ export default function SubjectsManagementPage({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const [activeTab, setActiveTab] = useState<'subjects' | 'topics'>('subjects');
+  const [activeTab, setActiveTab] = useState<"subjects" | "topics">("subjects");
   const [subjects, setSubjects] = useState<Subject[]>(initialSubjects);
   const [topics, setTopics] = useState<CurriculumTopic[]>(initialTopics);
 
   // Filter state for Subjects tab
-  const [subjectSearch, setSubjectSearch] = useState('');
-  const [levelFilter, setLevelFilter] = useState<string>('all');
+  const [subjectSearch, setSubjectSearch] = useState("");
+  const [levelFilter, setLevelFilter] = useState<string>("all");
 
   // Filter state for Topics tab
-  const [topicSearch, setTopicSearch] = useState('');
-  const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>('all');
-  const [selectedGradeFilter, setSelectedGradeFilter] = useState<string>('all');
+  const [topicSearch, setTopicSearch] = useState("");
+  const [selectedSubjectFilter, setSelectedSubjectFilter] =
+    useState<string>("all");
+  const [selectedGradeFilter, setSelectedGradeFilter] = useState<string>("all");
 
   // Modals state for Subject
   const [isSubjectDialogOpen, setIsSubjectDialogOpen] = useState(false);
@@ -120,8 +127,12 @@ export default function SubjectsManagementPage({
 
   // Modals state for Topic
   const [isTopicDialogOpen, setIsTopicDialogOpen] = useState(false);
-  const [editingTopic, setEditingTopic] = useState<CurriculumTopic | null>(null);
-  const [deletingTopic, setDeletingTopic] = useState<CurriculumTopic | null>(null);
+  const [editingTopic, setEditingTopic] = useState<CurriculumTopic | null>(
+    null,
+  );
+  const [deletingTopic, setDeletingTopic] = useState<CurriculumTopic | null>(
+    null,
+  );
 
   // -------------------------------------------------------------
   // FORM: Subject
@@ -135,22 +146,22 @@ export default function SubjectsManagementPage({
   } = useForm<SubjectInput>({
     resolver: zodResolver(subjectSchema),
     defaultValues: {
-      code: '',
-      name: '',
-      level: 'SD',
-      description: '',
-      status: 'active',
+      code: "",
+      name: "",
+      level: "SD",
+      description: "",
+      status: "active",
     },
   });
 
   const handleOpenAddSubject = () => {
     setEditingSubject(null);
     resetSubjectForm({
-      code: '',
-      name: '',
-      level: 'SD',
-      description: '',
-      status: 'active',
+      code: "",
+      name: "",
+      level: "SD",
+      description: "",
+      status: "active",
     });
     setIsSubjectDialogOpen(true);
   };
@@ -162,7 +173,7 @@ export default function SubjectsManagementPage({
       code: item.code,
       name: item.name,
       level: item.level,
-      description: item.description || '',
+      description: item.description || "",
       status: item.status,
     });
     setIsSubjectDialogOpen(true);
@@ -175,7 +186,7 @@ export default function SubjectsManagementPage({
       setIsSubjectDialogOpen(false);
       if (editingSubject) {
         setSubjects((prev) =>
-          prev.map((s) => (s.id === editingSubject.id ? { ...s, ...data } : s))
+          prev.map((s) => (s.id === editingSubject.id ? { ...s, ...data } : s)),
         );
       } else if (res.data) {
         setSubjects((prev) => [...prev, res.data as Subject]);
@@ -212,13 +223,13 @@ export default function SubjectsManagementPage({
   } = useForm<CurriculumTopicInput>({
     resolver: zodResolver(curriculumTopicSchema),
     defaultValues: {
-      subject_id: '',
-      grade: '4 SD',
+      subject_id: "",
+      grade: "4 SD",
       chapter_number: 1,
-      title: '',
-      description: '',
-      worksheet_name: '',
-      worksheet_url: '',
+      title: "",
+      description: "",
+      worksheet_name: "",
+      worksheet_url: "",
     },
   });
 
@@ -226,23 +237,27 @@ export default function SubjectsManagementPage({
     setEditingTopic(null);
     const subId =
       defaultSubjectId ||
-      (selectedSubjectFilter !== 'all' ? selectedSubjectFilter : subjects[0]?.id || '');
-    const gradeVal = selectedGradeFilter !== 'all' ? selectedGradeFilter : '4 SD';
+      (selectedSubjectFilter !== "all"
+        ? selectedSubjectFilter
+        : subjects[0]?.id || "");
+    const gradeVal =
+      selectedGradeFilter !== "all" ? selectedGradeFilter : "4 SD";
 
     // Calculate next chapter number
     const existingChapters = topics
       .filter((t) => t.subject_id === subId && t.grade === gradeVal)
       .map((t) => t.chapter_number);
-    const nextChapter = existingChapters.length > 0 ? Math.max(...existingChapters) + 1 : 1;
+    const nextChapter =
+      existingChapters.length > 0 ? Math.max(...existingChapters) + 1 : 1;
 
     resetTopicForm({
       subject_id: subId,
       grade: gradeVal,
       chapter_number: nextChapter,
-      title: '',
-      description: '',
-      worksheet_name: '',
-      worksheet_url: '',
+      title: "",
+      description: "",
+      worksheet_name: "",
+      worksheet_url: "",
     });
     setIsTopicDialogOpen(true);
   };
@@ -255,9 +270,9 @@ export default function SubjectsManagementPage({
       grade: item.grade,
       chapter_number: item.chapter_number,
       title: item.title,
-      description: item.description || '',
-      worksheet_name: item.worksheet_name || '',
-      worksheet_url: item.worksheet_url || '',
+      description: item.description || "",
+      worksheet_name: item.worksheet_name || "",
+      worksheet_url: item.worksheet_url || "",
     });
     setIsTopicDialogOpen(true);
   };
@@ -267,18 +282,22 @@ export default function SubjectsManagementPage({
     if (res.success) {
       toast.success(res.message);
       setIsTopicDialogOpen(false);
-      const subjectName = subjects.find((s) => s.id === data.subject_id)?.name || '';
+      const subjectName =
+        subjects.find((s) => s.id === data.subject_id)?.name || "";
 
       if (editingTopic) {
         setTopics((prev) =>
           prev.map((t) =>
             t.id === editingTopic.id
               ? { ...t, ...data, subject_name: subjectName }
-              : t
-          )
+              : t,
+          ),
         );
       } else if (res.data) {
-        setTopics((prev) => [...prev, { ...(res.data as CurriculumTopic), subject_name: subjectName }]);
+        setTopics((prev) => [
+          ...prev,
+          { ...(res.data as CurriculumTopic), subject_name: subjectName },
+        ]);
       }
       startTransition(() => router.refresh());
     } else {
@@ -302,7 +321,7 @@ export default function SubjectsManagementPage({
   // Navigasi cepat dari Subject Card ke Tab Topics
   const handleQuickViewTopics = (subjectId: string) => {
     setSelectedSubjectFilter(subjectId);
-    setActiveTab('topics');
+    setActiveTab("topics");
   };
 
   // -------------------------------------------------------------
@@ -313,7 +332,7 @@ export default function SubjectsManagementPage({
       const matchSearch =
         s.name.toLowerCase().includes(subjectSearch.toLowerCase()) ||
         s.code.toLowerCase().includes(subjectSearch.toLowerCase());
-      const matchLevel = levelFilter === 'all' || s.level === levelFilter;
+      const matchLevel = levelFilter === "all" || s.level === levelFilter;
       return matchSearch && matchLevel;
     });
   }, [subjects, subjectSearch, levelFilter]);
@@ -322,10 +341,13 @@ export default function SubjectsManagementPage({
     return topics.filter((t) => {
       const matchSearch =
         t.title.toLowerCase().includes(topicSearch.toLowerCase()) ||
-        (t.description && t.description.toLowerCase().includes(topicSearch.toLowerCase()));
+        (t.description &&
+          t.description.toLowerCase().includes(topicSearch.toLowerCase()));
       const matchSubject =
-        selectedSubjectFilter === 'all' || t.subject_id === selectedSubjectFilter;
-      const matchGrade = selectedGradeFilter === 'all' || t.grade === selectedGradeFilter;
+        selectedSubjectFilter === "all" ||
+        t.subject_id === selectedSubjectFilter;
+      const matchGrade =
+        selectedGradeFilter === "all" || t.grade === selectedGradeFilter;
       return matchSearch && matchSubject && matchGrade;
     });
   }, [topics, topicSearch, selectedSubjectFilter, selectedGradeFilter]);
@@ -341,26 +363,38 @@ export default function SubjectsManagementPage({
         description="Kelola master mata pelajaran dan silabus bab materi pembelajaran untuk penugasan jadwal dan worksheet murid."
       >
         <Button
-          onClick={() => (activeTab === 'subjects' ? handleOpenAddSubject() : handleOpenAddTopic())}
+          onClick={() =>
+            activeTab === "subjects"
+              ? handleOpenAddSubject()
+              : handleOpenAddTopic()
+          }
           className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-xs"
         >
           <Plus className="w-4 h-4" />
-          {activeTab === 'subjects' ? 'Tambah Mata Pelajaran' : 'Tambah Bab Materi'}
+          {activeTab === "subjects"
+            ? "Tambah Mata Pelajaran"
+            : "Tambah Bab Materi"}
         </Button>
       </PageHeader>
 
       {/* 3. TABS: MATA PELAJARAN VS SILABUS MATERI */}
       <Tabs
         value={activeTab}
-        onValueChange={(val) => setActiveTab(val as 'subjects' | 'topics')}
+        onValueChange={(val) => setActiveTab(val as "subjects" | "topics")}
         className="space-y-6"
       >
         <TabsList className="grid w-full sm:w-[420px] grid-cols-2 p-1 bg-muted/60">
-          <TabsTrigger value="subjects" className="gap-2 text-xs sm:text-sm font-semibold">
+          <TabsTrigger
+            value="subjects"
+            className="gap-2 text-xs sm:text-sm font-semibold"
+          >
             <BookOpen className="w-4 h-4" />
             Mata Pelajaran ({subjects.length})
           </TabsTrigger>
-          <TabsTrigger value="topics" className="gap-2 text-xs sm:text-sm font-semibold">
+          <TabsTrigger
+            value="topics"
+            className="gap-2 text-xs sm:text-sm font-semibold"
+          >
             <Layers className="w-4 h-4" />
             Silabus Bab Materi ({topics.length})
           </TabsTrigger>
@@ -385,7 +419,10 @@ export default function SubjectsManagementPage({
               <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
                 Jenjang:
               </span>
-              <Select value={levelFilter} onValueChange={(val) => setLevelFilter(val || 'all')}>
+              <Select
+                value={levelFilter}
+                onValueChange={(val) => setLevelFilter(val || "all")}
+              >
                 <SelectTrigger className="h-9 text-xs w-36 bg-background">
                   <SelectValue placeholder="Semua Jenjang" />
                 </SelectTrigger>
@@ -412,14 +449,21 @@ export default function SubjectsManagementPage({
             <Card className="border border-dashed">
               <CardContent className="py-12 text-center text-muted-foreground space-y-2">
                 <BookOpen className="w-8 h-8 mx-auto opacity-50" />
-                <p className="text-sm font-semibold">Tidak ada mata pelajaran ditemukan.</p>
-                <p className="text-xs">Klik tombol &quot;Tambah Mata Pelajaran&quot; di atas untuk menambah baru.</p>
+                <p className="text-sm font-semibold">
+                  Tidak ada mata pelajaran ditemukan.
+                </p>
+                <p className="text-xs">
+                  Klik tombol &quot;Tambah Mata Pelajaran&quot; di atas untuk
+                  menambah baru.
+                </p>
               </CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredSubjects.map((sub) => {
-                const topicCount = topics.filter((t) => t.subject_id === sub.id).length;
+                const topicCount = topics.filter(
+                  (t) => t.subject_id === sub.id,
+                ).length;
 
                 return (
                   <Card
@@ -428,16 +472,19 @@ export default function SubjectsManagementPage({
                   >
                     <CardHeader className="pb-2.5">
                       <div className="flex items-start justify-between gap-2">
-                        <Badge variant="outline" className="font-mono text-[10px] tracking-wider">
+                        <Badge
+                          variant="outline"
+                          className="font-mono text-[10px] tracking-wider"
+                        >
                           {sub.code}
                         </Badge>
                         <Badge
                           className={
-                            sub.level === 'SD'
-                              ? 'bg-amber-500/10 text-amber-700 border-amber-300'
-                              : sub.level === 'SMP'
-                              ? 'bg-blue-500/10 text-blue-700 border-blue-300'
-                              : 'bg-purple-500/10 text-purple-700 border-purple-300'
+                            sub.level === "SD"
+                              ? "bg-amber-500/10 text-amber-700 border-amber-300"
+                              : sub.level === "SMP"
+                                ? "bg-blue-500/10 text-blue-700 border-blue-300"
+                                : "bg-purple-500/10 text-purple-700 border-purple-300"
                           }
                         >
                           {sub.level}
@@ -447,7 +494,7 @@ export default function SubjectsManagementPage({
                         {sub.name}
                       </CardTitle>
                       <CardDescription className="text-xs line-clamp-2 min-h-[32px]">
-                        {sub.description || 'Tidak ada keterangan tambahan.'}
+                        {sub.description || "Tidak ada keterangan tambahan."}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="pt-2 border-t space-y-3">
@@ -520,7 +567,9 @@ export default function SubjectsManagementPage({
                 </span>
                 <Select
                   value={selectedSubjectFilter}
-                  onValueChange={(val) => setSelectedSubjectFilter(val || 'all')}
+                  onValueChange={(val) =>
+                    setSelectedSubjectFilter(val || "all")
+                  }
                 >
                   <SelectTrigger className="h-9 text-xs w-44 bg-background">
                     <SelectValue placeholder="Semua Mapel" />
@@ -544,7 +593,7 @@ export default function SubjectsManagementPage({
                 </span>
                 <Select
                   value={selectedGradeFilter}
-                  onValueChange={(val) => setSelectedGradeFilter(val || 'all')}
+                  onValueChange={(val) => setSelectedGradeFilter(val || "all")}
                 >
                   <SelectTrigger className="h-9 text-xs w-32 bg-background">
                     <SelectValue placeholder="Semua Kelas" />
@@ -578,9 +627,12 @@ export default function SubjectsManagementPage({
             <Card className="border border-dashed">
               <CardContent className="py-12 text-center text-muted-foreground space-y-2">
                 <Layers className="w-8 h-8 mx-auto opacity-50" />
-                <p className="text-sm font-semibold">Belum ada bab materi kurikulum.</p>
+                <p className="text-sm font-semibold">
+                  Belum ada bab materi kurikulum.
+                </p>
                 <p className="text-xs">
-                  Pilih mata pelajaran &amp; jenjang kelas, lalu klik &quot;+ Tambah Bab&quot; untuk menyusun materi ajar.
+                  Pilih mata pelajaran &amp; jenjang kelas, lalu klik &quot;+
+                  Tambah Bab&quot; untuk menyusun materi ajar.
                 </p>
               </CardContent>
             </Card>
@@ -592,31 +644,43 @@ export default function SubjectsManagementPage({
                     <tr>
                       <th className="px-4 py-3 w-16 text-center">Bab</th>
                       <th className="px-4 py-3 w-44">Mata Pelajaran</th>
-                      <th className="px-3 py-3 w-28 text-center">Jenjang / Kelas</th>
+                      <th className="px-3 py-3 w-28 text-center">
+                        Jenjang / Kelas
+                      </th>
                       <th className="px-4 py-3">Judul Materi & Silabus</th>
-                      <th className="px-4 py-3 w-56">Lembar Kerja (Worksheet)</th>
+                      <th className="px-4 py-3 w-56">
+                        Lembar Kerja (Worksheet)
+                      </th>
                       <th className="px-3 py-3 w-20 text-center">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {filteredTopics.map((topic) => {
-                      const subjectObj = subjects.find((s) => s.id === topic.subject_id);
+                      const subjectObj = subjects.find(
+                        (s) => s.id === topic.subject_id,
+                      );
 
                       return (
-                        <tr key={topic.id} className="hover:bg-muted/20 transition-colors">
+                        <tr
+                          key={topic.id}
+                          className="hover:bg-muted/20 transition-colors"
+                        >
                           <td className="px-4 py-3 text-center font-bold text-foreground">
                             <span className="inline-block w-7 h-7 leading-7 rounded-full bg-primary/10 text-primary font-mono text-xs">
                               {topic.chapter_number}
                             </span>
                           </td>
                           <td className="px-4 py-3 font-semibold text-foreground">
-                            {subjectObj?.name || topic.subject_name || '-'}
+                            {subjectObj?.name || topic.subject_name || "-"}
                             <span className="block font-mono text-[10px] text-muted-foreground">
                               {subjectObj?.code}
                             </span>
                           </td>
                           <td className="px-3 py-3 text-center">
-                            <Badge variant="outline" className="font-semibold text-xs">
+                            <Badge
+                              variant="outline"
+                              className="font-semibold text-xs"
+                            >
                               {topic.grade}
                             </Badge>
                           </td>
@@ -634,7 +698,10 @@ export default function SubjectsManagementPage({
                             {topic.worksheet_name ? (
                               <div className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-200 w-fit">
                                 <FileText className="w-3.5 h-3.5 shrink-0" />
-                                <span className="truncate max-w-[170px]" title={topic.worksheet_name}>
+                                <span
+                                  className="truncate max-w-[170px]"
+                                  title={topic.worksheet_name}
+                                >
                                   {topic.worksheet_name}
                                 </span>
                               </div>
@@ -686,10 +753,13 @@ export default function SubjectsManagementPage({
             <DialogHeader>
               <DialogTitle className="text-base flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-emerald-600" />
-                {editingSubject ? 'Edit Mata Pelajaran' : 'Tambah Mata Pelajaran Baru'}
+                {editingSubject
+                  ? "Edit Mata Pelajaran"
+                  : "Tambah Mata Pelajaran Baru"}
               </DialogTitle>
               <DialogDescription className="text-xs">
-                Mata pelajaran akan menjadi acuan penyusunan kurikulum materi dan jadwal belajar.
+                Mata pelajaran akan menjadi acuan penyusunan kurikulum materi
+                dan jadwal belajar.
               </DialogDescription>
             </DialogHeader>
 
@@ -702,11 +772,13 @@ export default function SubjectsManagementPage({
                   <Input
                     id="sub-code"
                     placeholder="Contoh: MTK-SD"
-                    {...registerSubject('code')}
+                    {...registerSubject("code")}
                     className="h-8 text-xs font-mono uppercase"
                   />
                   {subjectErrors.code && (
-                    <p className="text-rose-500 text-[10px]">{subjectErrors.code.message}</p>
+                    <p className="text-rose-500 text-[10px]">
+                      {subjectErrors.code.message}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-1">
@@ -714,8 +786,10 @@ export default function SubjectsManagementPage({
                     Jenjang Pendidikan
                   </Label>
                   <Select
-                    defaultValue={editingSubject?.level || 'SD'}
-                    onValueChange={(v) => v && setSubjectValue('level', v as any)}
+                    defaultValue={editingSubject?.level || "SD"}
+                    onValueChange={(v) =>
+                      v && setSubjectValue("level", v as any)
+                    }
                   >
                     <SelectTrigger id="sub-level" className="h-8 text-xs">
                       <SelectValue placeholder="Pilih jenjang" />
@@ -751,11 +825,13 @@ export default function SubjectsManagementPage({
                 <Input
                   id="sub-name"
                   placeholder="Contoh: Matematika"
-                  {...registerSubject('name')}
+                  {...registerSubject("name")}
                   className="h-8 text-xs"
                 />
                 {subjectErrors.name && (
-                  <p className="text-rose-500 text-[10px]">{subjectErrors.name.message}</p>
+                  <p className="text-rose-500 text-[10px]">
+                    {subjectErrors.name.message}
+                  </p>
                 )}
               </div>
 
@@ -767,7 +843,7 @@ export default function SubjectsManagementPage({
                   id="sub-desc"
                   rows={2}
                   placeholder="Keterangan cakupan materi belajar..."
-                  {...registerSubject('description')}
+                  {...registerSubject("description")}
                   className="text-xs resize-none"
                 />
               </div>
@@ -777,8 +853,10 @@ export default function SubjectsManagementPage({
                   Status Keaktifan
                 </Label>
                 <Select
-                  defaultValue={editingSubject?.status || 'active'}
-                  onValueChange={(v) => v && setSubjectValue('status', v as any)}
+                  defaultValue={editingSubject?.status || "active"}
+                  onValueChange={(v) =>
+                    v && setSubjectValue("status", v as any)
+                  }
                 >
                   <SelectTrigger id="sub-status" className="h-8 text-xs">
                     <SelectValue />
@@ -811,7 +889,7 @@ export default function SubjectsManagementPage({
                 disabled={isSubmittingSubject}
                 className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
               >
-                {isSubmittingSubject ? 'Menyimpan...' : 'Simpan Mapel'}
+                {isSubmittingSubject ? "Menyimpan..." : "Simpan Mapel"}
               </Button>
             </DialogFooter>
           </form>
@@ -827,10 +905,13 @@ export default function SubjectsManagementPage({
             <DialogHeader>
               <DialogTitle className="text-base flex items-center gap-2">
                 <Layers className="w-4 h-4 text-emerald-600" />
-                {editingTopic ? 'Edit Bab Materi Kurikulum' : 'Tambah Bab Materi Baru'}
+                {editingTopic
+                  ? "Edit Bab Materi Kurikulum"
+                  : "Tambah Bab Materi Baru"}
               </DialogTitle>
               <DialogDescription className="text-xs">
-                Materi ini akan otomatis muncul pada form presensi tutor dan siap diunduh worksheet-nya.
+                Materi ini akan otomatis muncul pada form presensi tutor dan
+                siap diunduh worksheet-nya.
               </DialogDescription>
             </DialogHeader>
 
@@ -840,8 +921,12 @@ export default function SubjectsManagementPage({
                   Pilih Mata Pelajaran
                 </Label>
                 <Select
-                  defaultValue={editingTopic?.subject_id || watchTopic('subject_id') || subjects[0]?.id}
-                  onValueChange={(v) => v && setTopicValue('subject_id', v)}
+                  defaultValue={
+                    editingTopic?.subject_id ||
+                    watchTopic("subject_id") ||
+                    subjects[0]?.id
+                  }
+                  onValueChange={(v) => v && setTopicValue("subject_id", v)}
                 >
                   <SelectTrigger id="topic-sub" className="h-8 text-xs">
                     <SelectValue placeholder="Pilih mapel..." />
@@ -855,18 +940,25 @@ export default function SubjectsManagementPage({
                   </SelectContent>
                 </Select>
                 {topicErrors.subject_id && (
-                  <p className="text-rose-500 text-[10px]">{topicErrors.subject_id.message}</p>
+                  <p className="text-rose-500 text-[10px]">
+                    {topicErrors.subject_id.message}
+                  </p>
                 )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label htmlFor="topic-grade" className="text-xs font-semibold">
+                  <Label
+                    htmlFor="topic-grade"
+                    className="text-xs font-semibold"
+                  >
                     Jenjang Kelas
                   </Label>
                   <Select
-                    defaultValue={editingTopic?.grade || watchTopic('grade') || '4 SD'}
-                    onValueChange={(v) => v && setTopicValue('grade', v)}
+                    defaultValue={
+                      editingTopic?.grade || watchTopic("grade") || "4 SD"
+                    }
+                    onValueChange={(v) => v && setTopicValue("grade", v)}
                   >
                     <SelectTrigger id="topic-grade" className="h-8 text-xs">
                       <SelectValue placeholder="Pilih kelas" />
@@ -880,7 +972,9 @@ export default function SubjectsManagementPage({
                     </SelectContent>
                   </Select>
                   {topicErrors.grade && (
-                    <p className="text-rose-500 text-[10px]">{topicErrors.grade.message}</p>
+                    <p className="text-rose-500 text-[10px]">
+                      {topicErrors.grade.message}
+                    </p>
                   )}
                 </div>
 
@@ -891,11 +985,15 @@ export default function SubjectsManagementPage({
                   <Input
                     id="topic-chap"
                     type="number"
-                    {...registerTopic('chapter_number', { valueAsNumber: true })}
+                    {...registerTopic("chapter_number", {
+                      valueAsNumber: true,
+                    })}
                     className="h-8 text-xs text-center font-bold"
                   />
                   {topicErrors.chapter_number && (
-                    <p className="text-rose-500 text-[10px]">{topicErrors.chapter_number.message}</p>
+                    <p className="text-rose-500 text-[10px]">
+                      {topicErrors.chapter_number.message}
+                    </p>
                   )}
                 </div>
               </div>
@@ -907,11 +1005,13 @@ export default function SubjectsManagementPage({
                 <Input
                   id="topic-title"
                   placeholder="Contoh: Operasi Pecahan Senilai & Campuran"
-                  {...registerTopic('title')}
+                  {...registerTopic("title")}
                   className="h-8 text-xs"
                 />
                 {topicErrors.title && (
-                  <p className="text-rose-500 text-[10px]">{topicErrors.title.message}</p>
+                  <p className="text-rose-500 text-[10px]">
+                    {topicErrors.title.message}
+                  </p>
                 )}
               </div>
 
@@ -923,32 +1023,38 @@ export default function SubjectsManagementPage({
                   id="topic-desc"
                   rows={2}
                   placeholder="Penjelasan ringkas kompetensi dasar yang dipelajari..."
-                  {...registerTopic('description')}
+                  {...registerTopic("description")}
                   className="text-xs resize-none"
                 />
               </div>
 
               <div className="space-y-1 border-t pt-2">
-                <Label htmlFor="topic-ws" className="text-xs font-semibold flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300">
+                <Label
+                  htmlFor="topic-ws"
+                  className="text-xs font-semibold flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300"
+                >
                   <FileText className="w-3.5 h-3.5" />
                   Nama File Worksheet / Lembar Kerja (Opsional)
                 </Label>
                 <Input
                   id="topic-ws"
                   placeholder="Contoh: Worksheet Latihan Pecahan Campuran.pdf"
-                  {...registerTopic('worksheet_name')}
+                  {...registerTopic("worksheet_name")}
                   className="h-8 text-xs"
                 />
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="topic-url" className="text-xs font-medium text-muted-foreground">
+                <Label
+                  htmlFor="topic-url"
+                  className="text-xs font-medium text-muted-foreground"
+                >
                   URL Tautan Worksheet (Opsional)
                 </Label>
                 <Input
                   id="topic-url"
                   placeholder="Contoh: /samples/worksheets/mtk4_bab3.pdf"
-                  {...registerTopic('worksheet_url')}
+                  {...registerTopic("worksheet_url")}
                   className="h-8 text-xs font-mono text-muted-foreground"
                 />
               </div>
@@ -970,7 +1076,7 @@ export default function SubjectsManagementPage({
                 disabled={isSubmittingTopic}
                 className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
               >
-                {isSubmittingTopic ? 'Menyimpan...' : 'Simpan Bab Materi'}
+                {isSubmittingTopic ? "Menyimpan..." : "Simpan Bab Materi"}
               </Button>
             </DialogFooter>
           </form>
@@ -980,14 +1086,17 @@ export default function SubjectsManagementPage({
       {/* ==============================================================
           ALERT DIALOG: HAPUS SUBJECT
           ============================================================== */}
-      <AlertDialog open={!!deletingSubject} onOpenChange={() => setDeletingSubject(null)}>
+      <AlertDialog
+        open={!!deletingSubject}
+        onOpenChange={() => setDeletingSubject(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Mata Pelajaran?</AlertDialogTitle>
             <AlertDialogDescription className="text-xs">
-              Apakah Anda yakin ingin menghapus mata pelajaran{' '}
-              <strong>{deletingSubject?.name}</strong>? Seluruh bab materi kurikulum yang terkait
-              akan ikut terhapus.
+              Apakah Anda yakin ingin menghapus mata pelajaran{" "}
+              <strong>{deletingSubject?.name}</strong>? Seluruh bab materi
+              kurikulum yang terkait akan ikut terhapus.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1005,15 +1114,18 @@ export default function SubjectsManagementPage({
       {/* ==============================================================
           ALERT DIALOG: HAPUS TOPIC
           ============================================================== */}
-      <AlertDialog open={!!deletingTopic} onOpenChange={() => setDeletingTopic(null)}>
+      <AlertDialog
+        open={!!deletingTopic}
+        onOpenChange={() => setDeletingTopic(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Bab Materi?</AlertDialogTitle>
             <AlertDialogDescription className="text-xs">
-              Apakah Anda yakin ingin menghapus{' '}
+              Apakah Anda yakin ingin menghapus{" "}
               <strong>
                 Bab {deletingTopic?.chapter_number}: {deletingTopic?.title}
-              </strong>{' '}
+              </strong>{" "}
               dari kurikulum?
             </AlertDialogDescription>
           </AlertDialogHeader>

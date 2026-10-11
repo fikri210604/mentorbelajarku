@@ -3,7 +3,14 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Edit2, Trash2, BookOpen, Search, GraduationCap } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  BookOpen,
+  Search,
+  GraduationCap,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -44,7 +51,9 @@ interface ProgramsPageProps {
   initialPrograms?: any[];
 }
 
-export default function ProgramsPage({ initialPrograms = [] }: ProgramsPageProps) {
+export default function ProgramsPage({
+  initialPrograms = [],
+}: ProgramsPageProps) {
   const [programs, setPrograms] = useState<any[]>(initialPrograms);
   const [search, setSearch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -106,7 +115,7 @@ export default function ProgramsPage({ initialPrograms = [] }: ProgramsPageProps
 
     if (editingProgram) {
       setPrograms((prev) =>
-        prev.map((p) => (p.id === editingProgram.id ? { ...p, ...data } : p))
+        prev.map((p) => (p.id === editingProgram.id ? { ...p, ...data } : p)),
       );
     } else {
       setPrograms((prev) => [...prev, { ...data, id: Date.now().toString() }]);
@@ -180,13 +189,19 @@ export default function ProgramsPage({ initialPrograms = [] }: ProgramsPageProps
             <tbody className="divide-y divide-border">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-muted-foreground"
+                  >
                     Belum ada mata pelajaran yang sesuai dengan pencarian.
                   </td>
                 </tr>
               ) : (
                 filtered.map((prog) => (
-                  <tr key={prog.id} className="hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={prog.id}
+                    className="hover:bg-muted/30 transition-colors"
+                  >
                     <td className="px-4 py-3 font-mono font-bold text-primary">
                       {prog.code}
                     </td>
@@ -247,7 +262,9 @@ export default function ProgramsPage({ initialPrograms = [] }: ProgramsPageProps
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingProgram ? "Edit Program Bimbel" : "Tambah Program Bimbel Baru"}
+              {editingProgram
+                ? "Edit Program Bimbel"
+                : "Tambah Program Bimbel Baru"}
             </DialogTitle>
             <DialogDescription>
               Tentukan kode singkatan dan nama program bimbingan belajar.
@@ -257,7 +274,9 @@ export default function ProgramsPage({ initialPrograms = [] }: ProgramsPageProps
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-1 space-y-1.5">
-                <Label htmlFor="code">Kode <span className="text-destructive">*</span></Label>
+                <Label htmlFor="code">
+                  Kode <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="code"
                   placeholder="MTK"
@@ -265,24 +284,33 @@ export default function ProgramsPage({ initialPrograms = [] }: ProgramsPageProps
                   {...register("code")}
                 />
                 {errors.code && (
-                  <p className="text-xs text-destructive">{errors.code.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.code.message}
+                  </p>
                 )}
               </div>
               <div className="col-span-2 space-y-1.5">
-                <Label htmlFor="name">Nama Program Bimbel <span className="text-destructive">*</span></Label>
+                <Label htmlFor="name">
+                  Nama Program Bimbel{" "}
+                  <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="name"
                   placeholder="Contoh: Matematika (TKA & Pendalaman)"
                   {...register("name")}
                 />
                 {errors.name && (
-                  <p className="text-xs text-destructive">{errors.name.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.name.message}
+                  </p>
                 )}
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="level">Jenjang Pendidikan <span className="text-destructive">*</span></Label>
+              <Label htmlFor="level">
+                Jenjang Pendidikan <span className="text-destructive">*</span>
+              </Label>
               <Select
                 defaultValue={editingProgram?.level || "Semua Jenjang"}
                 onValueChange={(val) => setValue("level", val)}
@@ -296,17 +324,25 @@ export default function ProgramsPage({ initialPrograms = [] }: ProgramsPageProps
                   <SelectItem value="TK/SD">TK & SD</SelectItem>
                   <SelectItem value="SD">SD (Sekolah Dasar)</SelectItem>
                   <SelectItem value="SD/SMP">SD & SMP</SelectItem>
-                  <SelectItem value="SMP">SMP (Sekolah Menengah Pertama)</SelectItem>
-                  <SelectItem value="SMA">SMA / SMK (Sekolah Menengah Atas)</SelectItem>
+                  <SelectItem value="SMP">
+                    SMP (Sekolah Menengah Pertama)
+                  </SelectItem>
+                  <SelectItem value="SMA">
+                    SMA / SMK (Sekolah Menengah Atas)
+                  </SelectItem>
                 </SelectContent>
               </Select>
               {errors.level && (
-                <p className="text-xs text-destructive">{errors.level.message}</p>
+                <p className="text-xs text-destructive">
+                  {errors.level.message}
+                </p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="description">Deskripsi / Ruang Lingkup Materi</Label>
+              <Label htmlFor="description">
+                Deskripsi / Ruang Lingkup Materi
+              </Label>
               <Textarea
                 id="description"
                 placeholder="Contoh: Aljabar, geometri, aritmatika, kalkulus..."
@@ -319,13 +355,17 @@ export default function ProgramsPage({ initialPrograms = [] }: ProgramsPageProps
               <Label htmlFor="status">Status</Label>
               <Select
                 defaultValue={editingProgram?.status || "active"}
-                onValueChange={(val) => setValue("status", val as "active" | "inactive")}
+                onValueChange={(val) =>
+                  setValue("status", val as "active" | "inactive")
+                }
               >
                 <SelectTrigger id="status">
                   <SelectValue placeholder="Pilih status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Aktif (Dapat dipilih di jadwal)</SelectItem>
+                  <SelectItem value="active">
+                    Aktif (Dapat dipilih di jadwal)
+                  </SelectItem>
                   <SelectItem value="inactive">Nonaktif</SelectItem>
                 </SelectContent>
               </Select>
@@ -341,7 +381,11 @@ export default function ProgramsPage({ initialPrograms = [] }: ProgramsPageProps
                 Batal
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Menyimpan..." : editingProgram ? "Simpan Perubahan" : "Tambahkan"}
+                {isSubmitting
+                  ? "Menyimpan..."
+                  : editingProgram
+                    ? "Simpan Perubahan"
+                    : "Tambahkan"}
               </Button>
             </DialogFooter>
           </form>
@@ -349,14 +393,20 @@ export default function ProgramsPage({ initialPrograms = [] }: ProgramsPageProps
       </Dialog>
 
       {/* DIALOG KONFIRMASI HAPUS */}
-      <AlertDialog open={!!deletingProgram} onOpenChange={() => setDeletingProgram(null)}>
+      <AlertDialog
+        open={!!deletingProgram}
+        onOpenChange={() => setDeletingProgram(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Mata Pelajaran?</AlertDialogTitle>
             <AlertDialogDescription>
               Apakah Anda yakin ingin menghapus mata pelajaran{" "}
-              <strong>&quot;{deletingProgram?.name}&quot; ({deletingProgram?.code})</strong>?
-              Mata pelajaran yang sudah terikat pada jadwal murid aktif tidak dapat dihapus.
+              <strong>
+                &quot;{deletingProgram?.name}&quot; ({deletingProgram?.code})
+              </strong>
+              ? Mata pelajaran yang sudah terikat pada jadwal murid aktif tidak
+              dapat dihapus.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

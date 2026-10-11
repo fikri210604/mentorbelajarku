@@ -27,18 +27,28 @@ interface AttendanceListPageProps {
   initialAttendances?: AttendanceWithDetails[];
 }
 
-export default function AttendanceListPage({ initialAttendances = [] }: AttendanceListPageProps) {
+export default function AttendanceListPage({
+  initialAttendances = [],
+}: AttendanceListPageProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Summary Metrics
   const metrics = useMemo(() => {
     const total = initialAttendances.length;
-    const present = initialAttendances.filter((a) => a.status === "present" || (a.status as string) === "late").length;
-    const permission = initialAttendances.filter((a) => a.status === "permission" || a.status === "sick").length;
-    const absent = initialAttendances.filter((a) => a.status === "absent").length;
+    const present = initialAttendances.filter(
+      (a) => a.status === "present" || (a.status as string) === "late",
+    ).length;
+    const permission = initialAttendances.filter(
+      (a) => a.status === "permission" || a.status === "sick",
+    ).length;
+    const absent = initialAttendances.filter(
+      (a) => a.status === "absent",
+    ).length;
     const pendingVerification = initialAttendances.filter(
-      (a) => a.verification_status === "submitted" || (a.verification_status as string) === "pending"
+      (a) =>
+        a.verification_status === "submitted" ||
+        (a.verification_status as string) === "pending",
     ).length;
 
     return { total, present, permission, absent, pendingVerification };
@@ -49,7 +59,8 @@ export default function AttendanceListPage({ initialAttendances = [] }: Attendan
     return initialAttendances.filter((item) => {
       const studentName = item.students?.name?.toLowerCase() || "";
       const studentCode = item.students?.student_code?.toLowerCase() || "";
-      const tutorName = item.sessions?.tutors?.profiles?.full_name?.toLowerCase() || "";
+      const tutorName =
+        item.sessions?.tutors?.profiles?.full_name?.toLowerCase() || "";
       const material = item.material?.toLowerCase() || "";
       const query = searchTerm.toLowerCase();
 
@@ -62,11 +73,16 @@ export default function AttendanceListPage({ initialAttendances = [] }: Attendan
       if (!matchesSearch) return false;
 
       if (statusFilter === "all") return true;
-      if (statusFilter === "present") return item.status === "present" || (item.status as string) === "late";
-      if (statusFilter === "permission") return item.status === "permission" || item.status === "sick";
+      if (statusFilter === "present")
+        return item.status === "present" || (item.status as string) === "late";
+      if (statusFilter === "permission")
+        return item.status === "permission" || item.status === "sick";
       if (statusFilter === "absent") return item.status === "absent";
       if (statusFilter === "pending") {
-        return item.verification_status === "submitted" || (item.verification_status as string) === "pending";
+        return (
+          item.verification_status === "submitted" ||
+          (item.verification_status as string) === "pending"
+        );
       }
 
       return true;
@@ -87,8 +103,12 @@ export default function AttendanceListPage({ initialAttendances = [] }: Attendan
         <Card className="border shadow-xs">
           <CardContent className="p-4 flex items-center justify-between">
             <div className="space-y-0.5">
-              <p className="text-xs text-muted-foreground font-medium">Total Catatan</p>
-              <p className="text-2xl font-bold text-foreground">{metrics.total}</p>
+              <p className="text-xs text-muted-foreground font-medium">
+                Total Catatan
+              </p>
+              <p className="text-2xl font-bold text-foreground">
+                {metrics.total}
+              </p>
             </div>
             <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
               <Users className="w-5 h-5" />
@@ -99,8 +119,12 @@ export default function AttendanceListPage({ initialAttendances = [] }: Attendan
         <Card className="border shadow-xs">
           <CardContent className="p-4 flex items-center justify-between">
             <div className="space-y-0.5">
-              <p className="text-xs text-muted-foreground font-medium">Siswa Hadir</p>
-              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{metrics.present}</p>
+              <p className="text-xs text-muted-foreground font-medium">
+                Siswa Hadir
+              </p>
+              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                {metrics.present}
+              </p>
             </div>
             <div className="h-9 w-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="w-5 h-5" />
@@ -111,8 +135,12 @@ export default function AttendanceListPage({ initialAttendances = [] }: Attendan
         <Card className="border shadow-xs">
           <CardContent className="p-4 flex items-center justify-between">
             <div className="space-y-0.5">
-              <p className="text-xs text-muted-foreground font-medium">Izin & Sakit</p>
-              <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{metrics.permission}</p>
+              <p className="text-xs text-muted-foreground font-medium">
+                Izin & Sakit
+              </p>
+              <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                {metrics.permission}
+              </p>
             </div>
             <div className="h-9 w-9 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
               <Clock className="w-5 h-5" />
@@ -123,8 +151,12 @@ export default function AttendanceListPage({ initialAttendances = [] }: Attendan
         <Card className="border shadow-xs">
           <CardContent className="p-4 flex items-center justify-between">
             <div className="space-y-0.5">
-              <p className="text-xs text-muted-foreground font-medium">Tanpa Keterangan (Alpa)</p>
-              <p className="text-2xl font-bold text-rose-600 dark:text-rose-400">{metrics.absent}</p>
+              <p className="text-xs text-muted-foreground font-medium">
+                Tanpa Keterangan (Alpa)
+              </p>
+              <p className="text-2xl font-bold text-rose-600 dark:text-rose-400">
+                {metrics.absent}
+              </p>
             </div>
             <div className="h-9 w-9 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400">
               <AlertCircle className="w-5 h-5" />
@@ -152,10 +184,20 @@ export default function AttendanceListPage({ initialAttendances = [] }: Attendan
           {[
             { key: "all", label: "Semua", count: metrics.total },
             { key: "present", label: "Hadir", count: metrics.present },
-            { key: "permission", label: "Izin / Sakit", count: metrics.permission },
+            {
+              key: "permission",
+              label: "Izin / Sakit",
+              count: metrics.permission,
+            },
             { key: "absent", label: "Alpa", count: metrics.absent },
             ...(metrics.pendingVerification > 0
-              ? [{ key: "pending", label: "Perlu Verifikasi", count: metrics.pendingVerification }]
+              ? [
+                  {
+                    key: "pending",
+                    label: "Perlu Verifikasi",
+                    count: metrics.pendingVerification,
+                  },
+                ]
               : []),
           ].map((tab) => (
             <button
@@ -171,7 +213,9 @@ export default function AttendanceListPage({ initialAttendances = [] }: Attendan
               <span>{tab.label}</span>
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                  statusFilter === tab.key ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"
+                  statusFilter === tab.key
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
                 }`}
               >
                 {tab.count}
@@ -212,7 +256,10 @@ export default function AttendanceListPage({ initialAttendances = [] }: Attendan
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredAttendances.map((att) => (
-                  <tr key={att.id} className="hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={att.id}
+                    className="hover:bg-muted/30 transition-colors"
+                  >
                     {/* Tanggal & Waktu */}
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="font-semibold text-foreground flex items-center gap-1.5">
@@ -220,14 +267,19 @@ export default function AttendanceListPage({ initialAttendances = [] }: Attendan
                         <span>{att.sessions?.session_date || "-"}</span>
                       </div>
                       <span className="text-[10px] text-muted-foreground font-mono block pl-5">
-                        {att.sessions?.start_time?.slice(0, 5) || "16:00"} - {att.sessions?.end_time?.slice(0, 5) || "17:15"}
+                        {att.sessions?.start_time?.slice(0, 5) || "16:00"} -{" "}
+                        {att.sessions?.end_time?.slice(0, 5) || "17:15"}
                       </span>
                     </td>
 
                     {/* Murid */}
                     <td className="px-4 py-3">
-                      <span className="font-semibold text-foreground text-xs block">{att.students?.name}</span>
-                      <span className="text-[11px] text-muted-foreground font-mono">{att.students?.student_code}</span>
+                      <span className="font-semibold text-foreground text-xs block">
+                        {att.students?.name}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground font-mono">
+                        {att.students?.student_code}
+                      </span>
                     </td>
 
                     {/* Tutor & Program */}
@@ -236,10 +288,15 @@ export default function AttendanceListPage({ initialAttendances = [] }: Attendan
                         {att.sessions?.tutors?.profiles?.full_name || "Tutor"}
                       </span>
                       <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
-                        <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
+                        <Badge
+                          variant="outline"
+                          className="text-[9px] px-1 py-0 h-4"
+                        >
                           {att.sessions?.bimbel_types?.name || "Reguler"}
                         </Badge>
-                        <span className="truncate max-w-[120px]">{att.sessions?.programs?.name}</span>
+                        <span className="truncate max-w-[120px]">
+                          {att.sessions?.programs?.name}
+                        </span>
                       </div>
                     </td>
 
@@ -265,7 +322,9 @@ export default function AttendanceListPage({ initialAttendances = [] }: Attendan
                           <Camera className="w-3.5 h-3.5" />
                         </span>
                       ) : (
-                        <span className="text-muted-foreground/40 text-[11px]">-</span>
+                        <span className="text-muted-foreground/40 text-[11px]">
+                          -
+                        </span>
                       )}
                     </td>
 

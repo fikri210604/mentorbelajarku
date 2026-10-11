@@ -11,6 +11,11 @@ const SCHEDULE_SELECT_COLUMNS = `
   program_id,
   bimbel_type_id,
   day_of_week,
+  days_of_week,
+  recurrence_start_date,
+  recurrence_interval,
+  recurrence_count,
+  recurrence_until,
   start_time,
   end_time,
   location,
@@ -105,7 +110,17 @@ export const getScheduleById = cache(async (id: string): Promise<ScheduleWithDet
     .maybeSingle();
 
   if (error || !data) return null;
-  return mapScheduleItem(data);
+
+  const { data: exceptions } = await supabase
+    .from("schedule_exceptions")
+    .select("exception_date, reason")
+    .eq("schedule_id", id)
+    .order("exception_date", { ascending: true });
+
+  return {
+    ...mapScheduleItem(data),
+    exceptions: (exceptions ?? []) as { exception_date: string; reason: string | null }[],
+  };
 });
 
 export const getTutorSchedules = cache(async (tutorId: string): Promise<ScheduleWithDetails[]> => {

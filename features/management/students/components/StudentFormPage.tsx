@@ -40,32 +40,61 @@ const EDUCATION_LEVELS = [
 
 const GRADE_OPTIONS_BY_LEVEL: Record<string, string[]> = {
   "TK/PAUD": ["PAUD / Kelompok Bermain (KB)", "TK A", "TK B"],
-  "SD": ["1 SD", "2 SD", "3 SD", "4 SD", "5 SD", "6 SD"],
-  "SMP": ["7 SMP", "8 SMP", "9 SMP"],
-  "SMA": ["10 SMA", "11 SMA", "12 SMA"],
-  "Umum": ["Alumni / Gap Year", "Persiapan UTBK / Kedinasan", "Umum"],
+  SD: ["1 SD", "2 SD", "3 SD", "4 SD", "5 SD", "6 SD"],
+  SMP: ["7 SMP", "8 SMP", "9 SMP"],
+  SMA: ["10 SMA", "11 SMA", "12 SMA"],
+  Umum: ["Alumni / Gap Year", "Persiapan UTBK / Kedinasan", "Umum"],
 };
 
 const BIMBEL_TYPE_OPTIONS = [
   { value: "Reguler", label: "Reguler (60 Menit - Standar)", duration: 60 },
-  { value: "Intensif", label: "Intensif (75 Menit - Percepatan & Ujian)", duration: 75 },
-  { value: "Private", label: "Private (90 Menit - 1-on-1 Eksklusif)", duration: 90 },
+  {
+    value: "Intensif",
+    label: "Intensif (75 Menit - Percepatan & Ujian)",
+    duration: 75,
+  },
+  {
+    value: "Private",
+    label: "Private (90 Menit - 1-on-1 Eksklusif)",
+    duration: 90,
+  },
 ] as const;
 
-export default function StudentFormPage({ initialData, isEdit = false, programs = [] }: StudentFormPageProps) {
+export default function StudentFormPage({
+  initialData,
+  isEdit = false,
+  programs = [],
+}: StudentFormPageProps) {
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
 
   // Deteksi nilai awal tingkat pendidikan dari data yang ada
   const initialLevel: "TK/PAUD" | "SD" | "SMP" | "SMA" | "Umum" = (() => {
-    if (initialData?.level && ["TK/PAUD", "SD", "SMP", "SMA", "Umum"].includes(initialData.level)) {
+    if (
+      initialData?.level &&
+      ["TK/PAUD", "SD", "SMP", "SMA", "Umum"].includes(initialData.level)
+    ) {
       return initialData.level as "TK/PAUD" | "SD" | "SMP" | "SMA" | "Umum";
     }
     const g = initialData?.grade?.toUpperCase() || "";
-    if (g.includes("TK") || g.includes("PAUD") || g.includes("KB")) return "TK/PAUD";
-    if (g.includes("SMP") || g.includes("7") || g.includes("8") || g.includes("9")) return "SMP";
-    if (g.includes("SMA") || g.includes("SMK") || g.includes("10") || g.includes("11") || g.includes("12")) return "SMA";
+    if (g.includes("TK") || g.includes("PAUD") || g.includes("KB"))
+      return "TK/PAUD";
+    if (
+      g.includes("SMP") ||
+      g.includes("7") ||
+      g.includes("8") ||
+      g.includes("9")
+    )
+      return "SMP";
+    if (
+      g.includes("SMA") ||
+      g.includes("SMK") ||
+      g.includes("10") ||
+      g.includes("11") ||
+      g.includes("12")
+    )
+      return "SMA";
     if (g.includes("ALUMNI") || g.includes("UTBK")) return "Umum";
     return "SD";
   })();
@@ -103,7 +132,9 @@ export default function StudentFormPage({ initialData, isEdit = false, programs 
       parentName: initialData?.parent_name || "",
       parentPhone: initialData?.parent_phone || "",
       address: initialData?.address || "",
-      status: (initialData?.status as "active" | "inactive" | "graduated") || "active",
+      status:
+        (initialData?.status as "active" | "inactive" | "graduated") ||
+        "active",
     },
   });
 
@@ -112,9 +143,12 @@ export default function StudentFormPage({ initialData, isEdit = false, programs 
   const watchBimbelType = watch("bimbelType") || "Reguler";
   const watchProgramId = watch("programId");
 
-  const currentGradeOptions = GRADE_OPTIONS_BY_LEVEL[watchLevel] || GRADE_OPTIONS_BY_LEVEL["SD"];
+  const currentGradeOptions =
+    GRADE_OPTIONS_BY_LEVEL[watchLevel] || GRADE_OPTIONS_BY_LEVEL["SD"];
 
-  const handleLevelChange = (newLevel: "TK/PAUD" | "SD" | "SMP" | "SMA" | "Umum") => {
+  const handleLevelChange = (
+    newLevel: "TK/PAUD" | "SD" | "SMP" | "SMA" | "Umum",
+  ) => {
     setValue("level", newLevel);
     const options = GRADE_OPTIONS_BY_LEVEL[newLevel];
     if (options && options.length > 0) {
@@ -130,7 +164,8 @@ export default function StudentFormPage({ initialData, isEdit = false, programs 
       if (isEdit && initialData) {
         const res = await updateStudent(initialData.id, data);
         if (res && !res.success) {
-          const errText = (res as any)?.error || "Gagal memperbarui data murid.";
+          const errText =
+            (res as any)?.error || "Gagal memperbarui data murid.";
           setSubmitError(errText);
           toast.error(errText);
           return;
@@ -144,7 +179,8 @@ export default function StudentFormPage({ initialData, isEdit = false, programs 
       } else {
         const res = await createStudent(data);
         if (res && !res.success) {
-          const errText = (res as any)?.error || "Gagal menambahkan murid baru.";
+          const errText =
+            (res as any)?.error || "Gagal menambahkan murid baru.";
           setSubmitError(errText);
           toast.error(errText);
           return;
@@ -157,7 +193,10 @@ export default function StudentFormPage({ initialData, isEdit = false, programs 
         }, 800);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Terjadi kesalahan sistem saat menyimpan data.";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Terjadi kesalahan sistem saat menyimpan data.";
       setSubmitError(msg);
       toast.error(msg);
       console.error("Error saving student:", err);
@@ -173,7 +212,13 @@ export default function StudentFormPage({ initialData, isEdit = false, programs 
         description="Lengkapi informasi data murid, jenjang sekolah, dan format paket bimbingan belajar."
       >
         <Button asChild variant="outline" size="sm">
-          <Link href={isEdit && initialData ? `/management/students/${initialData.id}` : "/management/students"}>
+          <Link
+            href={
+              isEdit && initialData
+                ? `/management/students/${initialData.id}`
+                : "/management/students"
+            }
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Batal
           </Link>
@@ -187,7 +232,8 @@ export default function StudentFormPage({ initialData, isEdit = false, programs 
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Validasi Formulir Gagal</AlertTitle>
             <AlertDescription>
-              Terdapat data yang belum sesuai. Mohon periksa kolom bertanda merah di bawah.
+              Terdapat data yang belum sesuai. Mohon periksa kolom bertanda
+              merah di bawah.
             </AlertDescription>
           </Alert>
         )}
@@ -218,7 +264,9 @@ export default function StudentFormPage({ initialData, isEdit = false, programs 
             {/* NIS & Nama */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-semibold text-foreground">Kode Murid (NIS) *</label>
+                <label className="text-xs font-semibold text-foreground">
+                  Kode Murid (NIS) *
+                </label>
                 <Input
                   {...register("studentCode")}
                   placeholder="Contoh: STD-2026-001"
@@ -226,15 +274,25 @@ export default function StudentFormPage({ initialData, isEdit = false, programs 
                   className="mt-1 text-xs"
                 />
                 {errors.studentCode && (
-                  <p className="text-xs text-destructive mt-1">{errors.studentCode.message}</p>
+                  <p className="text-xs text-destructive mt-1">
+                    {errors.studentCode.message}
+                  </p>
                 )}
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-foreground">Nama Lengkap *</label>
-                <Input {...register("name")} placeholder="Nama lengkap murid" className="mt-1 text-xs" />
+                <label className="text-xs font-semibold text-foreground">
+                  Nama Lengkap *
+                </label>
+                <Input
+                  {...register("name")}
+                  placeholder="Nama lengkap murid"
+                  className="mt-1 text-xs"
+                />
                 {errors.name && (
-                  <p className="text-xs text-destructive mt-1">{errors.name.message}</p>
+                  <p className="text-xs text-destructive mt-1">
+                    {errors.name.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -242,12 +300,20 @@ export default function StudentFormPage({ initialData, isEdit = false, programs 
             {/* Sekolah, Tingkat & Kelas (Dropdown Berantai) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="text-xs font-semibold text-foreground">Sekolah Asal</label>
-                <Input {...register("school")} placeholder="Contoh: TK Pertiwi / SDN 1" className="mt-1 text-xs" />
+                <label className="text-xs font-semibold text-foreground">
+                  Sekolah Asal
+                </label>
+                <Input
+                  {...register("school")}
+                  placeholder="Contoh: TK Pertiwi / SDN 1"
+                  className="mt-1 text-xs"
+                />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-foreground">Tingkat Pendidikan *</label>
+                <label className="text-xs font-semibold text-foreground">
+                  Tingkat Pendidikan *
+                </label>
                 <select
                   value={watchLevel}
                   onChange={(e) => handleLevelChange(e.target.value as any)}
@@ -262,7 +328,9 @@ export default function StudentFormPage({ initialData, isEdit = false, programs 
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-foreground">Kelas / Rombel *</label>
+                <label className="text-xs font-semibold text-foreground">
+                  Kelas / Rombel *
+                </label>
                 <select
                   value={watchGrade || currentGradeOptions[0]}
                   onChange={(e) => setValue("grade", e.target.value)}
@@ -275,14 +343,18 @@ export default function StudentFormPage({ initialData, isEdit = false, programs 
                   ))}
                 </select>
                 {errors.grade && (
-                  <p className="text-xs text-destructive mt-1">{errors.grade.message}</p>
+                  <p className="text-xs text-destructive mt-1">
+                    {errors.grade.message}
+                  </p>
                 )}
               </div>
             </div>
 
             {/* Program Bimbel (disimpan sebagai enrollment murid) */}
             <div>
-              <label className="text-xs font-semibold text-foreground">Program Bimbel *</label>
+              <label className="text-xs font-semibold text-foreground">
+                Program Bimbel *
+              </label>
               <select
                 value={watchProgramId || ""}
                 onChange={(e) => setValue("programId", e.target.value)}
@@ -296,21 +368,27 @@ export default function StudentFormPage({ initialData, isEdit = false, programs 
                 ))}
               </select>
               {errors.programId && (
-                <p className="text-xs text-destructive mt-1">{errors.programId.message}</p>
+                <p className="text-xs text-destructive mt-1">
+                  {errors.programId.message}
+                </p>
               )}
               <p className="text-[11px] text-muted-foreground mt-1">
-                Program + jenis bimbel tersimpan sebagai enrollment murid (dipakai untuk durasi
-                jadwal &amp; tarif honor).
+                Program + jenis bimbel tersimpan sebagai enrollment murid
+                (dipakai untuk durasi jadwal &amp; tarif honor).
               </p>
             </div>
 
             {/* Jenis Bimbel & Jenis Kelamin */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-semibold text-foreground">Jenis Bimbel *</label>
+                <label className="text-xs font-semibold text-foreground">
+                  Jenis Bimbel *
+                </label>
                 <select
                   value={watchBimbelType}
-                  onChange={(e) => setValue("bimbelType", e.target.value as any)}
+                  onChange={(e) =>
+                    setValue("bimbelType", e.target.value as any)
+                  }
                   className="w-full mt-1 px-3 py-2 border rounded-md text-xs bg-background"
                 >
                   {BIMBEL_TYPE_OPTIONS.map((bt) => (
@@ -320,12 +398,15 @@ export default function StudentFormPage({ initialData, isEdit = false, programs 
                   ))}
                 </select>
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Otomatis menentukan durasi jadwal sesi belajar dan penyesuaian tarif honor tutor.
+                  Otomatis menentukan durasi jadwal sesi belajar dan penyesuaian
+                  tarif honor tutor.
                 </p>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-foreground">Jenis Kelamin</label>
+                <label className="text-xs font-semibold text-foreground">
+                  Jenis Kelamin
+                </label>
                 <select
                   {...register("gender")}
                   className="w-full mt-1 px-3 py-2 border rounded-md text-xs bg-background"
@@ -339,7 +420,9 @@ export default function StudentFormPage({ initialData, isEdit = false, programs 
             {/* Tanggal Lahir */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-semibold text-foreground">Tanggal Lahir (Opsional)</label>
+                <label className="text-xs font-semibold text-foreground">
+                  Tanggal Lahir (Opsional)
+                </label>
                 <div className="mt-1">
                   <DatePicker
                     value={watch("birthDate")}
@@ -356,19 +439,37 @@ export default function StudentFormPage({ initialData, isEdit = false, programs 
             {/* Data Orang Tua */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-semibold text-foreground">Nama Orang Tua / Wali</label>
-                <Input {...register("parentName")} placeholder="Nama ayah/ibu/wali" className="mt-1 text-xs" />
+                <label className="text-xs font-semibold text-foreground">
+                  Nama Orang Tua / Wali
+                </label>
+                <Input
+                  {...register("parentName")}
+                  placeholder="Nama ayah/ibu/wali"
+                  className="mt-1 text-xs"
+                />
               </div>
               <div>
-                <label className="text-xs font-semibold text-foreground">No. HP / WhatsApp Orang Tua</label>
-                <Input {...register("parentPhone")} placeholder="081234567890" className="mt-1 text-xs" />
+                <label className="text-xs font-semibold text-foreground">
+                  No. HP / WhatsApp Orang Tua
+                </label>
+                <Input
+                  {...register("parentPhone")}
+                  placeholder="081234567890"
+                  className="mt-1 text-xs"
+                />
               </div>
             </div>
 
             {/* Alamat */}
             <div>
-              <label className="text-xs font-semibold text-foreground">Alamat Domisili</label>
-              <Input {...register("address")} placeholder="Alamat rumah murid" className="mt-1 text-xs" />
+              <label className="text-xs font-semibold text-foreground">
+                Alamat Domisili
+              </label>
+              <Input
+                {...register("address")}
+                placeholder="Alamat rumah murid"
+                className="mt-1 text-xs"
+              />
             </div>
 
             <div className="pt-4 flex justify-end">

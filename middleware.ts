@@ -36,12 +36,23 @@ export function middleware(request: NextRequest) {
   }
 
   // 4. Redirect unauthenticated users dari rute privat.
+  const isPublicApi =
+    pathname.startsWith('/api/v1/auth') ||
+    pathname.startsWith('/api/v1/sessions/cron-generate') ||
+    pathname.startsWith('/api/v1/automation');
+
   const isPrivateRoute =
     pathname.startsWith('/management') ||
     pathname.startsWith('/tutor') ||
-    (pathname.startsWith('/api/v1') && !pathname.startsWith('/api/v1/auth'));
+    (pathname.startsWith('/api/v1') && !isPublicApi);
 
   if (isPrivateRoute && !isAuthenticated) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: silakan login terlebih dahulu.', code: 'UNAUTHORIZED' },
+        { status: 401 }
+      );
+    }
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(loginUrl);

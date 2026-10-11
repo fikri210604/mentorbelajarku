@@ -72,8 +72,8 @@ export default function TutorStudentDetailPage({
                       {sp.programs?.name} ({sp.bimbel_types?.name})
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Alokasi Paket: <strong>{sp.total_sessions} Sesi</strong> • Mulai:{" "}
-                      {sp.start_date || "-"}
+                      Alokasi Paket: <strong>{sp.total_sessions} Sesi</strong> •
+                      Mulai: {sp.start_date || "-"}
                     </p>
                   </div>
                   <StatusBadge status={sp.status} />
@@ -81,7 +81,9 @@ export default function TutorStudentDetailPage({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Tidak ada program aktif.</p>
+            <p className="text-sm text-muted-foreground">
+              Tidak ada program aktif.
+            </p>
           )}
         </CardContent>
       </Card>

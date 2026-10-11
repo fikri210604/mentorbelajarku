@@ -3,7 +3,16 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Edit2, Trash2, Layers, Clock, FileText, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Layers,
+  Clock,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -44,7 +53,9 @@ interface BimbelTypesPageProps {
   initialBimbelTypes?: any[];
 }
 
-export default function BimbelTypesPage({ initialBimbelTypes = [] }: BimbelTypesPageProps) {
+export default function BimbelTypesPage({
+  initialBimbelTypes = [],
+}: BimbelTypesPageProps) {
   const [types, setTypes] = useState<any[]>(initialBimbelTypes);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingType, setEditingType] = useState<any | null>(null);
@@ -102,7 +113,7 @@ export default function BimbelTypesPage({ initialBimbelTypes = [] }: BimbelTypes
 
     if (editingType) {
       setTypes((prev) =>
-        prev.map((t) => (t.id === editingType.id ? { ...t, ...data } : t))
+        prev.map((t) => (t.id === editingType.id ? { ...t, ...data } : t)),
       );
     } else {
       setTypes((prev) => [...prev, { ...data, id: Date.now().toString() }]);
@@ -154,13 +165,19 @@ export default function BimbelTypesPage({ initialBimbelTypes = [] }: BimbelTypes
             <tbody className="divide-y divide-border">
               {types.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                  <td
+                    colSpan={5}
+                    className="px-4 py-8 text-center text-muted-foreground"
+                  >
                     Belum ada jenis bimbel yang ditambahkan.
                   </td>
                 </tr>
               ) : (
                 types.map((bt) => (
-                  <tr key={bt.id} className="hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={bt.id}
+                    className="hover:bg-muted/30 transition-colors"
+                  >
                     <td className="px-4 py-3 font-semibold text-foreground">
                       <div className="flex items-center gap-2">
                         <div className="p-1.5 rounded-md bg-primary/10 text-primary">
@@ -221,25 +238,33 @@ export default function BimbelTypesPage({ initialBimbelTypes = [] }: BimbelTypes
               {editingType ? "Edit Jenis Bimbel" : "Tambah Jenis Bimbel Baru"}
             </DialogTitle>
             <DialogDescription>
-              Tentukan nama dan durasi belajar dalam menit untuk jadwal dan honor sesi.
+              Tentukan nama dan durasi belajar dalam menit untuk jadwal dan
+              honor sesi.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="name">Nama Jenis Bimbel <span className="text-destructive">*</span></Label>
+              <Label htmlFor="name">
+                Nama Jenis Bimbel <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="name"
                 placeholder="Contoh: Reguler, Intensif, Private"
                 {...register("name")}
               />
               {errors.name && (
-                <p className="text-xs text-destructive">{errors.name.message}</p>
+                <p className="text-xs text-destructive">
+                  {errors.name.message}
+                </p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="duration_minutes">Durasi Belajar (Menit) <span className="text-destructive">*</span></Label>
+              <Label htmlFor="duration_minutes">
+                Durasi Belajar (Menit){" "}
+                <span className="text-destructive">*</span>
+              </Label>
               <div className="relative">
                 <Input
                   id="duration_minutes"
@@ -253,7 +278,9 @@ export default function BimbelTypesPage({ initialBimbelTypes = [] }: BimbelTypes
                 Reguler: 75m, Intensif: 75m, Private: 90m
               </p>
               {errors.duration_minutes && (
-                <p className="text-xs text-destructive">{errors.duration_minutes.message}</p>
+                <p className="text-xs text-destructive">
+                  {errors.duration_minutes.message}
+                </p>
               )}
             </div>
 
@@ -271,7 +298,9 @@ export default function BimbelTypesPage({ initialBimbelTypes = [] }: BimbelTypes
               <Label htmlFor="status">Status Aktif</Label>
               <Select
                 defaultValue={editingType?.status || "active"}
-                onValueChange={(val) => setValue("status", val as "active" | "inactive")}
+                onValueChange={(val) =>
+                  setValue("status", val as "active" | "inactive")
+                }
               >
                 <SelectTrigger id="status">
                   <SelectValue placeholder="Pilih status" />
@@ -293,7 +322,11 @@ export default function BimbelTypesPage({ initialBimbelTypes = [] }: BimbelTypes
                 Batal
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Menyimpan..." : editingType ? "Simpan Perubahan" : "Tambahkan"}
+                {isSubmitting
+                  ? "Menyimpan..."
+                  : editingType
+                    ? "Simpan Perubahan"
+                    : "Tambahkan"}
               </Button>
             </DialogFooter>
           </form>
@@ -301,14 +334,17 @@ export default function BimbelTypesPage({ initialBimbelTypes = [] }: BimbelTypes
       </Dialog>
 
       {/* DIALOG KONFIRMASI HAPUS */}
-      <AlertDialog open={!!deletingType} onOpenChange={() => setDeletingType(null)}>
+      <AlertDialog
+        open={!!deletingType}
+        onOpenChange={() => setDeletingType(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Jenis Bimbel?</AlertDialogTitle>
             <AlertDialogDescription>
               Apakah Anda yakin ingin menghapus jenis bimbel{" "}
-              <strong>&quot;{deletingType?.name}&quot;</strong>? Tindakan ini tidak dapat
-              dibatalkan jika tidak ada data aktif yang terikat.
+              <strong>&quot;{deletingType?.name}&quot;</strong>? Tindakan ini
+              tidak dapat dibatalkan jika tidak ada data aktif yang terikat.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

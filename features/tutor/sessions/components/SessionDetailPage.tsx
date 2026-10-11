@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Clock, User, CheckCircle2, CalendarClock } from "lucide-react";
+import {
+  ArrowLeft,
+  Clock,
+  User,
+  CheckCircle2,
+  CalendarClock,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
@@ -15,7 +21,10 @@ interface SessionDetailPageProps {
   isTutor?: boolean;
 }
 
-export default function SessionDetailPage({ session, isTutor = false }: SessionDetailPageProps) {
+export default function SessionDetailPage({
+  session,
+  isTutor = false,
+}: SessionDetailPageProps) {
   const backHref = isTutor ? "/tutor/dashboard" : "/management/sessions";
   const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
 
@@ -71,19 +80,32 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div>
-              <span className="text-muted-foreground block text-xs">Tanggal & Jam</span>
-              <span className="font-medium">{session.session_date}, {session.start_time} - {session.end_time}</span>
+              <span className="text-muted-foreground block text-xs">
+                Tanggal & Jam
+              </span>
+              <span className="font-medium">
+                {session.session_date}, {session.start_time} -{" "}
+                {session.end_time}
+              </span>
             </div>
             <div>
-              <span className="text-muted-foreground block text-xs">Tutor Pengajar Aktual</span>
-              <span className="font-medium">{session.tutors?.profiles?.full_name || "Tutor"}</span>
+              <span className="text-muted-foreground block text-xs">
+                Tutor Pengajar Aktual
+              </span>
+              <span className="font-medium">
+                {session.tutors?.profiles?.full_name || "Tutor"}
+              </span>
             </div>
             <div>
-              <span className="text-muted-foreground block text-xs">Status Sesi</span>
+              <span className="text-muted-foreground block text-xs">
+                Status Sesi
+              </span>
               <StatusBadge status={session.status} />
             </div>
             <div>
-              <span className="text-muted-foreground block text-xs">Catatan</span>
+              <span className="text-muted-foreground block text-xs">
+                Catatan
+              </span>
               <span className="font-medium">{session.notes || "-"}</span>
             </div>
           </CardContent>
@@ -100,17 +122,26 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
             {session.attendance && session.attendance.length > 0 ? (
               <div className="divide-y text-sm">
                 {session.attendance.map((att) => (
-                  <div key={att.id} className="py-2.5 flex justify-between items-center">
+                  <div
+                    key={att.id}
+                    className="py-2.5 flex justify-between items-center"
+                  >
                     <div>
-                      <p className="font-medium">{att.students?.name || "Murid"}</p>
-                      <p className="text-xs text-muted-foreground">NIS: {att.students?.student_code || "-"}</p>
+                      <p className="font-medium">
+                        {att.students?.name || "Murid"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        NIS: {att.students?.student_code || "-"}
+                      </p>
                     </div>
                     <StatusBadge status={att.status} />
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Belum ada data presensi murid pada sesi ini.</p>
+              <p className="text-sm text-muted-foreground">
+                Belum ada data presensi murid pada sesi ini.
+              </p>
             )}
           </CardContent>
         </Card>

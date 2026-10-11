@@ -1,1 +1,4 @@
-export { CameraCapture, type CameraCaptureProps } from '@/components/shared/camera';
+export {
+  CameraCapture,
+  type CameraCaptureProps,
+} from "@/components/shared/camera";

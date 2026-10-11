@@ -11,7 +11,9 @@ interface ScheduleListPageProps {
   initialSchedules?: ScheduleWithDetails[];
 }
 
-export default function ScheduleListPage({ initialSchedules = [] }: ScheduleListPageProps) {
+export default function ScheduleListPage({
+  initialSchedules = [],
+}: ScheduleListPageProps) {
   return (
     <div className="space-y-6">
       <PageHeader

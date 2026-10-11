@@ -1,12 +1,20 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import { buildWaLink } from '@/lib/whatsapp';
-import { StatCounter } from './stat-counter';
-import { Reveal } from '@/components/shared/reveal';
-import { GraduationCap, Users, Award, Play, CheckCheck, Camera, BellRing } from 'lucide-react';
+import Link from "next/link";
+import Image from "next/image";
+import { buildWaLink } from "@/lib/whatsapp";
+import { StatCounter } from "./stat-counter";
+import { Reveal } from "@/components/shared/reveal";
+import {
+  GraduationCap,
+  Users,
+  Award,
+  Play,
+  CheckCheck,
+  Camera,
+  BellRing,
+} from "lucide-react";
 
 export function HeroSection() {
-  const waHeroUrl = buildWaLink('hero');
+  const waHeroUrl = buildWaLink("hero");
 
   return (
     <section className="relative overflow-hidden bg-background pt-2 sm:pt-4 md:pt-6">
@@ -24,7 +32,7 @@ export function HeroSection() {
             {/* Badge jenjang — mempertahankan keyword SEO tanpa membebani headline */}
             <Reveal direction="down" distance={16} duration={600}>
               <div className="flex flex-wrap items-center gap-2">
-                {['TK', 'SD', 'SMP', 'SMA', 'OSN', 'UTBK-SNBT'].map((grade) => (
+                {["TK", "SD", "SMP", "SMA", "OSN", "UTBK-SNBT"].map((grade) => (
                   <span
                     key={grade}
                     className="rounded-full border border-primary/25 bg-accent px-3 py-1 text-[11px] font-bold text-primary shadow-2xs"
@@ -40,7 +48,7 @@ export function HeroSection() {
 
             <Reveal delay={120} duration={700}>
               <h1 className="font-heading text-3xl font-black leading-tight tracking-tight text-foreground sm:text-4xl sm:leading-snug md:text-[42px]">
-                Anak Paham Konsep,{' '}
+                Anak Paham Konsep,{" "}
                 <span className="relative inline-block text-primary">
                   Orang Tua Pegang Buktinya.
                   <svg
@@ -63,10 +71,11 @@ export function HeroSection() {
 
             <Reveal delay={240} duration={700}>
               <p className="max-w-2xl text-xs leading-relaxed text-foreground/80 sm:text-sm md:text-base">
-                Bimbingan belajar dan les privat di <strong>Kemiling, Bandar Lampung</strong> yang
-                membantu siswa memahami pelajaran dari dasar, menemukan ritme belajar, dan tumbuh
-                lebih percaya diri. Didampingi mentor berpengalaman dengan suasana belajar yang
-                sabar, dekat, dan terarah.
+                Bimbingan belajar dan les privat di{" "}
+                <strong>Kemiling, Bandar Lampung</strong> yang membantu siswa
+                memahami pelajaran dari dasar, menemukan ritme belajar, dan
+                tumbuh lebih percaya diri. Didampingi mentor berpengalaman
+                dengan suasana belajar yang sabar, dekat, dan terarah.
               </p>
             </Reveal>
 
@@ -93,7 +102,12 @@ export function HeroSection() {
 
           {/* Kolom Kanan: Foto Siswa + Kartu Melayang Interaktif */}
           <div className="relative z-10 flex items-end justify-center pt-0 pb-0 lg:col-span-5">
-            <Reveal direction="left" distance={40} duration={900} className="w-full">
+            <Reveal
+              direction="left"
+              distance={40}
+              duration={900}
+              className="w-full"
+            >
               <div className="relative -mb-4 flex w-full max-w-[360px] items-end justify-center sm:-mb-7 sm:max-w-[440px] lg:-mb-8 lg:max-w-[490px] mx-auto">
                 {/* Shape Segitiga Rounded di Belakang Foto */}
                 <div className="pointer-events-none absolute inset-x-4 top-1/2 z-0 flex h-[68%] -translate-y-1/2 items-center justify-center sm:inset-x-6 sm:h-[72%]">
@@ -107,7 +121,13 @@ export function HeroSection() {
                       fill="url(#hero-triangle-grad)"
                     />
                     <defs>
-                      <linearGradient id="hero-triangle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <linearGradient
+                        id="hero-triangle-grad"
+                        x1="0%"
+                        y1="0%"
+                        x2="100%"
+                        y2="100%"
+                      >
                         <stop offset="0%" stopColor="#FF7A00" />
                         <stop offset="100%" stopColor="#FF5500" />
                       </linearGradient>
@@ -140,7 +160,8 @@ export function HeroSection() {
                         Mentor memahami kebutuhan setiap siswa
                       </p>
                       <div className="mt-1 flex items-center gap-1 text-[9px] font-semibold text-primary">
-                        Sesi personal <CheckCheck className="h-3 w-3 text-sky-500" />
+                        Sesi personal{" "}
+                        <CheckCheck className="h-3 w-3 text-sky-500" />
                       </div>
                     </div>
                   </div>

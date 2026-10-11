@@ -54,6 +54,7 @@ export const MANAGEMENT_NAV: NavSection[] = [
       { title: "Katalog Permission", href: "/management/settings/permissions", icon: "ShieldCheck" },
       { title: "Pengguna & Peran", href: "/management/settings/users", icon: "ShieldCheck" },
       { title: "Toleransi Jam Presensi", href: "/management/settings/attendance-window", icon: "Clock" },
+      { title: "Notifikasi & Pengingat", href: "/management/settings/notifications", icon: "BellRing" },
       { title: "Audit Log & Keamanan", href: "/management/audit-logs", icon: "ShieldAlert" },
     ],
   },

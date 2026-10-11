@@ -16,6 +16,8 @@ export interface ScheduleWithDetails extends Schedule {
   // Derived helper for UI
   student_names?: string[];
   total_students?: number;
+  // Pengecualian tanggal seri (diisi getScheduleById)
+  exceptions?: Array<{ exception_date: string; reason: string | null }>;
   // Kurikulum & Penugasan Materi
   subject_id?: string | null;
   subject_name?: string | null;

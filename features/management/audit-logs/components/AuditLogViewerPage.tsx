@@ -13,7 +13,13 @@ import {
   Calendar,
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +36,9 @@ interface AuditLogViewerPageProps {
   initialLogs?: AuditLogItem[];
 }
 
-export default function AuditLogViewerPage({ initialLogs = [] }: AuditLogViewerPageProps) {
+export default function AuditLogViewerPage({
+  initialLogs = [],
+}: AuditLogViewerPageProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEntity, setSelectedEntity] = useState<string>("ALL");
   const [activeLog, setActiveLog] = useState<AuditLogItem | null>(null);
@@ -49,11 +57,14 @@ export default function AuditLogViewerPage({ initialLogs = [] }: AuditLogViewerP
         searchTerm === "" ||
         log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
         log.entity_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (log.user?.name && log.user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (log.user?.email && log.user.email.toLowerCase().includes(searchTerm.toLowerCase()));
+        (log.user?.name &&
+          log.user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (log.user?.email &&
+          log.user.email.toLowerCase().includes(searchTerm.toLowerCase()));
 
       const matchEntity =
-        selectedEntity === "ALL" || log.entity_type.toLowerCase() === selectedEntity.toLowerCase();
+        selectedEntity === "ALL" ||
+        log.entity_type.toLowerCase() === selectedEntity.toLowerCase();
 
       return matchSearch && matchEntity;
     });
@@ -88,7 +99,11 @@ export default function AuditLogViewerPage({ initialLogs = [] }: AuditLogViewerP
         </Badge>
       );
     }
-    return <Badge variant="outline" className="text-xs">{action}</Badge>;
+    return (
+      <Badge variant="outline" className="text-xs">
+        {action}
+      </Badge>
+    );
   };
 
   return (
@@ -142,15 +157,21 @@ export default function AuditLogViewerPage({ initialLogs = [] }: AuditLogViewerP
             </span>
           </CardTitle>
           <CardDescription className="text-xs">
-            Data tersinkronisasi otomatis dari tabel <code>audit_logs</code> Supabase PostgreSQL.
+            Data tersinkronisasi otomatis dari tabel <code>audit_logs</code>{" "}
+            Supabase PostgreSQL.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {filteredLogs.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground space-y-2">
               <ShieldAlert className="w-8 h-8 mx-auto text-muted-foreground/60" />
-              <p className="text-sm font-medium">Tidak ada rekaman audit log yang sesuai.</p>
-              <p className="text-xs">Aksi pengguna akan otomatis muncul di sini begitu ada mutasi data.</p>
+              <p className="text-sm font-medium">
+                Tidak ada rekaman audit log yang sesuai.
+              </p>
+              <p className="text-xs">
+                Aksi pengguna akan otomatis muncul di sini begitu ada mutasi
+                data.
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -166,7 +187,9 @@ export default function AuditLogViewerPage({ initialLogs = [] }: AuditLogViewerP
                 </thead>
                 <tbody className="divide-y divide-border">
                   {filteredLogs.map((log) => {
-                    const formattedDate = new Date(log.created_at).toLocaleString("id-ID", {
+                    const formattedDate = new Date(
+                      log.created_at,
+                    ).toLocaleString("id-ID", {
                       day: "numeric",
                       month: "short",
                       year: "numeric",
@@ -176,7 +199,10 @@ export default function AuditLogViewerPage({ initialLogs = [] }: AuditLogViewerP
                     });
 
                     return (
-                      <tr key={log.id} className="hover:bg-muted/30 transition-colors">
+                      <tr
+                        key={log.id}
+                        className="hover:bg-muted/30 transition-colors"
+                      >
                         <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
                           {formattedDate}
                         </td>
@@ -223,7 +249,10 @@ export default function AuditLogViewerPage({ initialLogs = [] }: AuditLogViewerP
       </Card>
 
       {/* Modal Detail Payload Audit Log */}
-      <Dialog open={!!activeLog} onOpenChange={(open) => !open && setActiveLog(null)}>
+      <Dialog
+        open={!!activeLog}
+        onOpenChange={(open) => !open && setActiveLog(null)}
+      >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-base flex items-center gap-2">
@@ -239,23 +268,34 @@ export default function AuditLogViewerPage({ initialLogs = [] }: AuditLogViewerP
             <div className="space-y-3.5 py-2 text-xs">
               <div className="grid grid-cols-2 gap-2 p-3 bg-muted/30 rounded-lg border border-border/60">
                 <div>
-                  <span className="text-muted-foreground block text-[11px]">Aksi:</span>
-                  <span className="font-semibold text-foreground">{activeLog.action}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground block text-[11px]">Entitas Target:</span>
+                  <span className="text-muted-foreground block text-[11px]">
+                    Aksi:
+                  </span>
                   <span className="font-semibold text-foreground">
-                    {activeLog.entity_type} ({activeLog.entity_id.slice(0, 8)}...)
+                    {activeLog.action}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-[11px]">Pelaku:</span>
+                  <span className="text-muted-foreground block text-[11px]">
+                    Entitas Target:
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    {activeLog.entity_type} ({activeLog.entity_id.slice(0, 8)}
+                    ...)
+                  </span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block text-[11px]">
+                    Pelaku:
+                  </span>
                   <span className="font-semibold text-foreground">
                     {activeLog.user?.name || activeLog.user_id || "Sistem"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-[11px]">Waktu:</span>
+                  <span className="text-muted-foreground block text-[11px]">
+                    Waktu:
+                  </span>
                   <span className="font-mono text-foreground">
                     {new Date(activeLog.created_at).toLocaleString("id-ID")}
                   </span>

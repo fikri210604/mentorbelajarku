@@ -14,14 +14,19 @@ import {
   CheckCircle2,
   Save,
   FileText,
-  Sparkles,
   Eye,
   EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -45,6 +50,7 @@ import {
   updateTutorProfile,
   changeTutorPassword,
 } from "../actions/profile.actions";
+import NotificationSubscription from "@/features/shared/web-push/components/NotificationSubscription";
 
 interface TutorProfilePageProps {
   initialData: {
@@ -56,12 +62,19 @@ interface TutorProfilePageProps {
     role: string;
     mustChangePassword: boolean;
   };
+  notificationStatus?: {
+    enabled: boolean;
+    subscriptionCount: number;
+  };
 }
 
-export default function TutorProfilePage({ initialData }: TutorProfilePageProps) {
+export default function TutorProfilePage({
+  initialData,
+  notificationStatus,
+}: TutorProfilePageProps) {
   // State Status Keamanan Kata Sandi
   const [mustChangePassword, setMustChangePassword] = useState(
-    initialData.mustChangePassword
+    initialData.mustChangePassword,
   );
 
   // State Feedback Profil
@@ -134,8 +147,10 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
     setTimeout(() => setPasswordSuccess(null), 5000);
   };
 
-  const [showPasswordConfirmDialog, setShowPasswordConfirmDialog] = useState(false);
-  const [pendingPasswordData, setPendingPasswordData] = useState<ChangePasswordInput | null>(null);
+  const [showPasswordConfirmDialog, setShowPasswordConfirmDialog] =
+    useState(false);
+  const [pendingPasswordData, setPendingPasswordData] =
+    useState<ChangePasswordInput | null>(null);
 
   const handlePreSubmitPassword = (data: ChangePasswordInput) => {
     setPendingPasswordData(data);
@@ -166,7 +181,10 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
             Perhatian Keamanan: Akun Masih Menggunakan Password Bawaan
           </AlertTitle>
           <AlertDescription className="text-xs text-amber-800 dark:text-amber-300 mt-1">
-            Anda saat ini menggunakan kata sandi default dari Manajemen. Silakan ubah kata sandi pada kartu <strong>Keamanan Akun & Ganti Kata Sandi</strong> di bawah agar data dan privasi honor mengajar Anda tetap terlindungi.
+            Anda saat ini menggunakan kata sandi default dari Manajemen. Silakan
+            ubah kata sandi pada kartu{" "}
+            <strong>Keamanan Akun & Ganti Kata Sandi</strong> di bawah agar data
+            dan privasi honor mengajar Anda tetap terlindungi.
           </AlertDescription>
         </Alert>
       ) : (
@@ -176,7 +194,8 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
             Keamanan Akun Aktif & Terlindungi
           </AlertTitle>
           <AlertDescription className="text-xs text-emerald-800 dark:text-emerald-300 mt-0.5">
-            Kata sandi kustom Anda aktif. Peringatan ganti password pada dashboard telah dihilangkan.
+            Kata sandi kustom Anda aktif. Peringatan ganti password pada
+            dashboard telah dihilangkan.
           </AlertDescription>
         </Alert>
       )}
@@ -195,25 +214,35 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
                   Identitas dan data kontak yang dilihat oleh pihak Manajemen.
                 </CardDescription>
               </div>
-              <Badge variant="outline" className="text-xs font-semibold capitalize">
+              <Badge
+                variant="outline"
+                className="text-xs font-semibold capitalize"
+              >
                 {initialData.role}
               </Badge>
             </div>
           </CardHeader>
 
           <CardContent className="p-4">
-            <form onSubmit={handleSubmitProfile(onProfileSubmit)} className="space-y-4">
+            <form
+              onSubmit={handleSubmitProfile(onProfileSubmit)}
+              className="space-y-4"
+            >
               {profileError && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-xs">{profileError}</AlertDescription>
+                  <AlertDescription className="text-xs">
+                    {profileError}
+                  </AlertDescription>
                 </Alert>
               )}
 
               {profileSuccess && (
                 <Alert className="border-emerald-200 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                  <AlertDescription className="text-xs">{profileSuccess}</AlertDescription>
+                  <AlertDescription className="text-xs">
+                    {profileSuccess}
+                  </AlertDescription>
                 </Alert>
               )}
 
@@ -307,23 +336,31 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
               Keamanan Akun & Kata Sandi
             </CardTitle>
             <CardDescription className="text-xs mt-0.5">
-              Perbarui kata sandi untuk melindungi hak akses dan data absensi Anda.
+              Perbarui kata sandi untuk melindungi hak akses dan data absensi
+              Anda.
             </CardDescription>
           </CardHeader>
 
           <CardContent className="p-4">
-            <form onSubmit={handleSubmitPassword(handlePreSubmitPassword)} className="space-y-4">
+            <form
+              onSubmit={handleSubmitPassword(handlePreSubmitPassword)}
+              className="space-y-4"
+            >
               {passwordError && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-xs">{passwordError}</AlertDescription>
+                  <AlertDescription className="text-xs">
+                    {passwordError}
+                  </AlertDescription>
                 </Alert>
               )}
 
               {passwordSuccess && (
                 <Alert className="border-emerald-200 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                  <AlertDescription className="text-xs">{passwordSuccess}</AlertDescription>
+                  <AlertDescription className="text-xs">
+                    {passwordSuccess}
+                  </AlertDescription>
                 </Alert>
               )}
 
@@ -342,8 +379,16 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
                     type="button"
                     onClick={() => setShowCurrentPassword((prev) => !prev)}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors cursor-pointer"
-                    aria-label={showCurrentPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
-                    title={showCurrentPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
+                    aria-label={
+                      showCurrentPassword
+                        ? "Sembunyikan kata sandi"
+                        : "Lihat kata sandi"
+                    }
+                    title={
+                      showCurrentPassword
+                        ? "Sembunyikan kata sandi"
+                        : "Lihat kata sandi"
+                    }
                     tabIndex={-1}
                   >
                     {showCurrentPassword ? (
@@ -375,8 +420,16 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
                     type="button"
                     onClick={() => setShowNewPassword((prev) => !prev)}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors cursor-pointer"
-                    aria-label={showNewPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
-                    title={showNewPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
+                    aria-label={
+                      showNewPassword
+                        ? "Sembunyikan kata sandi"
+                        : "Lihat kata sandi"
+                    }
+                    title={
+                      showNewPassword
+                        ? "Sembunyikan kata sandi"
+                        : "Lihat kata sandi"
+                    }
                     tabIndex={-1}
                   >
                     {showNewPassword ? (
@@ -408,8 +461,16 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
                     type="button"
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors cursor-pointer"
-                    aria-label={showConfirmPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
-                    title={showConfirmPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
+                    aria-label={
+                      showConfirmPassword
+                        ? "Sembunyikan kata sandi"
+                        : "Lihat kata sandi"
+                    }
+                    title={
+                      showConfirmPassword
+                        ? "Sembunyikan kata sandi"
+                        : "Lihat kata sandi"
+                    }
                     tabIndex={-1}
                   >
                     {showConfirmPassword ? (
@@ -432,7 +493,10 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
                 </span>
                 <ul className="list-disc list-inside space-y-0.5">
                   <li>Minimal 8 karakter kombinasi huruf dan angka.</li>
-                  <li>Setelah disimpan, peringatan ganti password otomatis nonaktif.</li>
+                  <li>
+                    Setelah disimpan, peringatan ganti password otomatis
+                    nonaktif.
+                  </li>
                 </ul>
               </div>
 
@@ -444,7 +508,9 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
                   className="text-xs gap-1.5"
                 >
                   <KeyRound className="w-3.5 h-3.5" />
-                  {isPasswordSubmitting ? "Menyimpan..." : "Perbarui Kata Sandi"}
+                  {isPasswordSubmitting
+                    ? "Menyimpan..."
+                    : "Perbarui Kata Sandi"}
                 </Button>
               </div>
             </form>
@@ -452,8 +518,17 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
         </Card>
       </div>
 
+      {/* KARTU 3: PENGATURAN NOTIFIKASI JADWAL */}
+      <NotificationSubscription
+        initialEnabled={notificationStatus?.enabled ?? true}
+        initialSubscriptionCount={notificationStatus?.subscriptionCount ?? 0}
+      />
+
       {/* Konfirmasi Ganti Kata Sandi Alert Dialog */}
-      <AlertDialog open={showPasswordConfirmDialog} onOpenChange={setShowPasswordConfirmDialog}>
+      <AlertDialog
+        open={showPasswordConfirmDialog}
+        onOpenChange={setShowPasswordConfirmDialog}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
@@ -461,18 +536,24 @@ export default function TutorProfilePage({ initialData }: TutorProfilePageProps)
               Konfirmasi Perubahan Kata Sandi
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin memperbarui kata sandi akun Anda? Setelah berhasil diperbarui, Anda harus menggunakan kata sandi baru untuk login selanjutnya.
+              Apakah Anda yakin ingin memperbarui kata sandi akun Anda? Setelah
+              berhasil diperbarui, Anda harus menggunakan kata sandi baru untuk
+              login selanjutnya.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPasswordSubmitting}>Batal</AlertDialogCancel>
+            <AlertDialogCancel disabled={isPasswordSubmitting}>
+              Batal
+            </AlertDialogCancel>
             <AlertDialogAction
               disabled={isPasswordSubmitting}
               onClick={handleExecuteChangePassword}
               className="gap-1.5"
             >
               <KeyRound className="w-4 h-4" />
-              {isPasswordSubmitting ? "Memproses..." : "Ya, Perbarui Kata Sandi"}
+              {isPasswordSubmitting
+                ? "Memproses..."
+                : "Ya, Perbarui Kata Sandi"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -40,21 +40,41 @@ export default async function Page() {
   const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${lastDay}`;
 
-  const [sessions, schedules, payrollEstimate] = await Promise.all([
+  const [sessions, schedules, payrollEstimate, rawCorrections] = await Promise.all([
     session.tutorId ? getSessions(session.tutorId) : Promise.resolve([]),
     session.tutorId ? getTutorSchedules(session.tutorId) : Promise.resolve([]),
     session.tutorId
       ? PayrollCalculatorService.calculateTutorPayroll(session.tutorId, monthStart, monthEnd)
           .then((r) => r.grossAmount)
           .catch((err) => {
-            // Rate belum dikonfigurasi atau gagal kalkulasi → tampilkan tanpa nilai, bukan angka palsu
             console.error("Gagal menghitung estimasi honor:", err);
             return null;
           })
       : Promise.resolve(null),
+    session.tutorId
+      ? (async () => {
+          const { createServerClient } = await import("@/lib/supabase/server");
+          const supabase = createServerClient();
+          const tutorId: string = session.tutorId as string;
+          const { data } = await supabase
+            .from("attendance")
+            .select("id, session_id, notes, students (name), sessions!inner (session_date, start_time, tutor_id)")
+            .eq("sessions.tutor_id", tutorId)
+            .eq("verification_status", "correction_requested");
+          return data || [];
+        })()
+      : Promise.resolve([]),
   ]);
 
   const currentMonthPayroll = payrollEstimate ?? null;
+
+  const correctionRequests = (rawCorrections as any[]).map((c) => ({
+    id: c.id,
+    sessionId: c.session_id,
+    studentName: c.students?.name,
+    sessionDate: c.sessions?.session_date,
+    notes: c.notes,
+  }));
 
   const mappedSessions = (sessions as unknown as RawSession[]).map((s) => ({
     id: s.id,
@@ -88,6 +108,7 @@ export default async function Page() {
       sessions={mappedSessions}
       schedules={mappedSchedules}
       estMonthlyPayroll={currentMonthPayroll}
+      correctionRequests={correctionRequests}
     />
   );
 }

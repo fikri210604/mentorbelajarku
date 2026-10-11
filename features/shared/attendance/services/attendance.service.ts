@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
 import { uploadAttendancePhoto } from "@/lib/storage";
 import { validateImageDataUrl } from "@/lib/utils/image-validation";
@@ -39,20 +40,43 @@ export class AttendanceService {
       throw new Error("FORBIDDEN: Anda bukan tutor yang ditugaskan pada sesi ini.");
     }
 
-    // 3. Validasi keanggotaan murid pada sesi + resolve enrollment
-    let enrollmentId: string | null = null;
-    if (session.schedule_id) {
-      const { data: link } = await supabase
-        .from("schedule_students")
+    // 3 & 3b. Validasi keanggotaan (+ resolve enrollment) dan kunci verifikasi
+    // Mengutamakan snapshot session_students (Point 3) dengan fallback legacy schedule_students.
+    const [snapshotResult, legacyResult, existingResult] = await Promise.all([
+      supabase
+        .from("session_students")
         .select("enrollment_id")
-        .eq("schedule_id", session.schedule_id)
+        .eq("session_id", sessionId)
         .eq("student_id", studentId)
-        .maybeSingle();
+        .maybeSingle(),
+      session.schedule_id
+        ? supabase
+            .from("schedule_students")
+            .select("enrollment_id")
+            .eq("schedule_id", session.schedule_id)
+            .eq("student_id", studentId)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+      supabase
+        .from("attendance")
+        .select("id, verification_status, status, photo_path")
+        .eq("session_id", sessionId)
+        .eq("student_id", studentId)
+        .maybeSingle(),
+    ]);
 
-      if (!link) {
-        throw new Error("Murid tidak terdaftar sebagai peserta pada sesi ini.");
-      }
-      enrollmentId = link.enrollment_id ?? null;
+    const enrollmentId: string | null =
+      snapshotResult.data?.enrollment_id ?? legacyResult.data?.enrollment_id ?? null;
+
+    if (session.schedule_id && !snapshotResult.data && !legacyResult.data) {
+      throw new Error("Murid tidak terdaftar sebagai peserta pada sesi ini.");
+    }
+
+    const existingRow = existingResult.data;
+    if (existingRow?.verification_status === "verified" && tutorId) {
+      throw new Error(
+        "FORBIDDEN: Presensi ini sudah diverifikasi Management dan tidak dapat diubah. Hubungi Management untuk koreksi."
+      );
     }
 
     // 4. Foto wajib + validasi konten
@@ -73,8 +97,14 @@ export class AttendanceService {
     if (uploadResult.error || !uploadResult.path) {
       throw new Error("Gagal mengunggah foto presensi. Silakan coba lagi.");
     }
+    const photoHash = createHash("sha256").update(validated.buffer).digest("hex");
 
-    // 5. Upsert attendance (materi tidak lagi disimpan di attendance)
+    // verification_status di-set 'submitted' saat insert baru atau saat koreksi diunggah ulang
+    const nextVerificationStatus =
+      !existingRow || existingRow.verification_status === "correction_requested"
+        ? "submitted"
+        : existingRow.verification_status;
+
     const { data, error } = await supabase
       .from("attendance")
       .upsert(
@@ -83,7 +113,7 @@ export class AttendanceService {
           student_id: studentId,
           enrollment_id: enrollmentId,
           status,
-          verification_status: "submitted",
+          verification_status: nextVerificationStatus,
           photo_path: uploadResult.path,
           notes: notes ?? null,
           checked_in_at: new Date().toISOString(),
@@ -113,7 +143,7 @@ export class AttendanceService {
       );
     }
 
-    // 7. Audit log
+    // 7. Audit log dengan before/after + hash foto agar pergantian bukti terdeteksi
     if (data) {
       await supabase.from("audit_logs").insert({
         user_id: userId ?? null,
@@ -125,6 +155,19 @@ export class AttendanceService {
           student_id: studentId,
           status,
           has_photo: true,
+          photo_path: uploadResult.path,
+          photo_sha256: photoHash,
+          before: existingRow
+            ? {
+                status: existingRow.status,
+                photo_path: existingRow.photo_path,
+                verification_status: existingRow.verification_status,
+              }
+            : null,
+          after: {
+            status,
+            photo_path: uploadResult.path,
+          },
         },
       });
     }

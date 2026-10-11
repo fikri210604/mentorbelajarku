@@ -5,7 +5,13 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { SettingsNavTabs } from "./SettingsNavTabs";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -31,7 +37,10 @@ interface UsersRolesPageProps {
   roles: RoleWithPermissions[];
 }
 
-export default function UsersRolesPage({ initialUsers, roles }: UsersRolesPageProps) {
+export default function UsersRolesPage({
+  initialUsers,
+  roles,
+}: UsersRolesPageProps) {
   const [users, setUsers] = useState<ManagedUser[]>(initialUsers);
   const [selection, setSelection] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
@@ -42,7 +51,11 @@ export default function UsersRolesPage({ initialUsers, roles }: UsersRolesPagePr
   });
   const [savingId, setSavingId] = useState<string | null>(null);
 
-  const roleOptions = roles.map((r) => ({ id: r.id, label: r.display_name, name: r.name }));
+  const roleOptions = roles.map((r) => ({
+    id: r.id,
+    label: r.display_name,
+    name: r.name,
+  }));
 
   const handleSave = async (user: ManagedUser) => {
     const roleId = selection[user.id];
@@ -60,8 +73,8 @@ export default function UsersRolesPage({ initialUsers, roles }: UsersRolesPagePr
           prev.map((u) =>
             u.id === user.id
               ? { ...u, roleId, roleName: role?.name ?? u.roleName }
-              : u
-          )
+              : u,
+          ),
         );
         toast.success(res.message);
       } else {
@@ -88,8 +101,9 @@ export default function UsersRolesPage({ initialUsers, roles }: UsersRolesPagePr
         <div className="space-y-1">
           <p className="font-semibold text-primary">Penetapan Peran Dinamis</p>
           <p className="text-muted-foreground text-xs leading-relaxed">
-            Tambahkan peran baru di menu <strong>Peran &amp; Hak Akses</strong>, atur permission-nya,
-            lalu tempelkan peran tersebut ke pengguna di halaman ini.
+            Tambahkan peran baru di menu <strong>Peran &amp; Hak Akses</strong>,
+            atur permission-nya, lalu tempelkan peran tersebut ke pengguna di
+            halaman ini.
           </p>
         </div>
       </div>
@@ -101,7 +115,8 @@ export default function UsersRolesPage({ initialUsers, roles }: UsersRolesPagePr
             Daftar Pengguna
           </CardTitle>
           <CardDescription>
-            {users.length} pengguna terdaftar. Role dinamis mengikuti tabel peran.
+            {users.length} pengguna terdaftar. Role dinamis mengikuti tabel
+            peran.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -118,7 +133,10 @@ export default function UsersRolesPage({ initialUsers, roles }: UsersRolesPagePr
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell
+                    colSpan={5}
+                    className="text-center text-muted-foreground py-8"
+                  >
                     Tidak ada pengguna.
                   </TableCell>
                 </TableRow>
@@ -126,7 +144,9 @@ export default function UsersRolesPage({ initialUsers, roles }: UsersRolesPagePr
                 users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {user.email}
+                    </TableCell>
                     <TableCell>
                       <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-mono">
                         {user.roleName || "-"}
@@ -137,7 +157,10 @@ export default function UsersRolesPage({ initialUsers, roles }: UsersRolesPagePr
                         value={selection[user.id] ?? ""}
                         onValueChange={(value: string | null) => {
                           if (!value) return;
-                          setSelection((prev) => ({ ...prev, [user.id]: value }));
+                          setSelection((prev) => ({
+                            ...prev,
+                            [user.id]: value,
+                          }));
                         }}
                       >
                         <SelectTrigger className="h-9 text-xs">

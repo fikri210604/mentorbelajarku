@@ -60,7 +60,11 @@ import {
   updateRolePermissionsAction,
 } from "../actions/role.actions";
 import { SYSTEM_PERMISSIONS } from "@/config/permissions";
-import { Permission, PermissionDefinition, RoleWithPermissions } from "@/types/auth";
+import {
+  Permission,
+  PermissionDefinition,
+  RoleWithPermissions,
+} from "@/types/auth";
 import { isOwnerRoleName } from "@/lib/permissions/resolver";
 
 export interface RolesManagementPageProps {
@@ -85,12 +89,18 @@ export default function RolesManagementPage({
   const permissions =
     initialPermissions.length > 0 ? initialPermissions : SYSTEM_PERMISSIONS;
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<RoleWithPermissions | null>(null);
-  const [deletingRole, setDeletingRole] = useState<RoleWithPermissions | null>(null);
+  const [editingRole, setEditingRole] = useState<RoleWithPermissions | null>(
+    null,
+  );
+  const [deletingRole, setDeletingRole] = useState<RoleWithPermissions | null>(
+    null,
+  );
   const [isDeleting, setIsDeleting] = useState(false);
 
   // State dialog matriks hak akses (Permissions Matrix)
-  const [matrixRole, setMatrixRole] = useState<RoleWithPermissions | null>(null);
+  const [matrixRole, setMatrixRole] = useState<RoleWithPermissions | null>(
+    null,
+  );
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [isSavingPermissions, setIsSavingPermissions] = useState(false);
 
@@ -110,7 +120,7 @@ export default function RolesManagementPage({
 
   // Group permissions per kategori untuk tampilan checklist yang terstruktur
   const permissionCategories = Array.from(
-    new Set(permissions.map((p) => p.category))
+    new Set(permissions.map((p) => p.category)),
   );
 
   const openAddRoleDialog = () => {
@@ -144,8 +154,8 @@ export default function RolesManagementPage({
             prev.map((r) =>
               r.id === res.data!.id
                 ? { ...r, ...res.data!, permissions: r.permissions }
-                : r
-            )
+                : r,
+            ),
           );
         } else {
           setRoles((prev) => [...prev, res.data!]);
@@ -187,22 +197,30 @@ export default function RolesManagementPage({
     if (!canManageRoles) return;
     if (matrixRole?.name === "owner") return; // Owner selalu all
     setSelectedPermissions((prev) =>
-      prev.includes(permId) ? prev.filter((p) => p !== permId) : [...prev, permId]
+      prev.includes(permId)
+        ? prev.filter((p) => p !== permId)
+        : [...prev, permId],
     );
   };
 
   const toggleCategoryPermissions = (category: string) => {
     if (!canManageRoles) return;
     if (matrixRole?.name === "owner") return;
-    const catPerms = permissions.filter((p) => p.category === category).map(
-      (p) => p.id
+    const catPerms = permissions
+      .filter((p) => p.category === category)
+      .map((p) => p.id);
+    const allSelected = catPerms.every((id) =>
+      selectedPermissions.includes(id),
     );
-    const allSelected = catPerms.every((id) => selectedPermissions.includes(id));
 
     if (allSelected) {
-      setSelectedPermissions((prev) => prev.filter((id) => !catPerms.includes(id as any)));
+      setSelectedPermissions((prev) =>
+        prev.filter((id) => !catPerms.includes(id as any)),
+      );
     } else {
-      setSelectedPermissions((prev) => Array.from(new Set([...prev, ...catPerms])));
+      setSelectedPermissions((prev) =>
+        Array.from(new Set([...prev, ...catPerms])),
+      );
     }
   };
 
@@ -215,23 +233,31 @@ export default function RolesManagementPage({
     if (matrixRole?.name === "owner") return;
     const source = roles.find((r) => r.id === sourceRoleId);
     if (!source) return;
-    const sourcePerms = source.name === "owner" ? Array.from(knownPermissionIds) : source.permissions;
-    setSelectedPermissions(sourcePerms.filter((id) => knownPermissionIds.has(id)));
+    const sourcePerms =
+      source.name === "owner"
+        ? Array.from(knownPermissionIds)
+        : source.permissions;
+    setSelectedPermissions(
+      sourcePerms.filter((id) => knownPermissionIds.has(id)),
+    );
   };
 
   const savePermissions = async () => {
     if (!canManageRoles || !matrixRole) return;
     setIsSavingPermissions(true);
     try {
-      const res = await updateRolePermissionsAction(matrixRole.id, selectedPermissions);
+      const res = await updateRolePermissionsAction(
+        matrixRole.id,
+        selectedPermissions,
+      );
       if (res.success) {
         toast.success(res.message);
         setRoles((prev) =>
           prev.map((r) =>
             r.id === matrixRole.id
               ? { ...r, permissions: selectedPermissions as Permission[] }
-              : r
-          )
+              : r,
+          ),
         );
         setMatrixRole(null);
       } else {
@@ -270,7 +296,10 @@ export default function RolesManagementPage({
         description="Pusat kendali peran tim bimbel. Pimpinan dapat menambahkan scope tugas baru (seperti Bagian Kurikulum) dan mengatur checklist izin akses secara dinamis."
       >
         {canManageRoles && (
-          <Button onClick={openAddRoleDialog} className="gap-2 shadow-xs cursor-pointer">
+          <Button
+            onClick={openAddRoleDialog}
+            className="gap-2 shadow-xs cursor-pointer"
+          >
             <Plus className="w-4 h-4" />
             <span>Tambah Peran Baru</span>
           </Button>
@@ -282,9 +311,14 @@ export default function RolesManagementPage({
         <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-sm text-foreground">
           <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <p className="font-semibold text-amber-800 dark:text-amber-300">Mode Hanya-Lihat (Read-Only)</p>
+            <p className="font-semibold text-amber-800 dark:text-amber-300">
+              Mode Hanya-Lihat (Read-Only)
+            </p>
             <p className="text-muted-foreground text-xs leading-relaxed">
-              Akun Anda tidak memiliki izin <strong>Manajemen Role & Hak Akses</strong>. Anda hanya dapat melihat cakupan izin yang aktif dan tidak dapat memodifikasi matriks hak akses.
+              Akun Anda tidak memiliki izin{" "}
+              <strong>Manajemen Role & Hak Akses</strong>. Anda hanya dapat
+              melihat cakupan izin yang aktif dan tidak dapat memodifikasi
+              matriks hak akses.
             </p>
           </div>
         </div>
@@ -292,9 +326,15 @@ export default function RolesManagementPage({
         <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20 text-sm text-foreground">
           <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <p className="font-semibold text-primary">Sistem Peran Fleksibel & Dinamis</p>
+            <p className="font-semibold text-primary">
+              Sistem Peran Fleksibel & Dinamis
+            </p>
             <p className="text-muted-foreground text-xs leading-relaxed">
-              Anda dapat mendefinisikan peran baru (misalnya <strong>Bagian Kurikulum</strong> untuk mengelola master mapel, silabus bab materi, dan worksheet siswa). Tutor juga dapat diberi izin mengunggah lembar kerja, namun kurikulum dan owner memegang kendali review penuh.
+              Anda dapat mendefinisikan peran baru (misalnya{" "}
+              <strong>Bagian Kurikulum</strong> untuk mengelola master mapel,
+              silabus bab materi, dan worksheet siswa). Tutor juga dapat diberi
+              izin mengunggah lembar kerja, namun kurikulum dan owner memegang
+              kendali review penuh.
             </p>
           </div>
         </div>
@@ -304,14 +344,17 @@ export default function RolesManagementPage({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {roles.map((role) => {
           const isOwnerRole = role.name === "owner";
-          const permCount = isOwnerRole ? permissions.length : role.permissions.length;
+          const permCount = isOwnerRole
+            ? permissions.length
+            : role.permissions.length;
 
           return (
             <div
               key={role.id}
               className={cn(
                 "relative flex flex-col justify-between p-5 rounded-2xl border bg-card text-card-foreground shadow-2xs transition-all hover:border-border/90 hover:shadow-xs",
-                isOwnerRole && "border-primary/40 bg-linear-to-b from-primary/5 via-card to-card"
+                isOwnerRole &&
+                  "border-primary/40 bg-linear-to-b from-primary/5 via-card to-card",
               )}
             >
               <div className="space-y-3">
@@ -323,7 +366,7 @@ export default function RolesManagementPage({
                         "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border",
                         isOwnerRole
                           ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-muted text-foreground border-border"
+                          : "bg-muted text-foreground border-border",
                       )}
                     >
                       {isOwnerRole ? (
@@ -367,7 +410,9 @@ export default function RolesManagementPage({
                   </span>
                   <span className="font-semibold text-foreground">
                     {isOwnerRole ? (
-                      <span className="text-primary font-bold">Akses Penuh (100%)</span>
+                      <span className="text-primary font-bold">
+                        Akses Penuh (100%)
+                      </span>
                     ) : (
                       `${permCount} dari ${permissions.length} izin`
                     )}
@@ -427,11 +472,15 @@ export default function RolesManagementPage({
               {editingRole ? "Perbarui Data Peran" : "Tambah Peran Tim Baru"}
             </DialogTitle>
             <DialogDescription>
-              Tentukan identitas peran baru untuk mendelegasikan tugas (contoh: Bagian Kurikulum, Tim Soal, Supervisor).
+              Tentukan identitas peran baru untuk mendelegasikan tugas (contoh:
+              Bagian Kurikulum, Tim Soal, Supervisor).
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit(onSubmitRole)} className="space-y-4 py-2">
+          <form
+            onSubmit={handleSubmit(onSubmitRole)}
+            className="space-y-4 py-2"
+          >
             <div className="space-y-1.5">
               <Label htmlFor="display_name" className="text-xs font-semibold">
                 Nama Tampilan Peran <span className="text-destructive">*</span>
@@ -442,13 +491,16 @@ export default function RolesManagementPage({
                 {...register("display_name")}
               />
               {errors.display_name && (
-                <p className="text-[11px] text-destructive">{errors.display_name.message}</p>
+                <p className="text-[11px] text-destructive">
+                  {errors.display_name.message}
+                </p>
               )}
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="name" className="text-xs font-semibold">
-                Identifier Slug (Sistem) <span className="text-destructive">*</span>
+                Identifier Slug (Sistem){" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="name"
@@ -457,10 +509,13 @@ export default function RolesManagementPage({
                 {...register("name")}
               />
               <p className="text-[10px] text-muted-foreground">
-                Gunakan huruf kecil, angka, atau garis bawah tanpa spasi. Tidak dapat diubah setelah dibuat.
+                Gunakan huruf kecil, angka, atau garis bawah tanpa spasi. Tidak
+                dapat diubah setelah dibuat.
               </p>
               {errors.name && (
-                <p className="text-[11px] text-destructive">{errors.name.message}</p>
+                <p className="text-[11px] text-destructive">
+                  {errors.name.message}
+                </p>
               )}
             </div>
 
@@ -475,7 +530,9 @@ export default function RolesManagementPage({
                 {...register("description")}
               />
               {errors.description && (
-                <p className="text-[11px] text-destructive">{errors.description.message}</p>
+                <p className="text-[11px] text-destructive">
+                  {errors.description.message}
+                </p>
               )}
             </div>
 
@@ -489,7 +546,11 @@ export default function RolesManagementPage({
                 Batal
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Menyimpan..." : editingRole ? "Simpan Perubahan" : "Buat Peran"}
+                {isSubmitting
+                  ? "Menyimpan..."
+                  : editingRole
+                    ? "Simpan Perubahan"
+                    : "Buat Peran"}
               </Button>
             </DialogFooter>
           </form>
@@ -497,7 +558,10 @@ export default function RolesManagementPage({
       </Dialog>
 
       {/* 6. MODAL DIALOG: MATRIKS HAK AKSES (PERMISSIONS CHECKLIST) */}
-      <Dialog open={Boolean(matrixRole)} onOpenChange={(open) => !open && setMatrixRole(null)}>
+      <Dialog
+        open={Boolean(matrixRole)}
+        onOpenChange={(open) => !open && setMatrixRole(null)}
+      >
         <DialogContent className="sm:max-w-[720px] max-h-[85vh] flex flex-col p-0">
           <DialogHeader className="p-6 pb-4 border-b">
             <div className="flex items-center gap-2 text-primary font-semibold text-xs mb-1">
@@ -521,48 +585,56 @@ export default function RolesManagementPage({
 
           {/* Body Checklist - Scrollable */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {matrixRole?.name === "owner" && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs">
-              <Info className="w-4 h-4 shrink-0" />
-              <span>
-                Peran <strong>Owner</strong> adalah superadministrator mutlak. Seluruh hak akses selalu aktif secara default.
-              </span>
-            </div>
-          )}
-
-          {/* Dropdown salin izin dari peran lain (hanya untuk pengelola peran) */}
-          {matrixRole?.name !== "owner" && canManageRoles && (
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-xl border border-primary/20 bg-primary/5">
-              <div className="sm:flex-1 space-y-0.5">
-                <p className="text-xs font-semibold text-foreground">Salin Izin dari Peran Lain</p>
-                <p className="text-[10px] text-muted-foreground">
-                  Ambil paket izin dari peran yang sudah terdaftar di database, lalu sesuaikan manual sebelum disimpan.
-                </p>
+            {matrixRole?.name === "owner" && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs">
+                <Info className="w-4 h-4 shrink-0" />
+                <span>
+                  Peran <strong>Owner</strong> adalah superadministrator mutlak.
+                  Seluruh hak akses selalu aktif secara default.
+                </span>
               </div>
-              <Select onValueChange={(value: string | null) => { if (value) copyPermissionsFromRole(value); }}>
-                <SelectTrigger className="w-full sm:w-[280px] h-9 text-xs bg-card cursor-pointer">
-                  <SelectValue placeholder="Pilih peran sumber..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles
-                    .filter((r) => r.id !== matrixRole?.id)
-                    .map((r) => (
-                      <SelectItem key={r.id} value={r.id} className="text-xs">
-                        {r.display_name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+            )}
+
+            {/* Dropdown salin izin dari peran lain (hanya untuk pengelola peran) */}
+            {matrixRole?.name !== "owner" && canManageRoles && (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-xl border border-primary/20 bg-primary/5">
+                <div className="sm:flex-1 space-y-0.5">
+                  <p className="text-xs font-semibold text-foreground">
+                    Salin Izin dari Peran Lain
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Ambil paket izin dari peran yang sudah terdaftar di
+                    database, lalu sesuaikan manual sebelum disimpan.
+                  </p>
+                </div>
+                <Select
+                  onValueChange={(value: string | null) => {
+                    if (value) copyPermissionsFromRole(value);
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-[280px] h-9 text-xs bg-card cursor-pointer">
+                    <SelectValue placeholder="Pilih peran sumber..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles
+                      .filter((r) => r.id !== matrixRole?.id)
+                      .map((r) => (
+                        <SelectItem key={r.id} value={r.id} className="text-xs">
+                          {r.display_name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {permissionCategories.map((category) => {
               const CategoryIcon = getCategoryIcon(category);
               const categoryPermissions = permissions.filter(
-                (p) => p.category === category
+                (p) => p.category === category,
               );
               const allCategorySelected = categoryPermissions.every((p) =>
-                selectedPermissions.includes(p.id)
+                selectedPermissions.includes(p.id),
               );
 
               return (
@@ -592,7 +664,8 @@ export default function RolesManagementPage({
                       const isChecked =
                         matrixRole?.name === "owner" ||
                         selectedPermissions.includes(perm.id);
-                      const isControlDisabled = matrixRole?.name === "owner" || !canManageRoles;
+                      const isControlDisabled =
+                        matrixRole?.name === "owner" || !canManageRoles;
 
                       return (
                         <label
@@ -605,7 +678,7 @@ export default function RolesManagementPage({
                             isChecked
                               ? "bg-primary/5 border-primary/40 text-foreground"
                               : "bg-card border-border text-muted-foreground",
-                            isControlDisabled && !isChecked && "opacity-60"
+                            isControlDisabled && !isChecked && "opacity-60",
                           )}
                           onClick={(e) => {
                             if (isControlDisabled) return;
@@ -683,7 +756,9 @@ export default function RolesManagementPage({
             <AlertDialogTitle>Hapus Peran Ini?</AlertDialogTitle>
             <AlertDialogDescription>
               Apakah Anda yakin ingin menghapus peran{" "}
-              <strong>&quot;{deletingRole?.display_name}&quot;</strong>? Pengguna yang memegang peran ini akan kehilangan akses khusus yang telah diatur. Tindakan ini tidak dapat dibatalkan.
+              <strong>&quot;{deletingRole?.display_name}&quot;</strong>?
+              Pengguna yang memegang peran ini akan kehilangan akses khusus yang
+              telah diatur. Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

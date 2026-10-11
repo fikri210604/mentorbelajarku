@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect, useTransition, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -95,6 +95,40 @@ export default function ProgressReportsPage({
     setRows(initialReport.rows || []);
     setSelectedStudentId(initialReport.studentId);
   }
+
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+
+  const selectedStudent = useMemo(() => {
+    return students.find((st) => st.id === selectedStudentId);
+  }, [students, selectedStudentId]);
+
+  const selectedStudentLabel = useMemo(() => {
+    if (selectedStudent) {
+      return `${selectedStudent.name} (${selectedStudent.student_code})`;
+    }
+    if (reportData?.studentName) {
+      return `${reportData.studentName}${reportData.studentCode ? ` (${reportData.studentCode})` : ''}`;
+    }
+    return 'Pilih murid...';
+  }, [selectedStudent, reportData]);
+
+  const studentItems = useMemo(() => {
+    return students.map((st) => ({
+      value: st.id,
+      label: `${st.name} (${st.student_code})`,
+    }));
+  }, [students]);
+
+  const filteredStudents = useMemo(() => {
+    if (!studentSearchQuery.trim()) return students;
+    const q = studentSearchQuery.toLowerCase();
+    return students.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.student_code.toLowerCase().includes(q) ||
+        (s.grade && s.grade.toLowerCase().includes(q))
+    );
+  }, [students, studentSearchQuery]);
 
   // Handler saat memilih murid lain dari dropdown
   const handleSelectStudent = (newStudentId: string | null) => {
@@ -306,17 +340,51 @@ export default function ProgressReportsPage({
             <label className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
               Pilih Murid:
             </label>
-            <div className="w-full sm:w-72">
-              <Select value={selectedStudentId} onValueChange={handleSelectStudent}>
-                <SelectTrigger className="h-9 text-xs bg-background">
-                  <SelectValue placeholder="Pilih murid..." />
+            <div className="w-full sm:w-80">
+              <Select
+                items={studentItems}
+                value={selectedStudentId}
+                onValueChange={handleSelectStudent}
+              >
+                <SelectTrigger className="h-9 text-xs bg-background font-medium">
+                  <SelectValue placeholder="Pilih murid...">
+                    {selectedStudentLabel}
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
-                  {students.map((st) => (
-                    <SelectItem key={st.id} value={st.id} className="text-xs">
-                      {st.name} ({st.student_code})
-                    </SelectItem>
-                  ))}
+                <SelectContent className="max-h-80 w-80">
+                  {students.length > 5 && (
+                    <div className="p-1.5 border-b sticky top-0 bg-popover z-10">
+                      <Input
+                        type="text"
+                        placeholder="Cari nama atau NIS murid..."
+                        value={studentSearchQuery}
+                        onChange={(e) => setStudentSearchQuery(e.target.value)}
+                        className="h-7 text-xs px-2"
+                        onKeyDown={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  )}
+                  {filteredStudents.length === 0 ? (
+                    <div className="p-3 text-center text-xs text-muted-foreground italic">
+                      Tidak ada murid yang cocok
+                    </div>
+                  ) : (
+                    filteredStudents.map((st) => (
+                      <SelectItem
+                        key={st.id}
+                        value={st.id}
+                        label={`${st.name} (${st.student_code})`}
+                        className="text-xs py-2 cursor-pointer"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-foreground">{st.name}</span>
+                          <span className="text-[11px] text-muted-foreground font-mono">
+                            NIS: {st.student_code} {st.grade ? `• Kelas ${st.grade}` : ''}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

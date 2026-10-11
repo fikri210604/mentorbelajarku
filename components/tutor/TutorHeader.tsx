@@ -2,10 +2,11 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Bell, Building2, Menu } from "lucide-react";
+import { Building2, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserNav } from "@/components/shared/user-nav";
 import { BreadcrumbNav } from "@/components/shared/breadcrumb-nav";
+import { TutorNotificationBell } from "./TutorNotificationBell";
 import { useUiStore } from "@/stores/ui-store";
 import type { CurrentUserSession } from "@/lib/auth/session";
 
@@ -15,10 +16,22 @@ interface TutorHeaderProps {
 }
 
 const PAGE_METAS: Record<string, { title: string; subtitle: string }> = {
-  "/tutor/schedules": { title: "Jadwal Mengajar", subtitle: "Kalender & sesi bimbel" },
-  "/tutor/attendance": { title: "Presensi & Absensi", subtitle: "Dokumentasi kehadiran" },
-  "/tutor/students": { title: "Data Murid", subtitle: "Daftar siswa bimbingan" },
-  "/tutor/payroll": { title: "Penggajian", subtitle: "Estimasi honor & riwayat" },
+  "/tutor/schedules": {
+    title: "Jadwal Mengajar",
+    subtitle: "Kalender & sesi bimbel",
+  },
+  "/tutor/attendance": {
+    title: "Presensi & Absensi",
+    subtitle: "Dokumentasi kehadiran",
+  },
+  "/tutor/students": {
+    title: "Data Murid",
+    subtitle: "Daftar siswa bimbingan",
+  },
+  "/tutor/payroll": {
+    title: "Penggajian",
+    subtitle: "Estimasi honor & riwayat",
+  },
   "/tutor/profile": { title: "Profil Tutor", subtitle: "Pengaturan akun" },
 };
 
@@ -32,7 +45,8 @@ export function TutorHeader({ isManagement, user }: TutorHeaderProps = {}) {
     subtitle: "Bimbel Belajarku",
   };
 
-  const displayName = user?.profile?.full_name || user?.user?.name || "Tutor Pengajar";
+  const displayName =
+    user?.profile?.full_name || user?.user?.name || "Tutor Pengajar";
 
   return (
     <header className="border-b border-border bg-card/85 backdrop-blur-md shrink-0 sticky top-0 z-30 transition-all">
@@ -66,19 +80,9 @@ export function TutorHeader({ isManagement, user }: TutorHeaderProps = {}) {
           </div>
         )}
 
-        {/* Sisi Kanan Mobile: Tombol Lonceng Notifikasi */}
+        {/* Sisi Kanan Mobile: Lonceng Notifikasi Interaktif */}
         <div className="flex items-center gap-2 shrink-0">
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            className="size-9 rounded-full border border-border/70 bg-card hover:bg-muted text-muted-foreground hover:text-foreground relative shadow-2xs"
-          >
-            <Link href="/tutor/profile" aria-label="Notifikasi & Akun">
-              <Bell className="size-4" />
-              <span className="absolute top-2 right-2 size-2 rounded-full bg-emerald-500 animate-pulse" />
-            </Link>
-          </Button>
+          <TutorNotificationBell />
 
           {!isDashboard && (
             <div className="pl-0.5">
@@ -132,17 +136,7 @@ export function TutorHeader({ isManagement, user }: TutorHeaderProps = {}) {
             </Button>
           )}
 
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            className="relative text-muted-foreground size-9 rounded-full hover:bg-muted"
-          >
-            <Link href="/tutor/profile" aria-label="Notifikasi">
-              <Bell className="size-4" />
-              <span className="absolute top-2 right-2 size-2 rounded-full bg-emerald-500" />
-            </Link>
-          </Button>
+          <TutorNotificationBell />
 
           <div className="h-4 w-px bg-border mx-1" />
 

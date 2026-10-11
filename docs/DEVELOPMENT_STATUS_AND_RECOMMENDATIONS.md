@@ -13,16 +13,18 @@
 | **Dashboard Eksekutif** | **Selesai** | `/management/dashboard` | KPI metrik real-time: Total Murid Aktif, Total Tutor, Sesi Belajar Berjalan, Estimasi Pengeluaran Honor. Grafik statistik kehadiran & sebaran program bimbel. |
 | **Data Murid (Master Students)** | **Selesai** | `/management/students` | CRUD murid lengkap, registrasi murid baru, pencarian instan, filter status (`active`, `inactive`, `graduated`), dan paginasi server. |
 | **Detail & Riwayat Murid** | **Selesai** | `/management/students/[studentId]` | Visualisasi **Progres Pertemuan ke-X** dari total kuota paket aktif, persentase kelulusan paket, profil murid/wali/kontak WhatsApp, rincian paket terdaftar, dan log riwayat sesi kronologis. |
+| **Impor Catatan Spreadsheet / Excel Lama** | **Selesai** | `/management/students/[studentId]` (Dialog Impor) | Fitur migrasi data historis murid langsung dari Google Sheets/Excel: parser cerdas mendeteksi format tanggal Indonesia, nama mentor, materi, dan nomor pertemuan. Mengisi secara atomik `sessions`, `session_students`, `attendance` (verified), dan `learning_records` sehingga absensi di aplikasi baru langsung melanjutkan nomor pertemuan berikutnya (misal lanjut ke P4). |
 | **Laporan Perkembangan Murid (Cetak PDF A4)** | **Selesai** | `/management/students/[studentId]/progress-report`<br>`/management/progress-reports` | Kompilasi dinamis riwayat pertemuan murid langsung ke lembar evaluasi resmi format Google Sheets: Kop Banner hijau tua dual logo (Semesta Abhana & Mentorbelajarku), tabel materi `#9bbad6`, nomor pertemuan efektif, mentor pengajar. |
 | **Popup Edit Keterangan Evaluasi** | **Selesai** | Modal Dialog di halaman laporan | Manajemen dapat menambahkan atau mengedit keterangan evaluasi/catatan dan materi per pertemuan sebelum dicetak. Aksi dibatasi hanya **Edit** dan **Cetak** (tanpa aksi hapus & tambah baris liar). |
 | **Ekspor PDF Vektor Cepat (0 ms)** | **Selesai** | Tombol Cetak / Export PDF | Menggunakan Native Browser Vector Print Engine (`window.print()` + `@media print` CSS) menghasilkan cetakan/PDF A4 tajam 100% presisi tanpa membebani server/RAM. |
-| **Data Tutor (Master Tutors)** | **Selesai** | `/management/tutors` | Pengelolaan data tutor pengajar, spesialisasi mapel, status keaktifan, murid binaan, dan histori mengajar. |
-| **Jadwal Rutin (Schedules)** | **Selesai** | `/management/schedules` | Pembuatan jadwal rutin mingguan (hari, jam, tipe bimbel, program studi, tutor, murid/kelompok). |
-| **Sesi Pembelajaran Aktual (Sessions)** | **Selesai** | `/management/sessions` | Pencatatan kejadian sesi nyata per tanggal kalender. Mendukung pergantian tutor pengganti (*substitute tutor*), pembatalan, dan penjadwalan ulang (*rescheduling*). |
+| **Data Tutor (Master Tutors & CRUD)** | **Selesai + Auto Provisioning + Etika Islami** | `/management/tutors`<br>`/management/tutors/[tutorId]` | CRUD tutor lengkap untuk Admin/Owner/HRD: Tambah tutor baru dengan pembuatan akun Better Auth otomatis (`user` + `account` credential), pemilihan gender dengan panggilan kehormatan Islami (**Laki-laki: Abi**, **Perempuan: Umi**), pembuatan password default otomatis (`Mbk{4digit}!{chars}`), pengiriman email kredensial resmi bertata karma Islami (salam pembuka & penutup lengkap), tombol salin kredensial/format WA 1-klik yang sopan tanpa duplikasi panggilan, ubah biodata & kontak, reset kredensial, proteksi hapus berelasi (hard delete vs soft deactivation), serta pencatatan jejak audit `audit_logs`. Migration `0008`. |
+| **Jadwal Rutin (Schedules & Master Edit)** | **Selesai + Recurring + Full Edit** | `/management/schedules`<br>`/management/schedules/[scheduleId]/edit` | Pembuatan & pengeditan jadwal rutin mingguan (hari, jam, tipe bimbel, program studi, tutor, murid/kelompok, lokasi, catatan). Pengulangan eksplisit ala kalender — multi-hari (`days_of_week[]`), terminasi count xor until, interval 1–12 minggu, pratinjau tanggal. Halaman edit master lengkap (`/management/schedules/[id]/edit`) dengan sinkronisasi otomatis ke sesi mendatang yang berstatus `scheduled` dan pencatatan jejak audit. |
+| **Sesi Pembelajaran Aktual & Edit Scope (Sessions)** | **Selesai + Google Calendar Scope** | `/management/sessions`<br>`/management/sessions/[sessionId]` | Pencatatan kejadian sesi nyata per tanggal kalender. Mendukung dialog **Edit Jadwal Sesi ala Google Calendar** dengan 3 cakupan simpan: (1) **Hanya Sesi Ini** (`this_session`), (2) **Sesi Ini dan Seterusnya** (`this_and_following` / split recurrence aman memotong seri lama dan menerbitkan seri baru), (3) **Seluruh Sesi** (`all_sessions` untuk seri berulang). Riwayat sesi berstatus `completed` atau yang sudah memiliki presensi/honor diproteksi penuh dan tidak dimutasi (immutable history). |
 | **Monitoring Presensi (Attendance)** | **Selesai** | `/management/attendance` | Verifikasi kehadiran seluruh kelas harian, preview foto bukti absensi dari kamera tutor, status multi-opsi (Hadir, Sakit, Izin, Terlambat, Alfa). |
-| **Honor & Payroll Tutor** | **Selesai** | `/management/payroll` | Kalkulasi otomatis di server: `fee = rate × payable_students`. Menggunakan tarif historis berbasis periode masa berlaku (`effective_from` - `effective_until`). Alur: Generate Draft -> Review Sesi -> Finalisasi -> Bayar. |
+| **Honor & Payroll Tutor** | **Selesai** | `/management/payroll`<br>`/management/payroll/[id]` | Kalkulasi otomatis di server: `fee = rate × payable_students`. Menggunakan tarif historis (`effective_from` - `effective_until`). **Fitur Audit Bulanan**: Preview thumbnail foto bukti belajar, modal lightbox resolusi penuh, verifikasi foto instan (`verified`), pengajuan koreksi foto (`correction_requested`) dengan catatan instruksi, serta opsi mengeluarkan sesi dari draft. Konfirmasi pembayaran mencatat nomor referensi transfer bank (`payment_reference`) dan status `paid`. |
 | **Konfigurasi Bimbel (Settings)** | **Selesai** | `/management/settings/*` | Pengaturan Program Studi, Jenis Bimbel (Reguler 60m, Intensif 75m, Private 90m), dan Konfigurasi Tarif Tutor per Jenis Bimbel. |
-| **Audit Logs** | **Selesai** | `/management/audit-logs` | Jejak audit otomatis mencatat *who, what, when, before, after* untuk mutasi data sensitif (koreksi absensi, perubahan tarif, payroll). |
+| **Audit Logs** | **Selesai** | `/management/audit-logs` | Jejak audit otomatis mencatat *who, what, when, before, after* untuk mutasi data sensitif (koreksi absensi, audit foto dari payroll, perubahan tarif, status payroll). |
+| **Notifikasi & Pengingat Push** | **Selesai** | `/management/settings/notifications` | Konfigurasi global notifikasi push tutor: sakelar utama, notifikasi jadwal baru, pengingat sebelum sesi (`before_minutes`, diulang `repeat_count`× setiap `repeat_interval_minutes`), dan pengingat setelah sesi (`after_minutes`, hanya bila presensi belum diisi). Dibatasi permission dinamis `notification:manage`. Migration `0007`. |
 
 ---
 
@@ -30,12 +32,14 @@
 
 | Modul / Fitur | Status | Rute / Lokasi | Deskripsi & Kapabilitas |
 |---|---|---|---|
-| **Dashboard Tutor** | **Selesai** | `/tutor/dashboard` | Agenda mengajar hari ini, jadwal sesi terdekat, metrik murid binaan, dan estimasi honor berjalan bulan ini. |
+| **Dashboard Tutor** | **Selesai** | `/tutor/dashboard` | Agenda mengajar hari ini, jadwal sesi terdekat, metrik murid binaan, estimasi honor berjalan bulan ini, dan **banner peringatan perbaikan foto presensi** jika diminta oleh manajemen. |
 | **Jadwal Mengajar Mandiri** | **Selesai** | `/tutor/schedules` | Kalender dan jadwal mengajar pribadi (harian dan mingguan). |
-| **Presensi Kamera Browser (`react-webcam`)** | **Selesai** | `/tutor/sessions/[sessionId]` | Pengambilan foto bukti absensi murid langsung melalui kamera gawai/laptop, tombol ambil ulang, dan validasi gambar. |
+| **Presensi Kamera Browser (`react-webcam`)** | **Selesai** | `/tutor/sessions/[sessionId]` | Pengambilan foto bukti absensi murid langsung melalui kamera gawai/laptop, tombol ambil ulang, kompresi client, dan validasi gambar. Mendukung unggah ulang foto jika diminta koreksi oleh manajemen (status otomatis kembali menjadi `submitted`). |
 | **Input Materi & Evaluasi Sesi** | **Selesai** | Form Absensi Tutor | Pengisian materi yang diajarkan, catatan pemahaman murid, dan status kehadiran per murid saat sesi berlangsung. |
 | **Data Murid Binaan** | **Selesai** | `/tutor/students` | Melihat profil ringkas murid yang diampu beserta riwayat belajar dan catatan pertemuan sebelumnya. |
-| **Transparansi Honor Mandiri** | **Selesai** | `/tutor/payroll` | Rincian honor per sesi mengajar yang telah divalidasi dan status pencairan dari manajemen. |
+| **Transparansi Honor Mandiri** | **Selesai** | `/tutor/payroll` | Rincian honor per sesi mengajar, status pencairan (`draft`, `processed`, `paid`), tanggal pembayaran riil, dan **nomor referensi bukti transfer bank** dari manajemen. |
+| **Notifikasi Push & Toggle Profil** | **Selesai** | `/tutor/profile` | Toggle sakelar (shadcn Switch) untuk mengaktifkan/mematikan notifikasi, pendaftaran perangkat Web Push (VAPID + Service Worker), dan tombol kirim uji coba. Tutor menerima notifikasi jadwal baru serta pengingat sebelum/sesudah sesi. |
+| **Pusat Notifikasi & Lonceng Interaktif (In-App Bell)** | **Selesai** | Header Tutor (`TutorHeader`) | Popover lonceng dinamis dengan badge jumlah notifikasi unread merah (real-time poll 60d), daftar riwayat notifikasi jadwal/pengingat/uji coba, penanda waktu relatif Indonesia, navigasi 1-klik ke sesi mengajar, aksi tandai dibaca per item maupun sekaligus, dan tautan cepat ke pengaturan akun. Didukung migration `0009`. |
 
 ---
 
@@ -103,28 +107,56 @@ Berikut adalah rekomendasi teknis dan bisnis terstruktur untuk membawa sistem bi
 1. **Mode Presensi Cepat Kelas Kelompok (Batch Attendance)**:
    - Pada kelas kelompok (3–6 murid), tutor dapat mengklik satu tombol **"Hadirkan Semua"**, lalu hanya mengubah status murid yang tidak hadir (Sakit/Izin/Alfa).
    - Mendukung opsi 1 foto bersama (*group class photo*) untuk mengabsen seluruh murid sekaligus dalam 1 sesi.
-2. **Otomatisasi Pembangkitan Sesi (Automated Session Generator via Cron)**:
-   - Jadwal rutin mingguan (`schedules`) di-generate menjadi sesi aktual (`sessions`) secara otomatis setiap minggu menggunakan Background Cron / Supabase `pg_cron`.
-   - Tutor tidak perlu menginput sesi secara manual; saat hari mengajar tiba, sesi sudah otomatis siap di dashboard tutor.
-3. **Alur Izin & Reschedule Terpadu**:
+2. **Otomatisasi Pembangkitan Sesi (Automated Session Generator via Cron)** *(Selesai Diimplementasikan - 10 Okt 2026)*:
+   - Endpoint terproteksi `/api/v1/sessions/cron-generate` (otentikasi via `CRON_SECRET` atau hak `session:create`).
+   - Otomatis mengevaluasi jadwal berulang untuk 7 hari ke depan (WIB `Asia/Jakarta`).
+   - Tercatat otomatis di audit trail server (`SESSION_CRON_GENERATED`).
+3. **Snapshot Peserta Sesi Pembelajaran (`session_students`)** *(Selesai Diimplementasikan - 10 Okt 2026)*:
+   - Migration `0006_session_students_snapshot.sql` membekukan peserta murid pada setiap sesi yang dibangkitkan.
+   - Perubahan murid pada jadwal rutin di masa kini tidak akan merusak riwayat dan peserta sesi di masa lalu.
+   - Terintegrasi atomik pada `SessionGeneratorService`, validasi presensi `attendance.service.ts`, dan query sesi portal.
+4. **Alur Izin & Reschedule Terpadu**:
    - Ketika murid berstatus `permission` (Izin), sistem memberikan notifikasi kepada manajemen untuk menjadwalkan sesi pengganti (*reschedule slot*) agar hak pertemuan murid terpenuhi sebelum masa aktif paket berakhir.
 
 ---
 
 ### 2.4. Rekomendasi Fitur Payroll & Keuangan
 
-1. **Cetak Slip Gaji Tutor Digital (PDF Slip Honor)**:
-   - Menambahkan fitur ekspor Slip Gaji Tutor per bulan dengan format rapi (memuat rincian sesi, murid terbayar, nominal tarif, bonus/potongan, dan total honor bersih).
-2. **Approval Workflow Payroll**:
-   - Alur status berjenjang:
-     - `Draft Kalkulasi` (sistem menghitung sesi riil)
-     - `Review Manajemen` (koreksi bonus/potongan manual)
-     - `Disetujui (Approved)`
-     - `Dibayarkan (Paid)` (dengan lampiran bukti transfer bank)
+1. **Approval Workflow & Audit Presensi Bulanan** *(Selesai Diimplementasikan)*:
+   - Alur status berjenjang: `Draft` (generate sesi aktual) → `Processed` (difinalisasi Finance setelah audit foto) → `Paid` (ditandai lunas beserta nomor referensi transfer bank & catatan).
+   - Audit foto presensi per sesi langsung dari detail payroll dengan lightbox resolusi penuh dan aksi minta koreksi tutor.
+
+2. **Cetak Slip Gaji & Lembar Penggajian Resmi (A4 Sheet)** *(Selesai Diimplementasikan)*:
+   - Lembar penggajian tutor format A4 siap cetak (`/management/payroll` & `/tutor/payroll`) dengan kop resmi, rekapitulasi kehadiran per murid, dan ringkasan honor bersih.
+
+3. **Pencairan Honor Mandiri & Otomatisasi via Payment Gateway (Self-Payout / QR Payout Link)** *(Rekomendasi Roadmap)*:
+   - **Latar Belakang & Konsep**:
+     Untuk mengeliminasi proses transfer manual satu per satu via m-Banking yang memakan waktu dan berisiko salah input nominal, bimbel dapat mengintegrasikan API Disbursement / Payouts dari payment gateway (seperti **Xendit Payout Links / Disburse API**, **Midtrans Iris**, atau **Flip for Business**).
+   - **Mekanisme Pencairan Mandiri (Self-Claim QR Code / Payout Link)**:
+     - Pada tanggal cut-off penggajian yang dikonfigurasi (misalnya setiap tanggal 7 setiap bulan), sistem secara otomatis mengaktifkan **QR Code / Tombol Klaim Honor** di dashboard tutor untuk payroll yang telah difinalisasi (`processed`).
+     - Tutor memindai QR Code tersebut menggunakan kamera ponsel atau mengklik tombol *"Cairkan Honor Sekarang"*.
+     - Tautan membuka halaman pencairan resmi payment gateway yang aman.
+     - Tutor bebas memilih rekening tujuan pencairan:
+       - **Rekening Bank**: BCA, Mandiri, BRI, BNI, BSI, CIMB Niaga, Bank Jago, dsb.
+       - **E-Wallet**: GoPay, OVO, DANA, ShopeePay, LinkAja.
+     - Tutor mengonfirmasi penarikan, dan payment gateway mentransfer dana secara *real-time* detik itu juga.
+     - Webhook payment gateway otomatis mengirim callback ke server bimbel:
+       - Status payroll otomatis beralih menjadi `paid`.
+       - Waktu pembayaran (`paid_at`) dan nomor referensi transfer bank resmi (`payment_reference`) tercatat otomatis tanpa intervensi manual tim Finance.
+   - **Opsi Alternatif (1-Click Batch Disburse oleh Finance)**:
+     - Tutor mendaftarkan nomor rekening dan bank di halaman profil tutor.
+     - Pada tanggal gajian, Finance cukup menekan satu tombol *"Kirim Honor Seluruh Tutor via Payment Gateway"*, dan sistem mengeksekusi transfer massal ke seluruh rekening tutor sekaligus dalam hitungan detik.
+   - **Prasyarat & Pertimbangan Operasional**:
+     - *Pre-funded Balance*: Bimbel melakukan deposit saldo ke akun payment gateway sebelum tanggal penggajian agar saldo mencukupi saat ditarik.
+     - *Biaya Disburse*: Biaya per transaksi transfer (umumnya Rp2.000 – Rp4.000 per transfer sukses) dapat ditanggung lembaga sebagai benefit tutor atau dikonfigurasi sebagai biaya administrasi.
+     - *Verifikasi Bisnis (KYB)*: Memerlukan pendaftaran dan verifikasi akun bisnis pada penyedia payment gateway terkait.
 
 ---
 
 ### 2.5. Push Notification & Pengingat Presensi Otomatis (Attendance Reminder System)
+
+> **STATUS (10 Oktober 2026): Diimplementasikan.**
+> Web Push + VAPID + Service Worker (`public/sw.js`) telah aktif. Konfigurasi global di `/management/settings/notifications`, toggle tutor di `/tutor/profile`, dispatcher cron di `/api/v1/web-push/dispatch`, dan notifikasi jadwal baru dipicu dari Server Action `createSchedule`. Migration `0007`. Yang belum: fallback WhatsApp gateway dan rekapitulasi malam ke Manajemen.
 
 1. **Latar Belakang & Urgensi**:
    - Salah satu tantangan terbesar operasional bimbel adalah tutor terlambat atau lupa melakukan presensi tepat waktu saat sesi selesai. Keterlambatan input absensi berdampak berantai pada validitas data, keterlambatan pelaporan ke wali murid, dan keterlambatan kalkulasi payroll honor.
@@ -234,4 +266,24 @@ Berikut adalah rekomendasi teknis dan bisnis terstruktur untuk membawa sistem bi
    - Manfaatkan view PostgreSQL `v_attendance_with_meeting_number` yang sudah dibuat untuk memastikan nomor pertemuan dihitung secara matematis di database server, bukan ditebak di antarmuka frontend.
 3. **Progressive Web App (PWA) Offline Support**:
    - Konfigurasi PWA sederhana dengan Service Worker agar tutor di lokasi yang sinyalnya naik-turun tetap dapat membuka halaman absensi dan menyimpan draf presensi secara lokal (IndexedDB) sebelum tersinkronisasi saat online kembali.
+
+---
+
+### 2.9. Fitur Migrasi Data: Impor Riwayat Pertemuan Spreadsheet / Excel per Murid (Status: Selesai)
+
+1. **Latar Belakang & Implementasi**:
+   - Memfasilitasi admin bimbingan belajar untuk memasukkan data pertemuan terdahulu dari lembar kerja Google Sheets / Excel langsung ke sistem baru.
+   - Tersedia di halaman Detail Murid (`/management/students/[studentId]`) via modal dialog interaktif `ImportHistoricalSessionsDialog`.
+2. **Fitur Unggulan**:
+   - **Multi-Sheet Excel (.xlsx / .xls) & Copy-Paste**: Admin dapat mengunggah file workbook Excel utuh atau menyalin teks langsung. Sistem membaca seluruh sheet, mencocokkan nama murid di tiap lembar, dan otomatis memilih lembar yang sesuai dengan murid yang dibuka.
+   - **Ekstraksi Metadata Cerdas**: Membaca otomatis `Nama Murid`, `Kelas`, `Jadwal`, dan `Mapel`, memvalidasi apakah nama murid di sheet cocok dengan profil murid di sistem.
+   - **Deteksi Siklus Paket (Batch Cycles)**: Mengidentifikasi pembatas evaluasi (seperti `"Pencapaian dan Evaluasi"`) atau reset nomor pertemuan dari 8 ke 1.
+   - **Tombol Filter Cepat**:
+     - *Pilih Paket Berjalan Saja (Rekomendasi)*: Memilih hanya sesi paket aktif (misal 3 sesi terakhir) agar absensi tutor berikutnya otomatis berlanjut ke **Pertemuan ke-4**.
+     - *Pilih Semua (Seluruh Riwayat)*: Mengimpor seluruh 11 sesi; paket lama (P1–P8) otomatis ditandai `completed`, dan paket aktif (P1–P3) ditandai `active`.
+   - **Pencocokan Mentor Otomatis**: Nama tutor seperti *"Abi Yoko"*, *"Abi Govin"*, *"Abi Hanif"*, *"Umi Elsa"* dicocokkan otomatis ke database tutor dengan opsi ganti tutor per baris.
+3. **Arsitektur Teknis**:
+   - Server Action `importStudentHistoricalSessionsAction` menulis secara atomik ke tabel `sessions`, `session_students`, `attendance` (verified), `learning_records`, dan mencatat `audit_logs`.
+   - Penomoran pertemuan murni diturunkan dari view `v_attendance_with_meeting_number` tanpa hardcoding nomor pertemuan di database.
+
 

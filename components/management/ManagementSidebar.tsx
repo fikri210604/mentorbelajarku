@@ -56,6 +56,7 @@ const MANAGEMENT_MENU: MenuItem[] = [
       "roles:manage",
       "rates:manage",
       "curriculum:manage",
+      "notification:manage",
     ],
   },
 ];

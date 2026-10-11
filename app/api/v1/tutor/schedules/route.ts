@@ -13,7 +13,8 @@ export async function GET() {
   const { data, error } = await supabase
     .from("schedules")
     .select(
-      `id, day_of_week, start_time, end_time, status, location, notes,
+      `id, day_of_week, days_of_week, recurrence_start_date, recurrence_interval,
+       recurrence_count, recurrence_until, start_time, end_time, status, location, notes,
        program_id, bimbel_type_id,
        programs (id, code, name),
        bimbel_types (id, name, duration_minutes),

@@ -130,11 +130,13 @@ export function PayrollSheetWorkspace({
               <div className="w-full sm:w-72">
                 <Select value={selectedTutorId} onValueChange={(v) => navigate({ tutorId: v ?? undefined })}>
                   <SelectTrigger className="h-9 text-xs bg-background">
-                    <SelectValue placeholder="Pilih tutor..." />
+                    <SelectValue placeholder="Pilih tutor...">
+                      {tutors.find((t) => t.id === selectedTutorId)?.name}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {tutors.map((t) => (
-                      <SelectItem key={t.id} value={t.id} className="text-xs">
+                      <SelectItem key={t.id} value={t.id} label={t.name} className="text-xs">
                         {t.name}
                       </SelectItem>
                     ))}

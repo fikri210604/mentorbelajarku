@@ -1,7 +1,13 @@
 "use client";
 
 import { GraduationCap, Users, UserPlus, BookOpen, Layers } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { StudentReportData } from "../services/report.service";
 
@@ -9,7 +15,9 @@ interface StudentReportPageProps {
   initialData?: StudentReportData;
 }
 
-export default function StudentReportPage({ initialData }: StudentReportPageProps) {
+export default function StudentReportPage({
+  initialData,
+}: StudentReportPageProps) {
   const data: StudentReportData = initialData || {
     activeStudents: 0,
     newStudentsThisMonth: 0,
@@ -37,7 +45,9 @@ export default function StudentReportPage({ initialData }: StudentReportPageProp
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-emerald-600">{data.activeStudents}</p>
+            <p className="text-2xl font-bold text-emerald-600">
+              {data.activeStudents}
+            </p>
             <span className="text-xs text-muted-foreground">
               dari total {data.totalStudents} murid terdaftar
             </span>
@@ -52,8 +62,12 @@ export default function StudentReportPage({ initialData }: StudentReportPageProp
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-blue-600">+{data.newStudentsThisMonth}</p>
-            <span className="text-xs text-muted-foreground">Pendaftaran bulan berjalan</span>
+            <p className="text-2xl font-bold text-blue-600">
+              +{data.newStudentsThisMonth}
+            </p>
+            <span className="text-xs text-muted-foreground">
+              Pendaftaran bulan berjalan
+            </span>
           </CardContent>
         </Card>
 
@@ -65,8 +79,12 @@ export default function StudentReportPage({ initialData }: StudentReportPageProp
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-purple-600">{data.graduatedStudents}</p>
-            <span className="text-xs text-muted-foreground">Menyelesaikan seluruh paket</span>
+            <p className="text-2xl font-bold text-purple-600">
+              {data.graduatedStudents}
+            </p>
+            <span className="text-xs text-muted-foreground">
+              Menyelesaikan seluruh paket
+            </span>
           </CardContent>
         </Card>
       </div>
@@ -93,7 +111,9 @@ export default function StudentReportPage({ initialData }: StudentReportPageProp
                 {data.programDistribution.map((prog) => (
                   <div key={prog.name} className="space-y-1.5">
                     <div className="flex justify-between text-sm">
-                      <span className="font-medium text-foreground">{prog.name}</span>
+                      <span className="font-medium text-foreground">
+                        {prog.name}
+                      </span>
                       <span className="text-muted-foreground">
                         {prog.count} murid ({prog.percentage}%)
                       </span>
@@ -130,9 +150,16 @@ export default function StudentReportPage({ initialData }: StudentReportPageProp
             ) : (
               <div className="space-y-3">
                 {data.levelDistribution.map((lvl) => (
-                  <div key={lvl.level} className="flex justify-between items-center py-2 border-b border-border/50 text-sm">
-                    <span className="font-medium text-foreground">{lvl.level}</span>
-                    <span className="font-mono text-muted-foreground">{lvl.count} murid</span>
+                  <div
+                    key={lvl.level}
+                    className="flex justify-between items-center py-2 border-b border-border/50 text-sm"
+                  >
+                    <span className="font-medium text-foreground">
+                      {lvl.level}
+                    </span>
+                    <span className="font-mono text-muted-foreground">
+                      {lvl.count} murid
+                    </span>
                   </div>
                 ))}
               </div>

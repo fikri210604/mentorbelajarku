@@ -8,7 +8,9 @@ interface TutorScheduleListPageProps {
   initialSchedules?: ScheduleWithDetails[];
 }
 
-export default function TutorScheduleListPage({ initialSchedules = [] }: TutorScheduleListPageProps) {
+export default function TutorScheduleListPage({
+  initialSchedules = [],
+}: TutorScheduleListPageProps) {
   return (
     <div className="space-y-6">
       <PageHeader

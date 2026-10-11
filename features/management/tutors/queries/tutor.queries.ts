@@ -11,6 +11,7 @@ const TUTOR_SELECT_COLUMNS = `
   profile_id,
   bio,
   status,
+  gender,
   created_at,
   updated_at,
   profiles (
@@ -18,6 +19,7 @@ const TUTOR_SELECT_COLUMNS = `
     user_id,
     full_name,
     phone,
+    gender,
     avatar_url
   ),
   tutor_rates (
@@ -36,6 +38,47 @@ const TUTOR_SELECT_COLUMNS = `
   )
 `;
 
+/**
+ * Memperkaya objek tutor dengan email login dari tabel "user".
+ */
+async function attachUserEmails(
+  supabase: ReturnType<typeof createServerClient>,
+  tutors: TutorWithProfile[]
+): Promise<TutorWithProfile[]> {
+  const userIds = Array.from(
+    new Set(
+      tutors
+        .map((t) => t.profiles?.user_id)
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+
+  if (userIds.length === 0) return tutors;
+
+  const { data: users, error } = await supabase
+    .from("user")
+    .select("id, email")
+    .in("id", userIds);
+
+  if (error || !users) return tutors;
+
+  const emailByUserId = new Map(users.map((u) => [u.id, u.email]));
+
+  return tutors.map((t) => {
+    if (t.profiles && t.profiles.user_id) {
+      const email = emailByUserId.get(t.profiles.user_id) || null;
+      return {
+        ...t,
+        profiles: {
+          ...t.profiles,
+          email,
+        },
+      };
+    }
+    return t;
+  });
+}
+
 export const getTutors = cache(async (): Promise<TutorWithProfile[]> => {
   if (!isSupabaseConfigured()) return [];
 
@@ -49,7 +92,8 @@ export const getTutors = cache(async (): Promise<TutorWithProfile[]> => {
     console.error("getTutors error:", error.message);
     return [];
   }
-  return (data as unknown as TutorWithProfile[]) || [];
+  const items = (data as unknown as TutorWithProfile[]) || [];
+  return attachUserEmails(supabase, items);
 });
 
 /**
@@ -86,7 +130,8 @@ export async function getTutorsPaginated(
   }
 
   const items = (data as unknown as TutorWithProfile[]) || [];
-  return createPaginatedResult(items, count ?? items.length, page, pageSize);
+  const enrichedItems = await attachUserEmails(supabase, items);
+  return createPaginatedResult(enrichedItems, count ?? items.length, page, pageSize);
 }
 
 function isUuid(id: string): boolean {
@@ -104,5 +149,6 @@ export const getTutorById = cache(async (id: string): Promise<TutorWithProfile |
     .maybeSingle();
 
   if (error || !data) return null;
-  return data as unknown as TutorWithProfile;
+  const items = await attachUserEmails(supabase, [data as unknown as TutorWithProfile]);
+  return items[0] || null;
 });

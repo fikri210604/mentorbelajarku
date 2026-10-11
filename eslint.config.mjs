@@ -30,6 +30,10 @@ const eslintConfig = defineConfig([
     // Playwright output artifacts.
     "playwright-report/**",
     "test-results/**",
+    // Local agent/tooling directories (not part of the app).
+    ".opencode/**",
+    ".agents/**",
+    ".claude/**",
   ]),
 ]);
 

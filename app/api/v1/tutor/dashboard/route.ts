@@ -13,7 +13,7 @@ export async function GET() {
   const { data: schedules, error } = await supabase
     .from("schedules")
     .select(
-      `id, day_of_week, start_time, end_time, status,
+      `id, day_of_week, days_of_week, start_time, end_time, status,
        schedule_students (student_id, students (id, name, student_code))`
     )
     .eq("tutor_id", tutorId);

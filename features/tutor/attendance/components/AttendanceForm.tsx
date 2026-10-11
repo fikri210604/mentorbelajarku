@@ -1,21 +1,30 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo } from 'react';
-import { CameraCapture } from '@/components/shared/camera';
-import { submitSessionAttendance } from '@/features/tutor/attendance/actions/attendance.actions';
-import { validateAttendanceTimeWindow, AttendanceTimeWindowResult } from '@/lib/utils/attendance-window';
+import { useState, useEffect, useMemo } from "react";
+import { CameraCapture } from "@/components/shared/camera";
+import { submitSessionAttendance } from "@/features/tutor/attendance/actions/attendance.actions";
+import {
+  validateAttendanceTimeWindow,
+  AttendanceTimeWindowResult,
+} from "@/lib/utils/attendance-window";
 import {
   compressImageFile,
   compressImageDataUrl,
   formatBytes,
-} from '@/lib/utils/image-compression';
-import { useNetworkStatus } from '@/lib/hooks/use-network-status';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+} from "@/lib/utils/image-compression";
+import { useNetworkStatus } from "@/lib/hooks/use-network-status";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Camera,
   CheckCircle2,
@@ -34,7 +43,7 @@ import {
   FileText,
   Trash2,
   Wifi,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,9 +53,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils';
-import type { AttendanceStatus } from '@/types/database.types';
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
+import type { AttendanceStatus } from "@/types/database.types";
 
 interface AttendanceFormProps {
   sessionId: string;
@@ -92,16 +101,36 @@ interface StudentAttendanceRow {
   nextMeetingNumber: number;
   maxMeetings: number;
   /** `unset` = tutor belum memilih status; mencegah asumsi default "hadir". */
-  status: AttendanceStatus | 'unset';
+  status: AttendanceStatus | "unset";
   material: string;
   notes: string;
 }
 
 const STATUS_OPTIONS = [
-  { val: 'present', label: 'Hadir', active: 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700' },
-  { val: 'permission', label: 'Izin', active: 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700' },
-  { val: 'sick', label: 'Sakit', active: 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-700' },
-  { val: 'absent', label: 'Alpa', active: 'border-rose-500 bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-700' },
+  {
+    val: "present",
+    label: "Hadir",
+    active:
+      "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700",
+  },
+  {
+    val: "permission",
+    label: "Izin",
+    active:
+      "border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700",
+  },
+  {
+    val: "sick",
+    label: "Sakit",
+    active:
+      "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-700",
+  },
+  {
+    val: "absent",
+    label: "Alpa",
+    active:
+      "border-rose-500 bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-700",
+  },
 ] as const;
 
 const AVATAR_HUES = [152, 82, 200, 30, 260, 330] as const;
@@ -117,33 +146,48 @@ export function AttendanceForm({
   // Wizard Step State: 1: Materi & Worksheet, 2: Foto Sesi, 3: Presensi Murid
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
-  const startTime = sessionDetails.startTime || '16:00';
-  const endTime = sessionDetails.endTime || '17:15';
+  const startTime = sessionDetails.startTime || "16:00";
+  const endTime = sessionDetails.endTime || "17:15";
 
-  const windowConfig = useMemo(() => ({
-    openBeforeMinutes: sessionDetails.windowConfig?.openBeforeMinutes ?? 15,
-    closeAfterHours: sessionDetails.windowConfig?.closeAfterHours ?? 4,
-    maxDaysAllowed: sessionDetails.windowConfig?.maxDaysAllowed ?? 1,
-    allowBackdate: sessionDetails.windowConfig?.allowBackdate ?? false,
-    sessionDeadlineOverride: sessionDetails.attendanceDeadline,
-    sessionAllowLateUpload: sessionDetails.allowLateUpload,
-  }), [sessionDetails.windowConfig, sessionDetails.attendanceDeadline, sessionDetails.allowLateUpload]);
+  const windowConfig = useMemo(
+    () => ({
+      openBeforeMinutes: sessionDetails.windowConfig?.openBeforeMinutes ?? 15,
+      closeAfterHours: sessionDetails.windowConfig?.closeAfterHours ?? 4,
+      maxDaysAllowed: sessionDetails.windowConfig?.maxDaysAllowed ?? 1,
+      allowBackdate: sessionDetails.windowConfig?.allowBackdate ?? false,
+      sessionDeadlineOverride: sessionDetails.attendanceDeadline,
+      sessionAllowLateUpload: sessionDetails.allowLateUpload,
+    }),
+    [
+      sessionDetails.windowConfig,
+      sessionDetails.attendanceDeadline,
+      sessionDetails.allowLateUpload,
+    ],
+  );
 
   // 1. Validasi Batas Waktu Absensi Dinamis (Master Config + Sesi Override)
   const [windowInfo, setWindowInfo] = useState<AttendanceTimeWindowResult>(() =>
-    validateAttendanceTimeWindow(sessionDetails.date, startTime, windowConfig)
+    validateAttendanceTimeWindow(sessionDetails.date, startTime, windowConfig),
   );
 
   // Perbarui status waktu setiap menit
   useEffect(() => {
     const timer = setInterval(() => {
-      setWindowInfo(validateAttendanceTimeWindow(sessionDetails.date, startTime, windowConfig));
+      setWindowInfo(
+        validateAttendanceTimeWindow(
+          sessionDetails.date,
+          startTime,
+          windowConfig,
+        ),
+      );
     }, 60000);
     return () => clearInterval(timer);
   }, [sessionDetails.date, startTime, windowConfig]);
 
   // 2. State untuk Foto Tunggal Sesi (1x Foto untuk seluruh murid)
-  const [sessionPhotoBase64, setSessionPhotoBase64] = useState<string | null>(null);
+  const [sessionPhotoBase64, setSessionPhotoBase64] = useState<string | null>(
+    null,
+  );
   const [showCamera, setShowCamera] = useState(false);
   const [isCompressingPhoto, setIsCompressingPhoto] = useState(false);
   const [photoInfo, setPhotoInfo] = useState<{
@@ -152,16 +196,23 @@ export function AttendanceForm({
     savingsPercent: number;
   } | null>(null);
 
-  const defaultMaxMeetings = sessionDetails.bimbelTypeName.toLowerCase().includes('intensif') ? 12 : 8;
+  const defaultMaxMeetings = sessionDetails.bimbelTypeName
+    .toLowerCase()
+    .includes("intensif")
+    ? 12
+    : 8;
 
   // 3. State Presensi Seluruh Murid (Otomatis terisi materi terjadwal dan default Hadir)
   const [studentRows, setStudentRows] = useState<StudentAttendanceRow[]>(() =>
     students.map((st) => {
       const maxMeetings = st.maxMeetings || defaultMaxMeetings;
       const nextMeetingNumber = st.nextMeetingNumber ?? 1;
-      const packageName = st.packageName || `Paket ${sessionDetails.bimbelTypeName} (${maxMeetings} Sesi)`;
+      const packageName =
+        st.packageName ||
+        `Paket ${sessionDetails.bimbelTypeName} (${maxMeetings} Sesi)`;
 
-      const defaultMaterial = sessionDetails.targetMaterial || sessionDetails.topicTitle || '';
+      const defaultMaterial =
+        sessionDetails.targetMaterial || sessionDetails.topicTitle || "";
 
       return {
         studentId: st.id,
@@ -170,23 +221,26 @@ export function AttendanceForm({
         packageName,
         nextMeetingNumber,
         maxMeetings,
-        status: 'unset' as const,
+        status: "unset" as const,
         material: defaultMaterial,
-        notes: '',
+        notes: "",
       };
-    })
+    }),
   );
 
   // Sinkronisasi jika prop students berubah
   const [prevStudents, setPrevStudents] = useState(students);
   if (prevStudents !== students) {
     setPrevStudents(students);
-    const defaultMaterial = sessionDetails.targetMaterial || sessionDetails.topicTitle || '';
+    const defaultMaterial =
+      sessionDetails.targetMaterial || sessionDetails.topicTitle || "";
     setStudentRows(
       students.map((st) => {
         const maxMeetings = st.maxMeetings || defaultMaxMeetings;
         const nextMeetingNumber = st.nextMeetingNumber ?? 1;
-        const packageName = st.packageName || `Paket ${sessionDetails.bimbelTypeName} (${maxMeetings} Sesi)`;
+        const packageName =
+          st.packageName ||
+          `Paket ${sessionDetails.bimbelTypeName} (${maxMeetings} Sesi)`;
 
         return {
           studentId: st.id,
@@ -195,16 +249,18 @@ export function AttendanceForm({
           packageName,
           nextMeetingNumber,
           maxMeetings,
-          status: 'unset' as const,
+          status: "unset" as const,
           material: defaultMaterial,
-          notes: '',
+          notes: "",
         };
-      })
+      }),
     );
   }
 
   // Bulk Material Helper (Terapkan materi ke semua murid)
-  const [commonMaterial, setCommonMaterial] = useState(sessionDetails.targetMaterial || sessionDetails.topicTitle || '');
+  const [commonMaterial, setCommonMaterial] = useState(
+    sessionDetails.targetMaterial || sessionDetails.topicTitle || "",
+  );
 
   const handleApplyCommonMaterial = () => {
     if (!commonMaterial.trim()) return;
@@ -212,7 +268,7 @@ export function AttendanceForm({
       prev.map((row) => ({
         ...row,
         material: commonMaterial.trim(),
-      }))
+      })),
     );
   };
 
@@ -220,8 +276,8 @@ export function AttendanceForm({
     setStudentRows((prev) =>
       prev.map((row) => ({
         ...row,
-        status: 'present',
-      }))
+        status: "present",
+      })),
     );
   };
 
@@ -232,13 +288,13 @@ export function AttendanceForm({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const presentCount = studentRows.filter(
-    (r) => r.status === 'present' || r.status === 'late'
+    (r) => r.status === "present" || r.status === "late",
   ).length;
   const permissionCount = studentRows.filter(
-    (r) => r.status === 'permission' || r.status === 'sick'
+    (r) => r.status === "permission" || r.status === "sick",
   ).length;
-  const absentCount = studentRows.filter((r) => r.status === 'absent').length;
-  const undecidedCount = studentRows.filter((r) => r.status === 'unset').length;
+  const absentCount = studentRows.filter((r) => r.status === "absent").length;
+  const undecidedCount = studentRows.filter((r) => r.status === "unset").length;
 
   // Penyelesaian tiap langkah untuk stepper
   const stepsDone = {
@@ -253,16 +309,18 @@ export function AttendanceForm({
     if (!file) return;
 
     // Reset input agar file yang sama bisa dipilih ulang bila diperlukan
-    e.target.value = '';
+    e.target.value = "";
 
     // Toleransi ukuran file mentah kamera smartphone hingga 20MB
     if (file.size > 20 * 1024 * 1024) {
-      setErrorMsg('Ukuran file foto maksimal adalah 20MB.');
+      setErrorMsg("Ukuran file foto maksimal adalah 20MB.");
       return;
     }
 
-    if (!file.type.startsWith('image/')) {
-      setErrorMsg('File yang dipilih harus berupa gambar (JPG, PNG, atau WebP).');
+    if (!file.type.startsWith("image/")) {
+      setErrorMsg(
+        "File yang dipilih harus berupa gambar (JPG, PNG, atau WebP).",
+      );
       return;
     }
 
@@ -275,7 +333,7 @@ export function AttendanceForm({
         maxHeight: 1280,
         quality: 0.8,
         maxSizeBytes: 400 * 1024,
-        mimeType: 'image/jpeg',
+        mimeType: "image/jpeg",
       });
 
       setSessionPhotoBase64(result.dataUrl);
@@ -286,8 +344,10 @@ export function AttendanceForm({
       });
       setErrorMsg(null);
     } catch (err) {
-      console.error('Gagal mengompresi foto:', err);
-      setErrorMsg('Gagal memproses dan mengompresi foto. Pastikan format file adalah foto yang sah.');
+      console.error("Gagal mengompresi foto:", err);
+      setErrorMsg(
+        "Gagal memproses dan mengompresi foto. Pastikan format file adalah foto yang sah.",
+      );
     } finally {
       setIsCompressingPhoto(false);
     }
@@ -297,13 +357,15 @@ export function AttendanceForm({
   const handleOpenConfirm = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    if (!isOnline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
-      setErrorMsg('Koneksi internet Anda terputus (offline). Mohon pastikan sinyal aktif sebelum menyimpan presensi agar foto dan data tidak hilang.');
+    if (!isOnline || (typeof navigator !== "undefined" && !navigator.onLine)) {
+      setErrorMsg(
+        "Koneksi internet Anda terputus (offline). Mohon pastikan sinyal aktif sebelum menyimpan presensi agar foto dan data tidak hilang.",
+      );
       return;
     }
 
     if (isCompressingPhoto) {
-      setErrorMsg('Mohon tunggu hingga proses kompresi foto selesai.');
+      setErrorMsg("Mohon tunggu hingga proses kompresi foto selesai.");
       return;
     }
 
@@ -313,17 +375,17 @@ export function AttendanceForm({
     }
 
     if (studentRows.length === 0) {
-      setErrorMsg('Tidak ada murid dalam sesi ini untuk diabsen.');
+      setErrorMsg("Tidak ada murid dalam sesi ini untuk diabsen.");
       return;
     }
 
     if (!sessionPhotoBase64) {
-      setErrorMsg('Foto bukti presensi wajib diambil sebelum menyimpan.');
+      setErrorMsg("Foto bukti presensi wajib diambil sebelum menyimpan.");
       return;
     }
 
-    if (studentRows.some((row) => row.status === 'unset')) {
-      setErrorMsg('Masih ada murid yang belum dipilih status kehadirannya.');
+    if (studentRows.some((row) => row.status === "unset")) {
+      setErrorMsg("Masih ada murid yang belum dipilih status kehadirannya.");
       return;
     }
 
@@ -333,8 +395,10 @@ export function AttendanceForm({
 
   // Execute Submit
   const handleExecuteSubmit = async () => {
-    if (!isOnline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
-      setErrorMsg('Koneksi internet Anda terputus (offline). Mohon tunggu hingga sinyal pulih sebelum menyimpan.');
+    if (!isOnline || (typeof navigator !== "undefined" && !navigator.onLine)) {
+      setErrorMsg(
+        "Koneksi internet Anda terputus (offline). Mohon tunggu hingga sinyal pulih sebelum menyimpan.",
+      );
       setShowConfirmDialog(false);
       return;
     }
@@ -346,7 +410,7 @@ export function AttendanceForm({
     try {
       const res = await submitSessionAttendance({
         sessionId,
-        sessionPhotoBase64: sessionPhotoBase64 ?? '',
+        sessionPhotoBase64: sessionPhotoBase64 ?? "",
         items: studentRows.map((row) => ({
           studentId: row.studentId,
           status: row.status as AttendanceStatus,
@@ -356,7 +420,7 @@ export function AttendanceForm({
       });
 
       if (!res.success) {
-        setErrorMsg(res.error || 'Gagal menyimpan absensi.');
+        setErrorMsg(res.error || "Gagal menyimpan absensi.");
         setLoading(false);
         setShowConfirmDialog(false);
         return;
@@ -365,11 +429,14 @@ export function AttendanceForm({
       setShowConfirmDialog(false);
       setLoading(false);
       setSuccessMsg(
-        `✓ Presensi ${studentRows.length} murid dan 1 foto dokumentasi berhasil disimpan!`
+        `✓ Presensi ${studentRows.length} murid dan 1 foto dokumentasi berhasil disimpan!`,
       );
       onSuccess?.({ sessionId, studentCount: studentRows.length });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Terjadi kesalahan sistem saat menyimpan absensi.';
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Terjadi kesalahan sistem saat menyimpan absensi.";
       setErrorMsg(msg);
       setLoading(false);
       setShowConfirmDialog(false);
@@ -377,13 +444,13 @@ export function AttendanceForm({
   };
 
   const windowBannerStyle =
-    windowInfo.status === 'dispensation_active'
-      ? 'bg-purple-500/10 border-purple-300 text-purple-950 dark:bg-purple-950/40 dark:border-purple-800 dark:text-purple-200'
-      : windowInfo.status === 'open'
-      ? 'bg-emerald-500/10 border-emerald-300 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200'
-      : windowInfo.status === 'too_early'
-      ? 'bg-amber-500/10 border-amber-300 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-200'
-      : 'bg-rose-500/10 border-rose-300 text-rose-900 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-200';
+    windowInfo.status === "dispensation_active"
+      ? "bg-purple-500/10 border-purple-300 text-purple-950 dark:bg-purple-950/40 dark:border-purple-800 dark:text-purple-200"
+      : windowInfo.status === "open"
+        ? "bg-emerald-500/10 border-emerald-300 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200"
+        : windowInfo.status === "too_early"
+          ? "bg-amber-500/10 border-amber-300 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-200"
+          : "bg-rose-500/10 border-rose-300 text-rose-900 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-200";
 
   return (
     <Card className="border shadow-md max-w-3xl mx-auto overflow-hidden">
@@ -394,29 +461,43 @@ export function AttendanceForm({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <div className="flex items-center gap-2">
-              <CardTitle className="text-lg sm:text-xl font-bold">Presensi Sesi Belajar</CardTitle>
+              <CardTitle className="text-lg sm:text-xl font-bold">
+                Presensi Sesi Belajar
+              </CardTitle>
               <Badge variant="secondary" className="text-xs">
                 {studentRows.length} Siswa
               </Badge>
             </div>
             <CardDescription className="text-xs mt-1">
-              {sessionDetails.programName} ({sessionDetails.bimbelTypeName} · {sessionDetails.duration}m) · {sessionDetails.date} ({startTime} - {endTime})
+              {sessionDetails.programName} ({sessionDetails.bimbelTypeName} ·{" "}
+              {sessionDetails.duration}m) · {sessionDetails.date} ({startTime} -{" "}
+              {endTime})
             </CardDescription>
           </div>
           <div className="text-left sm:text-right">
-            <Badge variant="outline" className="text-xs font-semibold bg-background">
+            <Badge
+              variant="outline"
+              className="text-xs font-semibold bg-background"
+            >
               Tutor: {sessionDetails.tutorName}
             </Badge>
           </div>
         </div>
 
         {/* Banner Jendela Waktu Presensi Dinamis */}
-        <div className={cn('p-2.5 rounded-lg border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2', windowBannerStyle)}>
+        <div
+          className={cn(
+            "p-2.5 rounded-lg border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2",
+            windowBannerStyle,
+          )}
+        >
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 shrink-0" />
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold">Batas Waktu:</span>
-              <span className="text-[11px] font-medium">{windowInfo.message}</span>
+              <span className="text-[11px] font-medium">
+                {windowInfo.message}
+              </span>
             </div>
           </div>
         </div>
@@ -427,9 +508,24 @@ export function AttendanceForm({
         <div className="pt-1">
           <div className="grid grid-cols-3 gap-1.5 p-1 bg-muted/60 rounded-xl border border-border/80">
             {[
-              { step: 1 as 1 | 2 | 3, icon: BookOpen, iconClass: 'text-blue-600 dark:text-blue-400', hint: 'Materi & Modul' },
-              { step: 2 as 1 | 2 | 3, icon: Camera, iconClass: 'text-emerald-600 dark:text-emerald-400', hint: `Foto Sesi${sessionPhotoBase64 ? ' ✓' : ''}` },
-              { step: 3 as 1 | 2 | 3, icon: UserCheck, iconClass: 'text-primary', hint: `Presensi (${undecidedCount === 0 ? 'Siap' : 'Menyusul'})` },
+              {
+                step: 1 as 1 | 2 | 3,
+                icon: BookOpen,
+                iconClass: "text-blue-600 dark:text-blue-400",
+                hint: "Materi & Modul",
+              },
+              {
+                step: 2 as 1 | 2 | 3,
+                icon: Camera,
+                iconClass: "text-emerald-600 dark:text-emerald-400",
+                hint: `Foto Sesi${sessionPhotoBase64 ? " ✓" : ""}`,
+              },
+              {
+                step: 3 as 1 | 2 | 3,
+                icon: UserCheck,
+                iconClass: "text-primary",
+                hint: `Presensi (${undecidedCount === 0 ? "Siap" : "Menyusul"})`,
+              },
             ].map((st) => {
               return (
                 <button
@@ -437,13 +533,15 @@ export function AttendanceForm({
                   type="button"
                   onClick={() => setCurrentStep(st.step)}
                   className={cn(
-                    'relative flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-semibold transition-all',
+                    "relative flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-semibold transition-all",
                     currentStep === st.step
-                      ? 'bg-background text-primary shadow-xs ring-1 ring-border'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? "bg-background text-primary shadow-xs ring-1 ring-border"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  <st.icon className={cn('w-3.5 h-3.5 shrink-0', st.iconClass)} />
+                  <st.icon
+                    className={cn("w-3.5 h-3.5 shrink-0", st.iconClass)}
+                  />
                   <span className="truncate">{st.hint}</span>
                   {stepsDone[st.step] && st.step !== 1 && (
                     <span className="absolute -top-1 -right-1 size-3.5 rounded-full bg-emerald-500 border-2 border-background flex items-center justify-center">
@@ -468,7 +566,9 @@ export function AttendanceForm({
         {successMsg && (
           <Alert className="border-emerald-500/50 bg-emerald-50 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            <AlertDescription className="text-xs font-medium">{successMsg}</AlertDescription>
+            <AlertDescription className="text-xs font-medium">
+              {successMsg}
+            </AlertDescription>
           </Alert>
         )}
 
@@ -492,10 +592,16 @@ export function AttendanceForm({
 
                   <h3 className="text-base font-bold text-foreground flex items-center gap-2 pt-1">
                     <BookOpen className="w-4 h-4 text-blue-600 shrink-0" />
-                    <span>{sessionDetails.targetMaterial || sessionDetails.topicTitle || "Materi Pembelajaran Sesi Ini"}</span>
+                    <span>
+                      {sessionDetails.targetMaterial ||
+                        sessionDetails.topicTitle ||
+                        "Materi Pembelajaran Sesi Ini"}
+                    </span>
                   </h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Materi ini telah disiapkan untuk sesi bimbingan hari ini. Unduh worksheet murid jika ingin mencetak atau menampilkan lembar soal latihan.
+                    Materi ini telah disiapkan untuk sesi bimbingan hari ini.
+                    Unduh worksheet murid jika ingin mencetak atau menampilkan
+                    lembar soal latihan.
                   </p>
                 </div>
 
@@ -548,13 +654,16 @@ export function AttendanceForm({
                 </Button>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Materi ini otomatis terisi ke catatan pembelajaran seluruh murid di sesi ini.
+                Materi ini otomatis terisi ke catatan pembelajaran seluruh murid
+                di sesi ini.
               </p>
             </div>
 
             {/* Navigation Button */}
             <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-muted-foreground">Langkah 1 dari 3</span>
+              <span className="text-xs text-muted-foreground">
+                Langkah 1 dari 3
+              </span>
               <Button
                 type="button"
                 onClick={() => setCurrentStep(2)}
@@ -580,7 +689,9 @@ export function AttendanceForm({
                   <span>Foto Dokumentasi Kelas (1x Foto Saja)</span>
                 </Label>
                 {isCompressingPhoto && (
-                  <span className="text-xs text-muted-foreground">Mengompresi foto...</span>
+                  <span className="text-xs text-muted-foreground">
+                    Mengompresi foto...
+                  </span>
                 )}
               </div>
 
@@ -601,7 +712,9 @@ export function AttendanceForm({
                         setPhotoInfo({
                           originalSize: formatBytes(result.originalSizeBytes),
                           compressedSize: formatBytes(result.sizeBytes),
-                          savingsPercent: Math.round(result.compressionRatio * 100),
+                          savingsPercent: Math.round(
+                            result.compressionRatio * 100,
+                          ),
                         });
                       } catch {
                         setSessionPhotoBase64(img);
@@ -634,13 +747,15 @@ export function AttendanceForm({
                     {photoInfo && (
                       <span className="inline-flex items-center px-2 py-1 rounded-md bg-background/90 text-[10px] font-semibold text-foreground shadow-xs">
                         {photoInfo.compressedSize}
-                        {photoInfo.savingsPercent > 0 && ` · hemat ${photoInfo.savingsPercent}%`}
+                        {photoInfo.savingsPercent > 0 &&
+                          ` · hemat ${photoInfo.savingsPercent}%`}
                       </span>
                     )}
                   </div>
                   <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 p-2 bg-gradient-to-t from-background/95 to-transparent">
                     <p className="text-[11px] font-medium text-foreground px-1">
-                      Akan diverifikasi bersama presensi {studentRows.length} siswa.
+                      Akan diverifikasi bersama presensi {studentRows.length}{" "}
+                      siswa.
                     </p>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <Button
@@ -678,13 +793,20 @@ export function AttendanceForm({
                     <Camera className="size-7" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm font-bold text-foreground">Ambil foto sesi belajar</p>
+                    <p className="text-sm font-bold text-foreground">
+                      Ambil foto sesi belajar
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      Cukup 1 foto bersama seluruh murid. Otomatis dipakai untuk semua siswa & dikompresi di perangkat.
+                      Cukup 1 foto bersama seluruh murid. Otomatis dipakai untuk
+                      semua siswa & dikompresi di perangkat.
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                    <Button type="button" onClick={() => setShowCamera(true)} className="h-9 text-xs font-semibold shadow-xs">
+                    <Button
+                      type="button"
+                      onClick={() => setShowCamera(true)}
+                      className="h-9 text-xs font-semibold shadow-xs"
+                    >
                       <Camera className="size-4" />
                       Buka Kamera
                     </Button>
@@ -710,7 +832,9 @@ export function AttendanceForm({
               {isCompressingPhoto && (
                 <div className="flex items-center gap-2.5 p-3 rounded-xl border border-primary/30 bg-primary/5 text-primary text-xs font-medium">
                   <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-                  <span>Sedang mengompresi dan mengoptimalkan ukuran foto...</span>
+                  <span>
+                    Sedang mengompresi dan mengoptimalkan ukuran foto...
+                  </span>
                 </div>
               )}
             </div>
@@ -749,22 +873,36 @@ export function AttendanceForm({
             <div className="p-3 rounded-xl border bg-gradient-to-r from-muted/40 to-transparent space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div className="flex items-center gap-2 flex-wrap text-xs">
-                  <span className="font-semibold text-foreground">Ringkasan Status:</span>
-                  <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30">
+                  <span className="font-semibold text-foreground">
+                    Ringkasan Status:
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                  >
                     {presentCount} Hadir
                   </Badge>
                   {permissionCount > 0 && (
-                    <Badge variant="outline" className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30">
+                    <Badge
+                      variant="outline"
+                      className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30"
+                    >
                       {permissionCount} Izin / Sakit
                     </Badge>
                   )}
                   {absentCount > 0 && (
-                    <Badge variant="outline" className="bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30">
+                    <Badge
+                      variant="outline"
+                      className="bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30"
+                    >
                       {absentCount} Alpa
                     </Badge>
                   )}
                   {undecidedCount > 0 && (
-                    <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
+                    <Badge
+                      variant="outline"
+                      className="bg-muted text-muted-foreground border-border"
+                    >
                       {undecidedCount} Belum dipilih
                     </Badge>
                   )}
@@ -792,10 +930,10 @@ export function AttendanceForm({
                   <div
                     key={row.studentId}
                     className={cn(
-                      'p-3.5 sm:p-4 rounded-xl border bg-card space-y-3 transition-colors',
-                      row.status === 'unset'
-                        ? 'border-border'
-                        : 'border-primary/25'
+                      "p-3.5 sm:p-4 rounded-xl border bg-card space-y-3 transition-colors",
+                      row.status === "unset"
+                        ? "border-border"
+                        : "border-primary/25",
                     )}
                   >
                     {/* Header Murid + Status Toggles */}
@@ -809,7 +947,9 @@ export function AttendanceForm({
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-bold text-sm text-foreground truncate">{row.name}</span>
+                            <span className="font-bold text-sm text-foreground truncate">
+                              {row.name}
+                            </span>
                             <span className="text-xs text-muted-foreground font-mono">
                               {row.studentCode}
                             </span>
@@ -817,21 +957,24 @@ export function AttendanceForm({
 
                           {/* Info Kuota & Pertemuan Sesuai Aturan Bisnis */}
                           <div className="mt-0.5 flex items-center gap-1.5 flex-wrap text-[11px]">
-                            {row.status === 'unset' ? (
+                            {row.status === "unset" ? (
                               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-medium text-muted-foreground">
                                 <HelpCircle className="size-3" />
                                 Tentukan status kehadiran
                               </span>
-                            ) : row.status === 'present' || row.status === 'late' ? (
+                            ) : row.status === "present" ||
+                              row.status === "late" ? (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded font-semibold text-emerald-700 dark:text-emerald-400">
                                 <Sparkles className="size-3" />
-                                Dicatat P{row.nextMeetingNumber} (Sesi ke-{row.nextMeetingNumber} dari {row.maxMeetings})
+                                Dicatat P{row.nextMeetingNumber} (Sesi ke-
+                                {row.nextMeetingNumber} dari {row.maxMeetings})
                               </span>
-                            ) : row.status === 'permission' ? (
+                            ) : row.status === "permission" ? (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded font-medium text-amber-700 dark:text-amber-400">
-                                Izin (Kuota pertemuan aman &amp; tidak berkurang)
+                                Izin (Kuota pertemuan aman &amp; tidak
+                                berkurang)
                               </span>
-                            ) : row.status === 'sick' ? (
+                            ) : row.status === "sick" ? (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded font-medium text-blue-700 dark:text-blue-400">
                                 Sakit (Kuota pertemuan aman)
                               </span>
@@ -855,15 +998,17 @@ export function AttendanceForm({
                               onClick={() =>
                                 setStudentRows((prev) =>
                                   prev.map((r) =>
-                                    r.studentId === row.studentId ? { ...r, status: st.val } : r
-                                  )
+                                    r.studentId === row.studentId
+                                      ? { ...r, status: st.val }
+                                      : r,
+                                  ),
                                 )
                               }
                               className={cn(
-                                'h-8 px-2.5 rounded-lg text-xs font-semibold border transition-all active:scale-95',
+                                "h-8 px-2.5 rounded-lg text-xs font-semibold border transition-all active:scale-95",
                                 isActive
                                   ? st.active
-                                  : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground bg-background'
+                                  : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground bg-background",
                               )}
                             >
                               {st.label}
@@ -876,7 +1021,10 @@ export function AttendanceForm({
                     {/* Input Materi & Catatan Khusus */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
                       <div className="space-y-1">
-                        <Label htmlFor={`mat-${row.studentId}`} className="text-[11px] font-medium text-muted-foreground">
+                        <Label
+                          htmlFor={`mat-${row.studentId}`}
+                          className="text-[11px] font-medium text-muted-foreground"
+                        >
                           Materi Siswa ({row.name})
                         </Label>
                         <Input
@@ -886,8 +1034,10 @@ export function AttendanceForm({
                           onChange={(e) =>
                             setStudentRows((prev) =>
                               prev.map((r) =>
-                                r.studentId === row.studentId ? { ...r, material: e.target.value } : r
-                              )
+                                r.studentId === row.studentId
+                                  ? { ...r, material: e.target.value }
+                                  : r,
+                              ),
                             )
                           }
                           className="h-8 text-xs bg-background"
@@ -895,7 +1045,10 @@ export function AttendanceForm({
                       </div>
 
                       <div className="space-y-1">
-                        <Label htmlFor={`note-${row.studentId}`} className="text-[11px] font-medium text-muted-foreground">
+                        <Label
+                          htmlFor={`note-${row.studentId}`}
+                          className="text-[11px] font-medium text-muted-foreground"
+                        >
                           Catatan Tambahan (Opsional)
                         </Label>
                         <Input
@@ -905,8 +1058,10 @@ export function AttendanceForm({
                           onChange={(e) =>
                             setStudentRows((prev) =>
                               prev.map((r) =>
-                                r.studentId === row.studentId ? { ...r, notes: e.target.value } : r
-                              )
+                                r.studentId === row.studentId
+                                  ? { ...r, notes: e.target.value }
+                                  : r,
+                              ),
                             )
                           }
                           className="h-8 text-xs bg-background"
@@ -945,7 +1100,9 @@ export function AttendanceForm({
                 ) : (
                   <>
                     <CheckCircle2 className="h-4 w-4" />
-                    <span>Simpan Presensi Sesi ({studentRows.length} Siswa)</span>
+                    <span>
+                      Simpan Presensi Sesi ({studentRows.length} Siswa)
+                    </span>
                   </>
                 )}
               </Button>
@@ -965,7 +1122,8 @@ export function AttendanceForm({
               Konfirmasi Simpan Presensi Sesi
             </AlertDialogTitle>
             <AlertDialogDescription className="text-xs">
-              Pastikan rincian kehadiran dan materi telah sesuai sebelum disimpan ke sistem.
+              Pastikan rincian kehadiran dan materi telah sesuai sebelum
+              disimpan ke sistem.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -973,30 +1131,46 @@ export function AttendanceForm({
             <div className="p-3 rounded-lg bg-muted/50 border space-y-1.5 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Sesi / Program:</span>
-                <span className="font-semibold">{sessionDetails.programName} ({sessionDetails.bimbelTypeName})</span>
+                <span className="font-semibold">
+                  {sessionDetails.programName} ({sessionDetails.bimbelTypeName})
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Waktu:</span>
-                <span className="font-mono">{sessionDetails.date} • {startTime} - {endTime} WIB</span>
+                <span className="font-mono">
+                  {sessionDetails.date} • {startTime} - {endTime} WIB
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Materi Pokok:</span>
-                <span className="font-semibold truncate max-w-[200px]">{commonMaterial || "Materi Kurikulum"}</span>
+                <span className="font-semibold truncate max-w-[200px]">
+                  {commonMaterial || "Materi Kurikulum"}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Foto Dokumentasi:</span>
                 <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                  {sessionPhotoBase64 ? '✓ 1 Foto Sesi Terlampir' : '⚠️ Tanpa Foto Dokumentasi'}
+                  {sessionPhotoBase64
+                    ? "✓ 1 Foto Sesi Terlampir"
+                    : "⚠️ Tanpa Foto Dokumentasi"}
                 </span>
               </div>
               <div className="pt-2 border-t flex justify-between items-center text-xs">
-                <span className="font-semibold text-foreground">Kehadiran Siswa:</span>
+                <span className="font-semibold text-foreground">
+                  Kehadiran Siswa:
+                </span>
                 <div className="flex gap-2">
-                  <span className="text-emerald-700 dark:text-emerald-400 font-bold">{presentCount} Hadir</span>
+                  <span className="text-emerald-700 dark:text-emerald-400 font-bold">
+                    {presentCount} Hadir
+                  </span>
                   <span>•</span>
-                  <span className="text-amber-700 dark:text-amber-400 font-medium">{permissionCount} Izin/Sakit</span>
+                  <span className="text-amber-700 dark:text-amber-400 font-medium">
+                    {permissionCount} Izin/Sakit
+                  </span>
                   <span>•</span>
-                  <span className="text-rose-700 dark:text-rose-400 font-medium">{absentCount} Alpa</span>
+                  <span className="text-rose-700 dark:text-rose-400 font-medium">
+                    {absentCount} Alpa
+                  </span>
                 </div>
               </div>
             </div>
@@ -1005,13 +1179,16 @@ export function AttendanceForm({
               <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-2">
                 <Wifi className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
                 <span className="leading-snug">
-                  <strong>Perhatian:</strong> Sinyal internet sedang lambat. Unggah foto absensi dan penyimpanan data mungkin memakan waktu lebih lama. Harap jangan menutup browser.
+                  <strong>Perhatian:</strong> Sinyal internet sedang lambat.
+                  Unggah foto absensi dan penyimpanan data mungkin memakan waktu
+                  lebih lama. Harap jangan menutup browser.
                 </span>
               </div>
             )}
 
             <p className="text-[11px] text-muted-foreground leading-normal">
-              Data kehadiran ini akan langsung tercatat ke riwayat pertemuan murid serta diajukan sebagai dasar honor mengajar tutor.
+              Data kehadiran ini akan langsung tercatat ke riwayat pertemuan
+              murid serta diajukan sebagai dasar honor mengajar tutor.
             </p>
           </div>
 

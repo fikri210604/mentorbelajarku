@@ -10,6 +10,7 @@ import {
   type OverrideAttendanceWindowInput,
 } from '@/features/shared/attendance/schemas/attendance.schema';
 import { getCurrentUser, sessionHasPermission } from '@/lib/auth/session';
+import { getActiveAttendanceWindowSetting } from '@/features/management/settings/queries/attendance-window.queries';
 import { validateAttendanceTimeWindow } from '@/lib/utils/attendance-window';
 import { validateImageDataUrl } from '@/lib/utils/image-validation';
 import { uploadAttendancePhoto, signAttendancePhotoPath } from '@/lib/storage';
@@ -70,15 +71,36 @@ export async function submitSessionAttendance(
 
     const supabase = createServerSupabaseClient();
 
-    // 3. Ambil sesi + konfigurasi jendela presensi
-    const { data: sessionData, error: sessionErr } = await supabase
+    // 3-5. Tiga lookup independen (sesi, setting jendela, baris terkunci) jalan
+    // paralel dalam satu Promise.all: ~1 roundtrip, bukan 3 berurutan.
+    // Setting jendela diambil dari cache 60-detik (invalidasi via tag saat disimpan).
+    const sessionQuery = supabase
       .from('sessions')
       .select(
         'id, tutor_id, session_date, start_time, end_time, status, attendance_deadline, allow_late_upload'
       )
       .eq('id', sessionId)
       .maybeSingle();
+    const lockedQuery =
+      currentUser.role === 'tutor'
+        ? supabase
+            .from('attendance')
+            .select('student_id')
+            .eq('session_id', sessionId)
+            .in(
+              'student_id',
+              items.map((item) => item.studentId)
+            )
+            .eq('verification_status', 'verified')
+        : null;
 
+    const [sessionResult, windowSetting, lockedResult] = await Promise.all([
+      sessionQuery,
+      getActiveAttendanceWindowSetting(),
+      lockedQuery,
+    ]);
+
+    const { data: sessionData, error: sessionErr } = sessionResult;
     if (sessionErr || !sessionData) {
       return { success: false, error: 'Sesi pembelajaran tidak ditemukan.' };
     }
@@ -94,14 +116,6 @@ export async function submitSessionAttendance(
     }
 
     // 5. Validasi jendela waktu (murni di server, tidak dapat di-bypass dari client)
-    const { data: windowSetting } = await supabase
-      .from('attendance_window_settings')
-      .select('*')
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
     const windowCheck = validateAttendanceTimeWindow(
       sessionData.session_date,
       sessionData.start_time || '00:00',
@@ -117,6 +131,17 @@ export async function submitSessionAttendance(
 
     if (!windowCheck.isAllowed) {
       return { success: false, error: windowCheck.message };
+    }
+
+    // 5b. Kunci verifikasi: tutor tidak boleh menimpa baris yang sudah verified
+    // (jalur RPC tidak mempredikat verification_status). Dicek SEBELUM upload foto.
+    const lockedRows = lockedResult?.data;
+    if (lockedRows && lockedRows.length > 0) {
+      return {
+        success: false,
+        error:
+          'FORBIDDEN: Sebagian presensi sudah diverifikasi Management dan tidak dapat diubah. Hubungi Management untuk koreksi.',
+      };
     }
 
     // 6. Foto sesi wajib + validasi konten (magic bytes), bukan sekadar MIME client

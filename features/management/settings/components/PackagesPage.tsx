@@ -3,7 +3,17 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Edit2, Trash2, PackageCheck, Clock, Calendar, Coins, GraduationCap, Search } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  PackageCheck,
+  Clock,
+  Calendar,
+  Coins,
+  GraduationCap,
+  Search,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -38,8 +48,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { bimbelPackageSchema, BimbelPackageInput } from "../schemas/settings.schema";
-import { saveBimbelPackage, deleteBimbelPackage } from "../actions/settings.actions";
+import {
+  bimbelPackageSchema,
+  BimbelPackageInput,
+} from "../schemas/settings.schema";
+import {
+  saveBimbelPackage,
+  deleteBimbelPackage,
+} from "../actions/settings.actions";
 
 const DEFAULT_PACKAGES = [
   {
@@ -49,7 +65,8 @@ const DEFAULT_PACKAGES = [
     max_meetings: 8,
     duration_minutes: 60,
     monthly_price: 350000,
-    description: "Paket belajar reguler 8 pertemuan sebulan dengan penguatan konsep terpadu.",
+    description:
+      "Paket belajar reguler 8 pertemuan sebulan dengan penguatan konsep terpadu.",
     status: "active",
     bimbel_types: { name: "Reguler" },
   },
@@ -71,7 +88,8 @@ const DEFAULT_PACKAGES = [
     max_meetings: 8,
     duration_minutes: 90,
     monthly_price: 850000,
-    description: "Bimbingan tatap muka satu murid satu tutor fokus kebutuhan siswa.",
+    description:
+      "Bimbingan tatap muka satu murid satu tutor fokus kebutuhan siswa.",
     status: "active",
     bimbel_types: { name: "Private" },
   },
@@ -86,7 +104,10 @@ export default function PackagesPage({
   initialPackages = [],
   bimbelTypesList = [],
 }: PackagesPageProps) {
-  const defaultPkgs = initialPackages && initialPackages.length > 0 ? initialPackages : DEFAULT_PACKAGES;
+  const defaultPkgs =
+    initialPackages && initialPackages.length > 0
+      ? initialPackages
+      : DEFAULT_PACKAGES;
   const [packages, setPackages] = useState(defaultPkgs);
   const [search, setSearch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -163,7 +184,9 @@ export default function PackagesPage({
     };
 
     if (editingPackage) {
-      setPackages((prev) => prev.map((p) => (p.id === editingPackage.id ? enriched : p)));
+      setPackages((prev) =>
+        prev.map((p) => (p.id === editingPackage.id ? enriched : p)),
+      );
     } else {
       setPackages((prev) => [enriched, ...prev]);
     }
@@ -238,13 +261,19 @@ export default function PackagesPage({
             <tbody className="divide-y divide-border">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                  <td
+                    colSpan={8}
+                    className="px-4 py-8 text-center text-muted-foreground"
+                  >
                     Belum ada paket belajar yang terdaftar.
                   </td>
                 </tr>
               ) : (
                 filtered.map((pkg) => (
-                  <tr key={pkg.id} className="hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={pkg.id}
+                    className="hover:bg-muted/30 transition-colors"
+                  >
                     <td className="px-4 py-3 font-semibold text-foreground">
                       <div className="flex items-center gap-2">
                         <div className="p-1.5 rounded-md bg-primary/10 text-primary">
@@ -321,31 +350,45 @@ export default function PackagesPage({
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {editingPackage ? "Edit Paket Belajar" : "Tambah Paket Belajar Baru"}
+              {editingPackage
+                ? "Edit Paket Belajar"
+                : "Tambah Paket Belajar Baru"}
             </DialogTitle>
             <DialogDescription>
-              Atur kuota pertemuan bulanan, durasi menit, dan biaya paket bimbingan belajar.
+              Atur kuota pertemuan bulanan, durasi menit, dan biaya paket
+              bimbingan belajar.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="name">Nama Paket <span className="text-destructive">*</span></Label>
+              <Label htmlFor="name">
+                Nama Paket <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="name"
                 placeholder="Contoh: Reguler SD, Intensif SMP, Calistung TK"
                 {...register("name")}
               />
               {errors.name && (
-                <p className="text-xs text-destructive">{errors.name.message}</p>
+                <p className="text-xs text-destructive">
+                  {errors.name.message}
+                </p>
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="bimbel_type_id">Jenis Bimbel <span className="text-destructive">*</span></Label>
+                <Label htmlFor="bimbel_type_id">
+                  Jenis Bimbel <span className="text-destructive">*</span>
+                </Label>
                 <Select
-                  defaultValue={editingPackage?.bimbel_type_id || editingPackage?.bimbel_types?.id || bimbelTypesList[0]?.id || ""}
+                  defaultValue={
+                    editingPackage?.bimbel_type_id ||
+                    editingPackage?.bimbel_types?.id ||
+                    bimbelTypesList[0]?.id ||
+                    ""
+                  }
                   onValueChange={(val) => {
                     setValue("bimbel_type_id", val);
                     const found = bimbelTypesList.find((bt) => bt.id === val);
@@ -366,12 +409,16 @@ export default function PackagesPage({
                   </SelectContent>
                 </Select>
                 {errors.bimbel_type_id && (
-                  <p className="text-xs text-destructive">{errors.bimbel_type_id.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.bimbel_type_id.message}
+                  </p>
                 )}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="level">Jenjang / Level <span className="text-destructive">*</span></Label>
+                <Label htmlFor="level">
+                  Jenjang / Level <span className="text-destructive">*</span>
+                </Label>
                 <Select
                   defaultValue={editingPackage?.level || "SD"}
                   onValueChange={(val) => setValue("level", val)}
@@ -388,14 +435,18 @@ export default function PackagesPage({
                   </SelectContent>
                 </Select>
                 {errors.level && (
-                  <p className="text-xs text-destructive">{errors.level.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.level.message}
+                  </p>
                 )}
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="max_meetings">Pertemuan / Bln <span className="text-destructive">*</span></Label>
+                <Label htmlFor="max_meetings">
+                  Pertemuan / Bln <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="max_meetings"
                   type="number"
@@ -403,12 +454,16 @@ export default function PackagesPage({
                   {...register("max_meetings", { valueAsNumber: true })}
                 />
                 {errors.max_meetings && (
-                  <p className="text-xs text-destructive">{errors.max_meetings.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.max_meetings.message}
+                  </p>
                 )}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="duration_minutes">Durasi (Menit) <span className="text-destructive">*</span></Label>
+                <Label htmlFor="duration_minutes">
+                  Durasi (Menit) <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="duration_minutes"
                   type="number"
@@ -416,12 +471,16 @@ export default function PackagesPage({
                   {...register("duration_minutes", { valueAsNumber: true })}
                 />
                 {errors.duration_minutes && (
-                  <p className="text-xs text-destructive">{errors.duration_minutes.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.duration_minutes.message}
+                  </p>
                 )}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="monthly_price">Biaya Paket (Rp) <span className="text-destructive">*</span></Label>
+                <Label htmlFor="monthly_price">
+                  Biaya Paket (Rp) <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="monthly_price"
                   type="number"
@@ -430,7 +489,9 @@ export default function PackagesPage({
                   {...register("monthly_price", { valueAsNumber: true })}
                 />
                 {errors.monthly_price && (
-                  <p className="text-xs text-destructive">{errors.monthly_price.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.monthly_price.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -449,13 +510,17 @@ export default function PackagesPage({
               <Label htmlFor="status">Status Paket</Label>
               <Select
                 defaultValue={editingPackage?.status || "active"}
-                onValueChange={(val) => setValue("status", val as "active" | "inactive")}
+                onValueChange={(val) =>
+                  setValue("status", val as "active" | "inactive")
+                }
               >
                 <SelectTrigger id="status">
                   <SelectValue placeholder="Pilih status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Aktif (Dapat dipilih murid)</SelectItem>
+                  <SelectItem value="active">
+                    Aktif (Dapat dipilih murid)
+                  </SelectItem>
                   <SelectItem value="inactive">Nonaktif</SelectItem>
                 </SelectContent>
               </Select>
@@ -471,7 +536,11 @@ export default function PackagesPage({
                 Batal
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Menyimpan..." : editingPackage ? "Simpan Perubahan" : "Tambahkan Paket"}
+                {isSubmitting
+                  ? "Menyimpan..."
+                  : editingPackage
+                    ? "Simpan Perubahan"
+                    : "Tambahkan Paket"}
               </Button>
             </DialogFooter>
           </form>
@@ -479,7 +548,10 @@ export default function PackagesPage({
       </Dialog>
 
       {/* DIALOG KONFIRMASI HAPUS */}
-      <AlertDialog open={!!deletingPackage} onOpenChange={() => setDeletingPackage(null)}>
+      <AlertDialog
+        open={!!deletingPackage}
+        onOpenChange={() => setDeletingPackage(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Paket Belajar?</AlertDialogTitle>

@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { scheduleOccursOnDay } from "@/lib/utils/recurrence";
 import { getSessions } from "@/features/management/sessions/queries/session.queries";
 import { getSchedules } from "@/features/management/schedules/queries/schedule.queries";
 import { SessionWithDetails } from "@/features/management/sessions/types";
@@ -115,9 +116,9 @@ export async function getDashboardData(targetDate?: string): Promise<DashboardDa
   // Sesi aktual pada tanggal target
   const todaySessions = allSessions.filter((s) => s.session_date === dateStr);
 
-  // Jadwal rutin aktif pada hari dalam seminggu
+  // Jadwal rutin aktif pada hari dalam seminggu (mendukung multi-hari)
   const todaySchedules = allSchedules.filter(
-    (sch) => sch.day_of_week === dayOfWeek && sch.status === "active"
+    (sch) => scheduleOccursOnDay(sch, dayOfWeek) && sch.status === "active"
   );
 
   // Kumpulkan seluruh tanggal yang memiliki sesi pembelajaran

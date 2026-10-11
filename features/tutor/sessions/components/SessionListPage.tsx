@@ -12,7 +12,9 @@ interface SessionListPageProps {
   initialSessions?: SessionWithDetails[];
 }
 
-export default function SessionListPage({ initialSessions = [] }: SessionListPageProps) {
+export default function SessionListPage({
+  initialSessions = [],
+}: SessionListPageProps) {
   return (
     <div className="space-y-6">
       <PageHeader
@@ -42,16 +44,24 @@ export default function SessionListPage({ initialSessions = [] }: SessionListPag
               </thead>
               <tbody className="divide-y divide-border">
                 {initialSessions.map((session) => (
-                  <tr key={session.id} className="hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={session.id}
+                    className="hover:bg-muted/30 transition-colors"
+                  >
                     <td className="px-4 py-3 font-medium">
                       {session.session_date}
                       <span className="text-xs text-muted-foreground block">
-                        {session.start_time.slice(0, 5)} - {session.end_time.slice(0, 5)}
+                        {session.start_time.slice(0, 5)} -{" "}
+                        {session.end_time.slice(0, 5)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-medium">{session.programs?.name}</span>
-                      <span className="text-muted-foreground text-xs block">{session.bimbel_types?.name}</span>
+                      <span className="font-medium">
+                        {session.programs?.name}
+                      </span>
+                      <span className="text-muted-foreground text-xs block">
+                        {session.bimbel_types?.name}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-foreground">
                       {session.tutors?.profiles?.full_name || "Tutor"}

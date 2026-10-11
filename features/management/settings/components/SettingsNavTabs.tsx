@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   UserCog,
   KeyRound,
+  BellRing,
   ArrowLeft,
   LucideIcon,
 } from "lucide-react";
@@ -134,7 +135,7 @@ export const SETTINGS_DOMAINS: DomainGroup[] = [
     id: "system",
     title: "Sistem & Kebijakan",
     icon: SettingsIcon,
-    badgeCount: 4,
+    badgeCount: 5,
     items: [
       {
         id: "attendance-window",
@@ -143,6 +144,14 @@ export const SETTINGS_DOMAINS: DomainGroup[] = [
         icon: Clock,
         desc: "Toleransi jam pengunggahan presensi & batas kunci absensi tutor",
         requiredPermission: "settings:manage",
+      },
+      {
+        id: "notifications",
+        label: "Notifikasi & Pengingat",
+        href: "/management/settings/notifications",
+        icon: BellRing,
+        desc: "Atur notifikasi push tutor: jadwal baru & pengingat sebelum/sesudah sesi",
+        requiredPermission: "notification:manage",
       },
       {
         id: "roles",

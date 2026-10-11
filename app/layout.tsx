@@ -22,7 +22,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Mentor Belajarku - Sistem Manajemen & Presensi Bimbel",
-  description: "Platform manajemen bimbingan belajar, absensi tutor dan murid, jadwal pembelajaran, dan payroll terpadu.",
+  description:
+    "Platform manajemen bimbingan belajar, absensi tutor dan murid, jadwal pembelajaran, dan payroll terpadu.",
   icons: {
     icon: "/logo.jpg",
     shortcut: "/logo.jpg",
@@ -38,7 +39,13 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={cn("h-full", "antialiased", inter.variable, plusJakartaSans.variable, "font-sans")}
+      className={cn(
+        "h-full",
+        "antialiased",
+        inter.variable,
+        plusJakartaSans.variable,
+        "font-sans",
+      )}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>

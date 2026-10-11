@@ -50,8 +50,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { managementRateSchema, ManagementRateInput } from "../schemas/settings.schema";
-import { saveManagementRate, deleteManagementRate } from "../actions/settings.actions";
+import {
+  managementRateSchema,
+  ManagementRateInput,
+} from "../schemas/settings.schema";
+import {
+  saveManagementRate,
+  deleteManagementRate,
+} from "../actions/settings.actions";
 import { SettingsNavTabs } from "./SettingsNavTabs";
 import { isOwnerRoleName } from "@/lib/permissions/resolver";
 
@@ -120,7 +126,8 @@ export default function ManagementRatesPage({
       role_level: item.role_level,
       rate_type: item.rate_type,
       amount: item.amount,
-      effective_from: item.effective_from || new Date().toISOString().split("T")[0],
+      effective_from:
+        item.effective_from || new Date().toISOString().split("T")[0],
       effective_until: item.effective_until || null,
       description: item.description || "",
       status: item.status || "active",
@@ -144,7 +151,9 @@ export default function ManagementRatesPage({
     };
 
     if (editingRate) {
-      setRates((prev) => prev.map((r) => (r.id === editingRate.id ? enriched : r)));
+      setRates((prev) =>
+        prev.map((r) => (r.id === editingRate.id ? enriched : r)),
+      );
     } else {
       setRates((prev) => [enriched, ...prev]);
     }
@@ -169,14 +178,30 @@ export default function ManagementRatesPage({
   const getRoleLabel = (role: string) => {
     switch (role) {
       case "hrd":
-        return { label: "HRD & Operasional", color: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300" };
+        return {
+          label: "HRD & Operasional",
+          color:
+            "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
+        };
       case "finance":
-        return { label: "Keuangan & Finance", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" };
+        return {
+          label: "Keuangan & Finance",
+          color:
+            "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
+        };
       case "owner":
-        return { label: "Owner / Pimpinan", color: "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300" };
+        return {
+          label: "Owner / Pimpinan",
+          color:
+            "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300",
+        };
       case "admin":
       default:
-        return { label: "Admin & CS", color: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" };
+        return {
+          label: "Admin & CS",
+          color:
+            "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+        };
     }
   };
 
@@ -228,8 +253,10 @@ export default function ManagementRatesPage({
             </span>
           </p>
           <p className="mt-1 text-purple-800/90 dark:text-purple-300/90 leading-relaxed">
-            Sesuai aturan bisnis, data gaji dan tunjangan pengurus manajemen bersifat rahasia dan hanya dapat
-            dikelola oleh <strong>Owner</strong>. HRD dan Finance tidak berhak mengubah struktur gaji pimpinan maupun staf manajemen lainnya.
+            Sesuai aturan bisnis, data gaji dan tunjangan pengurus manajemen
+            bersifat rahasia dan hanya dapat dikelola oleh{" "}
+            <strong>Owner</strong>. HRD dan Finance tidak berhak mengubah
+            struktur gaji pimpinan maupun staf manajemen lainnya.
           </p>
         </div>
       </div>
@@ -239,9 +266,12 @@ export default function ManagementRatesPage({
           <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
             <Lock className="w-6 h-6" />
           </div>
-          <h3 className="font-bold text-base text-foreground">Akses Pengaturan Gaji Dibatasi</h3>
+          <h3 className="font-bold text-base text-foreground">
+            Akses Pengaturan Gaji Dibatasi
+          </h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Anda login dengan peran selain Owner. Anda tidak memiliki izin untuk melihat atau mengubah besaran gaji staf manajemen bimbel.
+            Anda login dengan peran selain Owner. Anda tidak memiliki izin untuk
+            melihat atau mengubah besaran gaji staf manajemen bimbel.
           </p>
         </div>
       )}
@@ -277,7 +307,10 @@ export default function ManagementRatesPage({
                 <tbody className="divide-y divide-border">
                   {filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                      <td
+                        colSpan={7}
+                        className="px-4 py-8 text-center text-muted-foreground"
+                      >
                         Belum ada tarif gaji manajemen yang terdaftar.
                       </td>
                     </tr>
@@ -287,16 +320,23 @@ export default function ManagementRatesPage({
                       const amountVal = Number(rate.amount) || 0;
 
                       return (
-                        <tr key={rate.id} className="hover:bg-muted/30 transition-colors">
+                        <tr
+                          key={rate.id}
+                          className="hover:bg-muted/30 transition-colors"
+                        >
                           <td className="px-4 py-3 font-semibold text-foreground">
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold ${roleBadge.color}`}>
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold ${roleBadge.color}`}
+                            >
                               <Briefcase className="w-3.5 h-3.5" />
                               {roleBadge.label}
                             </span>
                           </td>
                           <td className="px-4 py-3">
                             <div>
-                              <span className="font-semibold text-foreground">{rate.title}</span>
+                              <span className="font-semibold text-foreground">
+                                {rate.title}
+                              </span>
                               {rate.description && (
                                 <span className="block text-xs text-muted-foreground truncate max-w-xs">
                                   {rate.description}
@@ -362,29 +402,39 @@ export default function ManagementRatesPage({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingRate ? "Edit Gaji Manajemen" : "Tambah Tarif Gaji Manajemen"}
+              {editingRate
+                ? "Edit Gaji Manajemen"
+                : "Tambah Tarif Gaji Manajemen"}
             </DialogTitle>
             <DialogDescription>
-              Atur besaran kompensasi bulanan atau tunjangan posisi manajemen bimbel.
+              Atur besaran kompensasi bulanan atau tunjangan posisi manajemen
+              bimbel.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="title">Nama Kompensasi / Jabatan <span className="text-destructive">*</span></Label>
+              <Label htmlFor="title">
+                Nama Kompensasi / Jabatan{" "}
+                <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="title"
                 placeholder="Contoh: Gaji Pokok HRD, Tunjangan Finance"
                 {...register("title")}
               />
               {errors.title && (
-                <p className="text-xs text-destructive">{errors.title.message}</p>
+                <p className="text-xs text-destructive">
+                  {errors.title.message}
+                </p>
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="role_level">Tingkat Jabatan <span className="text-destructive">*</span></Label>
+                <Label htmlFor="role_level">
+                  Tingkat Jabatan <span className="text-destructive">*</span>
+                </Label>
                 <Select
                   defaultValue={editingRate?.role_level || "hrd"}
                   onValueChange={(val) => setValue("role_level", val as any)}
@@ -396,16 +446,22 @@ export default function ManagementRatesPage({
                     <SelectItem value="owner">Owner / Pimpinan</SelectItem>
                     <SelectItem value="hrd">HRD & Operasional</SelectItem>
                     <SelectItem value="finance">Keuangan & Finance</SelectItem>
-                    <SelectItem value="admin">Admin & Layanan Pelanggan</SelectItem>
+                    <SelectItem value="admin">
+                      Admin & Layanan Pelanggan
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.role_level && (
-                  <p className="text-xs text-destructive">{errors.role_level.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.role_level.message}
+                  </p>
                 )}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="rate_type">Tipe Kompensasi <span className="text-destructive">*</span></Label>
+                <Label htmlFor="rate_type">
+                  Tipe Kompensasi <span className="text-destructive">*</span>
+                </Label>
                 <Select
                   defaultValue={editingRate?.rate_type || "monthly"}
                   onValueChange={(val) => setValue("rate_type", val as any)}
@@ -415,18 +471,24 @@ export default function ManagementRatesPage({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="monthly">Gaji Pokok Bulanan</SelectItem>
-                    <SelectItem value="allowance">Tunjangan Operasional</SelectItem>
+                    <SelectItem value="allowance">
+                      Tunjangan Operasional
+                    </SelectItem>
                     <SelectItem value="hourly">Honor per Aktivitas</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.rate_type && (
-                  <p className="text-xs text-destructive">{errors.rate_type.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.rate_type.message}
+                  </p>
                 )}
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="amount">Besaran Nominal (Rp) <span className="text-destructive">*</span></Label>
+              <Label htmlFor="amount">
+                Besaran Nominal (Rp) <span className="text-destructive">*</span>
+              </Label>
               <div className="relative">
                 <Input
                   id="amount"
@@ -438,30 +500,44 @@ export default function ManagementRatesPage({
                 <Coins className="absolute right-3 top-2.5 w-4 h-4 text-muted-foreground" />
               </div>
               {errors.amount && (
-                <p className="text-xs text-destructive">{errors.amount.message}</p>
+                <p className="text-xs text-destructive">
+                  {errors.amount.message}
+                </p>
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="effective_from">Mulai Berlaku <span className="text-destructive">*</span></Label>
+                <Label htmlFor="effective_from">
+                  Mulai Berlaku <span className="text-destructive">*</span>
+                </Label>
                 <DatePicker
                   id="effective_from"
                   value={watch("effective_from")}
-                  onChange={(_, str) => setValue("effective_from", str, { shouldValidate: true })}
+                  onChange={(_, str) =>
+                    setValue("effective_from", str, { shouldValidate: true })
+                  }
                   placeholder="Pilih tanggal mulai"
                 />
                 {errors.effective_from && (
-                  <p className="text-xs text-destructive">{errors.effective_from.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.effective_from.message}
+                  </p>
                 )}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="effective_until">Berlaku Sampai (Opsional)</Label>
+                <Label htmlFor="effective_until">
+                  Berlaku Sampai (Opsional)
+                </Label>
                 <DatePicker
                   id="effective_until"
                   value={watch("effective_until")}
-                  onChange={(_, str) => setValue("effective_until", str ? str : null, { shouldValidate: true })}
+                  onChange={(_, str) =>
+                    setValue("effective_until", str ? str : null, {
+                      shouldValidate: true,
+                    })
+                  }
                   placeholder="Tanpa batas (selamanya)"
                   clearable
                 />
@@ -482,7 +558,9 @@ export default function ManagementRatesPage({
               <Label htmlFor="status">Status</Label>
               <Select
                 defaultValue={editingRate?.status || "active"}
-                onValueChange={(val) => setValue("status", val as "active" | "inactive")}
+                onValueChange={(val) =>
+                  setValue("status", val as "active" | "inactive")
+                }
               >
                 <SelectTrigger id="status">
                   <SelectValue placeholder="Pilih status" />
@@ -504,7 +582,11 @@ export default function ManagementRatesPage({
                 Batal
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Menyimpan..." : editingRate ? "Simpan Perubahan" : "Simpan Gaji"}
+                {isSubmitting
+                  ? "Menyimpan..."
+                  : editingRate
+                    ? "Simpan Perubahan"
+                    : "Simpan Gaji"}
               </Button>
             </DialogFooter>
           </form>
@@ -512,7 +594,10 @@ export default function ManagementRatesPage({
       </Dialog>
 
       {/* DIALOG KONFIRMASI HAPUS */}
-      <AlertDialog open={!!deletingRate} onOpenChange={() => setDeletingRate(null)}>
+      <AlertDialog
+        open={!!deletingRate}
+        onOpenChange={() => setDeletingRate(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Tarif Gaji Manajemen?</AlertDialogTitle>

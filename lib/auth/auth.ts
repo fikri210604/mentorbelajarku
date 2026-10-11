@@ -18,7 +18,7 @@ function getOrCreatePgPool(): Pool | undefined {
 
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    connectionTimeoutMillis: 5000,
+    connectionTimeoutMillis: 15000,
     idleTimeoutMillis: 60000,
     max: 10,
     keepAlive: true,

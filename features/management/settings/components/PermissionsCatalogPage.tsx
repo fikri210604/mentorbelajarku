@@ -7,7 +7,13 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { SettingsNavTabs } from "./SettingsNavTabs";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -32,7 +38,10 @@ import {
   permissionSchema,
   PermissionInput,
 } from "../schemas/permission.schema";
-import { savePermissionAction, deletePermissionAction } from "../actions/permission.actions";
+import {
+  savePermissionAction,
+  deletePermissionAction,
+} from "../actions/permission.actions";
 import type { PermissionDefinition } from "@/types/auth";
 
 interface PermissionsCatalogPageProps {
@@ -143,14 +152,19 @@ export default function PermissionsCatalogPage({
             <TableBody>
               {permissions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                  <TableCell
+                    colSpan={4}
+                    className="text-center text-muted-foreground py-8"
+                  >
                     Belum ada permission.
                   </TableCell>
                 </TableRow>
               ) : (
                 permissions.map((permission) => (
                   <TableRow key={permission.id}>
-                    <TableCell className="font-mono text-xs">{permission.id}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {permission.id}
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {permission.category}
                     </TableCell>
@@ -189,14 +203,23 @@ export default function PermissionsCatalogPage({
               <Label htmlFor="permission-id" className="text-xs font-semibold">
                 Identifier <span className="text-destructive">*</span>
               </Label>
-              <Input id="permission-id" placeholder="contoh: worksheet:approve" {...register("id")} />
+              <Input
+                id="permission-id"
+                placeholder="contoh: worksheet:approve"
+                {...register("id")}
+              />
               {errors.id && (
-                <p className="text-[11px] text-destructive">{errors.id.message}</p>
+                <p className="text-[11px] text-destructive">
+                  {errors.id.message}
+                </p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="permission-category" className="text-xs font-semibold">
+              <Label
+                htmlFor="permission-category"
+                className="text-xs font-semibold"
+              >
                 Kategori <span className="text-destructive">*</span>
               </Label>
               <Input
@@ -205,12 +228,17 @@ export default function PermissionsCatalogPage({
                 {...register("category")}
               />
               {errors.category && (
-                <p className="text-[11px] text-destructive">{errors.category.message}</p>
+                <p className="text-[11px] text-destructive">
+                  {errors.category.message}
+                </p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="permission-name" className="text-xs font-semibold">
+              <Label
+                htmlFor="permission-name"
+                className="text-xs font-semibold"
+              >
                 Nama Permission <span className="text-destructive">*</span>
               </Label>
               <Input
@@ -219,12 +247,17 @@ export default function PermissionsCatalogPage({
                 {...register("name")}
               />
               {errors.name && (
-                <p className="text-[11px] text-destructive">{errors.name.message}</p>
+                <p className="text-[11px] text-destructive">
+                  {errors.name.message}
+                </p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="permission-description" className="text-xs font-semibold">
+              <Label
+                htmlFor="permission-description"
+                className="text-xs font-semibold"
+              >
                 Deskripsi
               </Label>
               <Textarea
@@ -234,12 +267,18 @@ export default function PermissionsCatalogPage({
                 {...register("description")}
               />
               {errors.description && (
-                <p className="text-[11px] text-destructive">{errors.description.message}</p>
+                <p className="text-[11px] text-destructive">
+                  {errors.description.message}
+                </p>
               )}
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsDialogOpen(false)}
+              >
                 Batal
               </Button>
               <Button type="submit" disabled={isSubmitting}>

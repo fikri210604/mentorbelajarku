@@ -17,7 +17,13 @@ import {
   Loader2,
   BookOpen,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
@@ -49,14 +55,17 @@ export default function TutorAttendancePage({
 }: TutorAttendancePageProps) {
   const router = useRouter();
   const [isGenerating, startGenerating] = useTransition();
-  const [showAllAttendanceSessions, setShowAllAttendanceSessions] = useState(false);
+  const [showAllAttendanceSessions, setShowAllAttendanceSessions] =
+    useState(false);
 
   const handleGenerateToday = () => {
     startGenerating(async () => {
       try {
         const res = await generateSessionsAction();
         if (!res.success) {
-          toast.error(res.error.message || "Gagal memuat sesi jadwal hari ini.");
+          toast.error(
+            res.error.message || "Gagal memuat sesi jadwal hari ini.",
+          );
           return;
         }
         toast.success(res.message || "Sesi berhasil dimuat!");
@@ -72,7 +81,9 @@ export default function TutorAttendancePage({
   const [submittedIds, setSubmittedIds] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
+  const today = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Jakarta",
+  });
 
   // Kartu: sesi hari ini + sesi terjadwal yang belum diabsen (tanggal lewat). Sesi batal tidak ditampilkan.
   const todaySessions = allSessions
@@ -80,18 +91,24 @@ export default function TutorAttendancePage({
     .filter(
       (s) =>
         s.session_date === today ||
-        (s.status === "scheduled" && s.session_date && s.session_date < today)
+        (s.status === "scheduled" && s.session_date && s.session_date < today),
     )
-    .map((s) => (submittedIds.includes(s.id) ? { ...s, status: "completed" } : s))
+    .map((s) =>
+      submittedIds.includes(s.id) ? { ...s, status: "completed" } : s,
+    )
     .sort((a, b) => (a.start_time || "").localeCompare(b.start_time || ""));
 
   const pendingSessions = todaySessions.filter((s) => s.status === "scheduled");
   // Hanya sesi yang belum diabsen yang bisa dipilih; sesi selesai tidak pernah membuka form lagi.
   const selectedSession =
-    pendingSessions.find((s) => s.id === selectedId) ?? pendingSessions[0] ?? null;
+    pendingSessions.find((s) => s.id === selectedId) ??
+    pendingSessions[0] ??
+    null;
 
   const scheduledCount = pendingSessions.length;
-  const completedCount = todaySessions.filter((s) => s.status === "completed").length;
+  const completedCount = todaySessions.filter(
+    (s) => s.status === "completed",
+  ).length;
 
   return (
     <div className="space-y-5 sm:space-y-6 max-w-3xl mx-auto">
@@ -105,7 +122,8 @@ export default function TutorAttendancePage({
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            Ambil 1x foto sesi belajar bersama murid dan catat materi yang telah disampaikan.
+            Ambil 1x foto sesi belajar bersama murid dan catat materi yang telah
+            disampaikan.
           </p>
         </div>
 
@@ -131,9 +149,12 @@ export default function TutorAttendancePage({
               <CalendarDays className="w-6 h-6" />
             </div>
             <div className="space-y-1">
-              <h3 className="font-bold text-foreground text-base">Tidak Ada Sesi Hari Ini</h3>
+              <h3 className="font-bold text-foreground text-base">
+                Tidak Ada Sesi Hari Ini
+              </h3>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                Belum ada sesi pembelajaran yang dibuat untuk hari ini. Anda dapat men-generate sesi langsung dari jadwal rutin aktif Anda.
+                Belum ada sesi pembelajaran yang dibuat untuk hari ini. Anda
+                dapat men-generate sesi langsung dari jadwal rutin aktif Anda.
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
@@ -178,7 +199,10 @@ export default function TutorAttendancePage({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {(showAllAttendanceSessions ? todaySessions : todaySessions.slice(0, 3)).map((session) => {
+              {(showAllAttendanceSessions
+                ? todaySessions
+                : todaySessions.slice(0, 3)
+              ).map((session) => {
                 const isSelected = selectedSession?.id === session.id;
                 const isCompleted = session.status === "completed";
 
@@ -193,15 +217,16 @@ export default function TutorAttendancePage({
                       isCompleted
                         ? "border-border/60 bg-muted/40 opacity-60 cursor-not-allowed grayscale-[30%]"
                         : isSelected
-                        ? "border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 ring-2 ring-emerald-500 shadow-sm active:scale-[0.98]"
-                        : "border-border bg-card hover:border-emerald-500/40 hover:bg-muted/20 active:scale-[0.98]"
+                          ? "border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 ring-2 ring-emerald-500 shadow-sm active:scale-[0.98]"
+                          : "border-border bg-card hover:border-emerald-500/40 hover:bg-muted/20 active:scale-[0.98]"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-mono text-xs font-bold text-foreground">
-                            {session.start_time?.slice(0, 5)} - {session.end_time?.slice(0, 5)} WIB
+                            {session.start_time?.slice(0, 5)} -{" "}
+                            {session.end_time?.slice(0, 5)} WIB
                           </span>
                           <span className="text-[10px] px-2 py-0.2 rounded-full font-medium border bg-background/80 text-muted-foreground">
                             {session.bimbel_types?.name || "Reguler"}
@@ -216,7 +241,9 @@ export default function TutorAttendancePage({
                           <div className="flex items-center gap-1.5 text-[11px] font-medium text-blue-700 dark:text-blue-300">
                             <BookOpen className="w-3 h-3 text-blue-600 shrink-0" />
                             <span className="truncate">
-                              {session.subject_name ? `${session.subject_name} • ` : ""}
+                              {session.subject_name
+                                ? `${session.subject_name} • `
+                                : ""}
                               {session.target_material || session.topic_title}
                             </span>
                           </div>
@@ -235,12 +262,18 @@ export default function TutorAttendancePage({
                       {/* Status Pill Badge */}
                       <div className="shrink-0 flex flex-col items-end">
                         {isCompleted ? (
-                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-[10px] gap-1 py-0 px-2 font-semibold">
+                          <Badge
+                            variant="outline"
+                            className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-[10px] gap-1 py-0 px-2 font-semibold"
+                          >
                             <CheckCircle2 className="w-3 h-3" />
                             <span>Sudah Diabsen</span>
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/40 text-[10px] gap-1 py-0 px-2 font-bold animate-pulse">
+                          <Badge
+                            variant="outline"
+                            className="bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/40 text-[10px] gap-1 py-0 px-2 font-bold animate-pulse"
+                          >
                             <span>Perlu Absen</span>
                           </Badge>
                         )}
@@ -291,10 +324,12 @@ export default function TutorAttendancePage({
                   <CheckCircle2 className="w-6 h-6 text-emerald-600" />
                 </div>
                 <h3 className="font-bold text-base text-foreground">
-                  Terima kasih sudah melakukan absensi{tutorName ? `, ${tutorName}` : ""}!
+                  Terima kasih sudah melakukan absensi
+                  {tutorName ? `, ${tutorName}` : ""}!
                 </h3>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                  Semua sesi sudah diabsen. Riwayat dan honor mengajar Anda dapat dilihat di bawah.
+                  Semua sesi sudah diabsen. Riwayat dan honor mengajar Anda
+                  dapat dilihat di bawah.
                 </p>
               </CardContent>
             </Card>
@@ -310,37 +345,68 @@ export default function TutorAttendancePage({
                 }}
                 sessionId={selectedSession.id}
                 sessionDetails={{
-                  date: selectedSession.session_date || new Date().toISOString().split("T")[0],
-                  programName: selectedSession.programs?.name || "Program Bimbel",
-                  bimbelTypeName: selectedSession.bimbel_types?.name || "Reguler",
+                  date:
+                    selectedSession.session_date ||
+                    new Date().toISOString().split("T")[0],
+                  programName:
+                    selectedSession.programs?.name || "Program Bimbel",
+                  bimbelTypeName:
+                    selectedSession.bimbel_types?.name || "Reguler",
                   duration: (() => {
                     // Durasi sesi = selisih jam mulai s/d jam selesai (jam terakhir antar murid).
-                    const [sh, sm] = (selectedSession.start_time || "").split(":").map(Number);
-                    const [eh, em] = (selectedSession.end_time || "").split(":").map(Number);
+                    const [sh, sm] = (selectedSession.start_time || "")
+                      .split(":")
+                      .map(Number);
+                    const [eh, em] = (selectedSession.end_time || "")
+                      .split(":")
+                      .map(Number);
                     if ([sh, sm, eh, em].every((n) => !isNaN(n))) {
                       const diff = eh * 60 + em - (sh * 60 + sm);
                       if (diff > 0) return diff;
                     }
                     return selectedSession.bimbel_types?.duration_minutes || 60;
                   })(),
-                  tutorName: selectedSession.tutors?.profiles?.full_name || "Tutor Pengajar",
+                  tutorName:
+                    selectedSession.tutors?.profiles?.full_name ||
+                    "Tutor Pengajar",
                   startTime: selectedSession.start_time || "16:00",
                   endTime: selectedSession.end_time || "17:15",
-                  attendanceDeadline: selectedSession.attendance_deadline || null,
+                  attendanceDeadline:
+                    selectedSession.attendance_deadline || null,
                   allowLateUpload: selectedSession.allow_late_upload ?? false,
                   subjectName: selectedSession.subject_name || "Matematika",
-                  targetMaterial: selectedSession.target_material || selectedSession.topic_title || "Bab 1: Bilangan Cacah Besar & Operasi Hitung",
+                  targetMaterial:
+                    selectedSession.target_material ||
+                    selectedSession.topic_title ||
+                    "Bab 1: Bilangan Cacah Besar & Operasi Hitung",
                   topicTitle: selectedSession.topic_title || "",
-                  worksheetUrl: selectedSession.worksheet_url || "/samples/worksheets/mtk4_bab1.pdf",
-                  worksheetName: selectedSession.worksheet_name || "Lembar Latihan Bilangan Cacah & Hitung Susun.pdf",
+                  worksheetUrl:
+                    selectedSession.worksheet_url ||
+                    "/samples/worksheets/mtk4_bab1.pdf",
+                  worksheetName:
+                    selectedSession.worksheet_name ||
+                    "Lembar Latihan Bilangan Cacah & Hitung Susun.pdf",
                 }}
                 students={
-                  selectedSession.students && selectedSession.students.length > 0
+                  selectedSession.students &&
+                  selectedSession.students.length > 0
                     ? selectedSession.students
                     : [
-                        { id: "std-001", name: "Alghazy Malik", student_code: "STD-2026-001" },
-                        { id: "std-002", name: "Najwa Khairunnisa", student_code: "STD-2026-002" },
-                        { id: "std-003", name: "Dimas Prasetyo", student_code: "STD-2026-003" },
+                        {
+                          id: "std-001",
+                          name: "Alghazy Malik",
+                          student_code: "STD-2026-001",
+                        },
+                        {
+                          id: "std-002",
+                          name: "Najwa Khairunnisa",
+                          student_code: "STD-2026-002",
+                        },
+                        {
+                          id: "std-003",
+                          name: "Dimas Prasetyo",
+                          student_code: "STD-2026-003",
+                        },
                       ]
                 }
               />
@@ -359,12 +425,14 @@ export default function TutorAttendancePage({
               Terima kasih sudah absensi!
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Presensi dan foto sesi berhasil disimpan. Sesi ini tercatat di riwayat mengajar dan
-              menjadi dasar perhitungan honor Anda.
+              Presensi dan foto sesi berhasil disimpan. Sesi ini tercatat di
+              riwayat mengajar dan menjadi dasar perhitungan honor Anda.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setThanksOpen(false)}>Tutup</AlertDialogAction>
+            <AlertDialogAction onClick={() => setThanksOpen(false)}>
+              Tutup
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

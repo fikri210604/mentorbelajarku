@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Image as ImageIcon, ExternalLink, ImageOff } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Image as ImageIcon,
+  ExternalLink,
+  ImageOff,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
@@ -11,7 +17,10 @@ interface AttendanceDetailPageProps {
   isTutor?: boolean;
 }
 
-export default function AttendanceDetailPage({ attendance, isTutor = false }: AttendanceDetailPageProps) {
+export default function AttendanceDetailPage({
+  attendance,
+  isTutor = false,
+}: AttendanceDetailPageProps) {
   const backHref = isTutor ? "/tutor/attendance" : "/management/attendance";
 
   if (!attendance) {
@@ -49,24 +58,40 @@ export default function AttendanceDetailPage({ attendance, isTutor = false }: At
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div>
-              <span className="text-muted-foreground block text-xs">Status Kehadiran</span>
+              <span className="text-muted-foreground block text-xs">
+                Status Kehadiran
+              </span>
               <StatusBadge status={attendance.status} />
             </div>
             <div>
-              <span className="text-muted-foreground block text-xs">Status Verifikasi</span>
+              <span className="text-muted-foreground block text-xs">
+                Status Verifikasi
+              </span>
               <StatusBadge status={attendance.verification_status} />
             </div>
             <div>
-              <span className="text-muted-foreground block text-xs">Waktu Absen</span>
-              <span className="font-medium">{attendance.checked_in_at || "-"}</span>
+              <span className="text-muted-foreground block text-xs">
+                Waktu Absen
+              </span>
+              <span className="font-medium">
+                {attendance.checked_in_at || "-"}
+              </span>
             </div>
             <div>
-              <span className="text-muted-foreground block text-xs">Materi yang Diajarkan</span>
-              <p className="font-medium text-foreground mt-0.5">{attendance.material || "-"}</p>
+              <span className="text-muted-foreground block text-xs">
+                Materi yang Diajarkan
+              </span>
+              <p className="font-medium text-foreground mt-0.5">
+                {attendance.material || "-"}
+              </p>
             </div>
             <div>
-              <span className="text-muted-foreground block text-xs">Catatan Evaluasi</span>
-              <p className="font-medium text-foreground mt-0.5">{attendance.notes || "-"}</p>
+              <span className="text-muted-foreground block text-xs">
+                Catatan Evaluasi
+              </span>
+              <p className="font-medium text-foreground mt-0.5">
+                {attendance.notes || "-"}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -99,8 +124,17 @@ export default function AttendanceDetailPage({ attendance, isTutor = false }: At
                 <p className="text-[11px] text-muted-foreground font-mono break-all">
                   {attendance.photo_path}
                 </p>
-                <Button asChild variant="outline" size="sm" className="w-full text-xs">
-                  <a href={attendance.photo_url} target="_blank" rel="noopener noreferrer">
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs"
+                >
+                  <a
+                    href={attendance.photo_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
                     Buka Ukuran Penuh
                   </a>
@@ -110,14 +144,17 @@ export default function AttendanceDetailPage({ attendance, isTutor = false }: At
               <div className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-8 text-center">
                 <ImageOff className="w-6 h-6 text-muted-foreground/60" />
                 <p className="text-xs text-muted-foreground">
-                  Foto tersimpan tetapi tidak dapat dimuat. Coba muat ulang halaman.
+                  Foto tersimpan tetapi tidak dapat dimuat. Coba muat ulang
+                  halaman.
                 </p>
                 <p className="text-[11px] text-muted-foreground font-mono break-all">
                   {attendance.photo_path}
                 </p>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Tidak ada foto presensi yang dilampirkan.</p>
+              <p className="text-sm text-muted-foreground">
+                Tidak ada foto presensi yang dilampirkan.
+              </p>
             )}
           </CardContent>
         </Card>

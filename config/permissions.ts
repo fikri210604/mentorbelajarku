@@ -224,6 +224,13 @@ export const SYSTEM_PERMISSIONS: PermissionDefinition[] = [
     name: "Lihat Audit Log Keamanan",
     description: "Melihat catatan jejak digital mutasi data",
   },
+  {
+    id: "notification:manage",
+    category: "Sistem & Keamanan",
+    name: "Kelola Pengaturan Notifikasi & Pengingat",
+    description:
+      "Mengatur notifikasi push tutor: jadwal baru, pengingat sebelum/sesudah sesi, dan jumlah ulangan",
+  },
 ];
 
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
@@ -264,6 +271,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "roles:manage",
     "settings:manage",
     "audit:read",
+    "notification:manage",
   ],
   admin: [
     "curriculum:manage",
@@ -301,6 +309,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "reports:read",
     "settings:manage",
     "audit:read",
+    "notification:manage",
   ],
   finance: [
     "attendance:read",
@@ -371,6 +380,7 @@ export const SUBROLE_PERMISSIONS: Record<ManagementSubrole, Permission[]> = {
     "roles:manage",
     "settings:manage",
     "audit:read",
+    "notification:manage",
   ],
   // Bagian Kurikulum: Fokus pada mata pelajaran, silabus, materi, worksheet siswa, evaluasi murid
   curriculum: [

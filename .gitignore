@@ -43,3 +43,8 @@ tsconfig.tsbuildinfo
 # supabase
 /supabase/
 .opencode
+
+.agent
+.claude
+
+playwright-report

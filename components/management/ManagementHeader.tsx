@@ -63,7 +63,11 @@ export function ManagementHeader() {
           </Link>
         </Button>
 
-        <Button variant="ghost" size="icon" className="relative text-muted-foreground h-9 w-9">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative text-muted-foreground h-9 w-9"
+        >
           <Bell className="h-4 w-4" />
           <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />
         </Button>

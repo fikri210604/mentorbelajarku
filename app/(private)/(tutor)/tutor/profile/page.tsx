@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { requireAuthUser } from "@/lib/auth/session";
 import { createServerClient } from "@/lib/supabase/server";
+import { getUserNotificationStatus } from "@/features/shared/web-push/queries/notification.queries";
 import TutorProfilePage from "@/features/tutor/profile/components/TutorProfilePage";
 
 export const metadata: Metadata = {
@@ -29,8 +30,11 @@ export default async function Page() {
     console.warn("Could not fetch tutor bio from database:", err);
   }
 
+  const notificationStatus = await getUserNotificationStatus(session.user.id);
+
   return (
     <TutorProfilePage
+      notificationStatus={notificationStatus}
       initialData={{
         userId: session.user.id,
         fullName: session.profile?.full_name || session.user.name,

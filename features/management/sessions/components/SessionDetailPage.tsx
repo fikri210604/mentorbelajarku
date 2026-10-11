@@ -17,7 +17,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,22 +42,29 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { SessionWithDetails } from "../types";
 import { updateSessionAttendanceDeadline } from "@/features/management/settings/actions/settings.actions";
 import { RescheduleSessionDialog } from "@/features/shared/sessions/components/RescheduleSessionDialog";
+import { EditSessionScheduleDialog } from "./EditSessionScheduleDialog";
 
 interface SessionDetailPageProps {
-  session: (SessionWithDetails & {
-    attendance_deadline?: string | null;
-    allow_late_upload?: boolean;
-    late_upload_reason?: string | null;
-  }) | null;
+  session:
+    | (SessionWithDetails & {
+        attendance_deadline?: string | null;
+        allow_late_upload?: boolean;
+        late_upload_reason?: string | null;
+      })
+    | null;
   isTutor?: boolean;
 }
 
-export default function SessionDetailPage({ session, isTutor = false }: SessionDetailPageProps) {
+export default function SessionDetailPage({
+  session,
+  isTutor = false,
+}: SessionDetailPageProps) {
   const backHref = isTutor ? "/tutor/dashboard" : "/management/sessions";
 
   const [currentSession, setCurrentSession] = useState(session);
   const [isDeadlineDialogOpen, setIsDeadlineDialogOpen] = useState(false);
   const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // State form dispensasi deadline
@@ -74,8 +87,12 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
     return `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}T${pad(tomorrow.getHours())}:${pad(tomorrow.getMinutes())}`;
   });
 
-  const [allowLate, setAllowLate] = useState(session?.allow_late_upload ?? true);
-  const [reasonInput, setReasonInput] = useState(session?.late_upload_reason || "");
+  const [allowLate, setAllowLate] = useState(
+    session?.allow_late_upload ?? true,
+  );
+  const [reasonInput, setReasonInput] = useState(
+    session?.late_upload_reason || "",
+  );
 
   if (!currentSession) {
     return (
@@ -106,7 +123,9 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
       });
 
       if (res.success) {
-        toast.success(res.message || "Batas waktu absensi sesi berhasil diperbarui.");
+        toast.success(
+          res.message || "Batas waktu absensi sesi berhasil diperbarui.",
+        );
         setCurrentSession((prev: any) => ({
           ...prev,
           attendance_deadline: isoDeadline,
@@ -156,6 +175,16 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
           <CalendarClock className="w-4 h-4 text-amber-600" />
           <span>Jadwalkan Ulang (Reschedule)</span>
         </Button>
+        {!isTutor && (
+          <Button
+            size="sm"
+            onClick={() => setIsEditDialogOpen(true)}
+            className="gap-1.5 shadow-xs"
+          >
+            <Edit className="w-4 h-4" />
+            <span>Edit Jadwal Sesi</span>
+          </Button>
+        )}
         {isTutor && (
           <Button asChild size="sm">
             <Link href={`/tutor/attendance`}>
@@ -177,31 +206,44 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
           </CardHeader>
           <CardContent className="space-y-3.5 text-sm">
             <div>
-              <span className="text-muted-foreground block text-xs">Tanggal & Jam Mengajar</span>
+              <span className="text-muted-foreground block text-xs">
+                Tanggal & Jam Mengajar
+              </span>
               <span className="font-semibold text-foreground font-mono">
-                {currentSession.session_date}, {currentSession.start_time?.slice(0, 5)} - {currentSession.end_time?.slice(0, 5)} WIB
+                {currentSession.session_date},{" "}
+                {currentSession.start_time?.slice(0, 5)} -{" "}
+                {currentSession.end_time?.slice(0, 5)} WIB
               </span>
             </div>
             <div>
-              <span className="text-muted-foreground block text-xs">Tutor Pengajar Aktual</span>
+              <span className="text-muted-foreground block text-xs">
+                Tutor Pengajar Aktual
+              </span>
               <span className="font-medium text-foreground">
                 {currentSession.tutors?.profiles?.full_name || "Tutor Pengajar"}
               </span>
             </div>
             <div>
-              <span className="text-muted-foreground block text-xs">Program & Kategori</span>
+              <span className="text-muted-foreground block text-xs">
+                Program & Kategori
+              </span>
               <span className="font-medium text-foreground">
-                {currentSession.programs?.name} ({currentSession.bimbel_types?.name})
+                {currentSession.programs?.name} (
+                {currentSession.bimbel_types?.name})
               </span>
             </div>
             <div>
-              <span className="text-muted-foreground block text-xs">Status Sesi</span>
+              <span className="text-muted-foreground block text-xs">
+                Status Sesi
+              </span>
               <div className="mt-1">
                 <StatusBadge status={currentSession.status} />
               </div>
             </div>
             <div>
-              <span className="text-muted-foreground block text-xs">Catatan Pembelajaran</span>
+              <span className="text-muted-foreground block text-xs">
+                Catatan Pembelajaran
+              </span>
               <span className="font-medium text-muted-foreground text-xs">
                 {currentSession.notes || "Tidak ada catatan khusus."}
               </span>
@@ -236,7 +278,9 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
           <CardContent className="space-y-4 text-sm">
             <div className="p-3 rounded-lg border bg-muted/20 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Status Jendela Upload:</span>
+                <span className="text-xs text-muted-foreground">
+                  Status Jendela Upload:
+                </span>
                 {hasCustomDeadline ? (
                   <Badge className="bg-purple-600 hover:bg-purple-600 text-white text-xs px-2 py-0.5">
                     Dispensasi Khusus Aktif
@@ -251,7 +295,9 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
               {hasCustomDeadline ? (
                 <div className="space-y-1 pt-1 border-t border-border/50 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Batas Maksimal Upload:</span>
+                    <span className="text-muted-foreground">
+                      Batas Maksimal Upload:
+                    </span>
                     <strong className="text-purple-700 dark:text-purple-300 font-mono">
                       {formattedCustomDeadline}
                     </strong>
@@ -267,7 +313,8 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground pt-1 border-t border-border/50">
-                  Mengikuti toleransi master bimbel (dibuka 15 menit sebelum jam mengajar s/d toleransi jam dan batas hari H+1).
+                  Mengikuti toleransi master bimbel (dibuka 15 menit sebelum jam
+                  mengajar s/d toleransi jam dan batas hari H+1).
                 </p>
               )}
             </div>
@@ -276,8 +323,9 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
               <div className="text-xs text-muted-foreground leading-relaxed flex items-start gap-2 bg-primary/5 p-3 rounded-lg border border-primary/10">
                 <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <span>
-                  Jika tutor mengalami kendala (misal mati lampu / tidak ada sinyal), Anda dapat memberi
-                  perpanjangan batas tanggal dan jam spesifik tanpa perlu mengubah master sistem.
+                  Jika tutor mengalami kendala (misal mati lampu / tidak ada
+                  sinyal), Anda dapat memberi perpanjangan batas tanggal dan jam
+                  spesifik tanpa perlu mengubah master sistem.
                 </span>
               </div>
             )}
@@ -293,14 +341,21 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {currentSession.attendance && currentSession.attendance.length > 0 ? (
+            {currentSession.attendance &&
+            currentSession.attendance.length > 0 ? (
               <div className="divide-y text-sm">
                 {currentSession.attendance.map((att) => (
-                  <div key={att.id} className="py-3 flex justify-between items-center">
+                  <div
+                    key={att.id}
+                    className="py-3 flex justify-between items-center"
+                  >
                     <div>
-                      <p className="font-semibold text-foreground">{att.students?.name || "Murid"}</p>
+                      <p className="font-semibold text-foreground">
+                        {att.students?.name || "Murid"}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        NIS: {att.students?.student_code || "-"} · Level: {att.students?.level || "-"}
+                        NIS: {att.students?.student_code || "-"} · Level:{" "}
+                        {att.students?.level || "-"}
                       </p>
                       {(() => {
                         const lr = (
@@ -311,7 +366,8 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
                               | null;
                           }
                         ).learning_records;
-                        const material = (Array.isArray(lr) ? lr[0] : lr)?.material;
+                        const material = (Array.isArray(lr) ? lr[0] : lr)
+                          ?.material;
                         return material ? (
                           <p className="text-xs text-muted-foreground mt-1 bg-muted/40 px-2 py-0.5 rounded inline-block">
                             Materi: {material}
@@ -335,7 +391,10 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
       </div>
 
       {/* Dialog Dispensasi Batas Waktu Absensi */}
-      <Dialog open={isDeadlineDialogOpen} onOpenChange={setIsDeadlineDialogOpen}>
+      <Dialog
+        open={isDeadlineDialogOpen}
+        onOpenChange={setIsDeadlineDialogOpen}
+      >
         <DialogContent className="sm:max-w-md">
           <form onSubmit={handleSaveDeadline}>
             <DialogHeader>
@@ -344,7 +403,8 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
                 Atur Batas Waktu Presensi Sesi
               </DialogTitle>
               <DialogDescription className="text-xs">
-                Beri perpanjangan tanggal dan jam kepada tutor untuk mengunggah presensi sesi ini.
+                Beri perpanjangan tanggal dan jam kepada tutor untuk mengunggah
+                presensi sesi ini.
               </DialogDescription>
             </DialogHeader>
 
@@ -362,13 +422,17 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
                   required
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  Tutor dapat melakukan absensi hingga batas waktu yang ditentukan di atas.
+                  Tutor dapat melakukan absensi hingga batas waktu yang
+                  ditentukan di atas.
                 </p>
               </div>
 
               <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
                 <div className="space-y-0.5">
-                  <Label htmlFor="allowLate" className="text-xs font-semibold cursor-pointer">
+                  <Label
+                    htmlFor="allowLate"
+                    className="text-xs font-semibold cursor-pointer"
+                  >
                     Izinkan Upload Susulan
                   </Label>
                   <p className="text-[11px] text-muted-foreground">
@@ -439,6 +503,22 @@ export default function SessionDetailPage({ session, isTutor = false }: SessionD
           session_date: currentSession.session_date,
           start_time: currentSession.start_time,
           end_time: currentSession.end_time,
+          program_name: currentSession.programs?.name,
+        }}
+      />
+
+      {/* Dialog Edit Sesi & Jadwal (Google Calendar Scope) */}
+      <EditSessionScheduleDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        session={{
+          id: currentSession.id,
+          schedule_id: currentSession.schedule_id,
+          session_date: currentSession.session_date,
+          start_time: currentSession.start_time,
+          end_time: currentSession.end_time,
+          tutor_id: currentSession.tutor_id,
+          notes: currentSession.notes,
           program_name: currentSession.programs?.name,
         }}
       />

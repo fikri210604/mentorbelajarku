@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { ArrowLeft, Edit, BookOpen, Clock, Calendar, UserCheck, FileText } from "lucide-react";
+import {
+  ArrowLeft,
+  Edit,
+  BookOpen,
+  Clock,
+  Calendar,
+  UserCheck,
+  FileText,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
@@ -7,22 +15,26 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { StudentProgressCard } from "@/features/shared/students/components/StudentProgressCard";
 import { StudentHistoryList } from "@/features/shared/students/components/StudentHistoryList";
 import { DeleteStudentButton } from "./DeleteStudentButton";
+import { ImportHistoricalSessionsDialog } from "./ImportHistoricalSessionsDialog";
 import type { StudentWithPrograms } from "../types";
 import type {
   StudentActivePackageProgress,
   StudentMeetingHistoryItem,
 } from "@/features/shared/students/types";
+import type { TutorWithProfile } from "@/features/management/tutors/types";
 
 interface StudentDetailPageProps {
   student: StudentWithPrograms | null;
   activePackage?: StudentActivePackageProgress | null;
   history?: StudentMeetingHistoryItem[];
+  tutors?: TutorWithProfile[];
 }
 
 export default function StudentDetailPage({
   student,
   activePackage = null,
   history = [],
+  tutors = [],
 }: StudentDetailPageProps) {
   if (!student) {
     return (
@@ -53,7 +65,18 @@ export default function StudentDetailPage({
             Edit Murid
           </Link>
         </Button>
-        <Button asChild size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs">
+        <ImportHistoricalSessionsDialog
+          studentId={student.id}
+          studentName={student.name}
+          studentCode={student.student_code}
+          activePackage={activePackage}
+          tutors={tutors}
+        />
+        <Button
+          asChild
+          size="sm"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+        >
           <Link href={`/management/students/${student.id}/progress-report`}>
             <FileText className="w-4 h-4 mr-2" />
             Laporan Perkembangan (Cetak PDF)
@@ -73,35 +96,47 @@ export default function StudentDetailPage({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="md:col-span-1 shadow-xs border">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold">Informasi Murid & Wali</CardTitle>
+            <CardTitle className="text-sm font-semibold">
+              Informasi Murid & Wali
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3.5 text-sm">
             <div>
-              <span className="text-muted-foreground block text-xs">Jenis Kelamin</span>
+              <span className="text-muted-foreground block text-xs">
+                Jenis Kelamin
+              </span>
               <span className="font-medium">
                 {student.gender === "male"
                   ? "Laki-laki"
                   : student.gender === "female"
-                  ? "Perempuan"
-                  : "-"}
+                    ? "Perempuan"
+                    : "-"}
               </span>
             </div>
             <div>
-              <span className="text-muted-foreground block text-xs">Sekolah & Jenjang/Kelas</span>
+              <span className="text-muted-foreground block text-xs">
+                Sekolah & Jenjang/Kelas
+              </span>
               <span className="font-medium">
                 {student.school || "-"} ({student.grade || "-"})
               </span>
             </div>
             <div>
-              <span className="text-muted-foreground block text-xs">Nama Orang Tua / Wali</span>
+              <span className="text-muted-foreground block text-xs">
+                Nama Orang Tua / Wali
+              </span>
               <span className="font-medium">{student.parent_name || "-"}</span>
             </div>
             <div>
-              <span className="text-muted-foreground block text-xs">Kontak WhatsApp Wali</span>
+              <span className="text-muted-foreground block text-xs">
+                Kontak WhatsApp Wali
+              </span>
               <span className="font-medium">{student.parent_phone || "-"}</span>
             </div>
             <div>
-              <span className="text-muted-foreground block text-xs">Alamat Tinggal</span>
+              <span className="text-muted-foreground block text-xs">
+                Alamat Tinggal
+              </span>
               <span className="font-medium">{student.address || "-"}</span>
             </div>
           </CardContent>
@@ -124,10 +159,12 @@ export default function StudentDetailPage({
                   >
                     <div>
                       <p className="font-semibold text-sm">
-                        {sp.programs?.name || "Program"} - {sp.bimbel_types?.name || "Reguler"}
+                        {sp.programs?.name || "Program"} -{" "}
+                        {sp.bimbel_types?.name || "Reguler"}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Alokasi Paket: <strong>{sp.total_sessions} Pertemuan</strong> • Mulai:{" "}
+                        Alokasi Paket:{" "}
+                        <strong>{sp.total_sessions} Pertemuan</strong> • Mulai:{" "}
                         {sp.start_date || "-"}
                       </p>
                     </div>
@@ -136,7 +173,9 @@ export default function StudentDetailPage({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Belum ada paket program aktif.</p>
+              <p className="text-sm text-muted-foreground">
+                Belum ada paket program aktif.
+              </p>
             )}
           </CardContent>
         </Card>

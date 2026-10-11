@@ -3,7 +3,14 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Clock, Eye, Sparkles, Loader2, CalendarPlus, CheckCircle2 } from "lucide-react";
+import {
+  Clock,
+  Eye,
+  Sparkles,
+  Loader2,
+  CalendarPlus,
+  CheckCircle2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -28,7 +35,9 @@ interface SessionListPageProps {
   initialSessions?: SessionWithDetails[];
 }
 
-export default function SessionListPage({ initialSessions = [] }: SessionListPageProps) {
+export default function SessionListPage({
+  initialSessions = [],
+}: SessionListPageProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -95,7 +104,8 @@ export default function SessionListPage({ initialSessions = [] }: SessionListPag
                 Generate Sesi Pembelajaran
               </DialogTitle>
               <DialogDescription>
-                Sistem akan membaca jadwal rutin (schedules) yang aktif dan membuat sesi pembelajaran aktual pada tanggal yang dipilih.
+                Sistem akan membaca jadwal rutin (schedules) yang aktif dan
+                membuat sesi pembelajaran aktual pada tanggal yang dipilih.
               </DialogDescription>
             </DialogHeader>
 
@@ -106,7 +116,11 @@ export default function SessionListPage({ initialSessions = [] }: SessionListPag
                   variant={mode === "today" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setMode("today")}
-                  className={mode === "today" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}
+                  className={
+                    mode === "today"
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                      : ""
+                  }
                 >
                   Hari Ini
                 </Button>
@@ -115,7 +129,11 @@ export default function SessionListPage({ initialSessions = [] }: SessionListPag
                   variant={mode === "week" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setMode("week")}
-                  className={mode === "week" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}
+                  className={
+                    mode === "week"
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                      : ""
+                  }
                 >
                   7 Hari ke Depan
                 </Button>
@@ -124,7 +142,11 @@ export default function SessionListPage({ initialSessions = [] }: SessionListPag
                   variant={mode === "custom" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setMode("custom")}
-                  className={mode === "custom" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}
+                  className={
+                    mode === "custom"
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                      : ""
+                  }
                 >
                   Pilih Tanggal
                 </Button>
@@ -143,7 +165,8 @@ export default function SessionListPage({ initialSessions = [] }: SessionListPag
               )}
 
               <p className="text-xs text-muted-foreground bg-muted/40 p-2.5 rounded border border-border/50">
-                💡 Sesi yang sudah ada untuk jadwal dan tanggal yang sama tidak akan terduplikasi.
+                💡 Sesi yang sudah ada untuk jadwal dan tanggal yang sama tidak
+                akan terduplikasi.
               </p>
             </div>
 
@@ -220,24 +243,36 @@ export default function SessionListPage({ initialSessions = [] }: SessionListPag
               </thead>
               <tbody className="divide-y divide-border">
                 {initialSessions.map((session) => {
-                  const studentCount = session.students?.length ?? session.attendance?.length ?? 0;
+                  const studentCount =
+                    session.students?.length ?? session.attendance?.length ?? 0;
                   return (
-                    <tr key={session.id} className="hover:bg-muted/30 transition-colors">
+                    <tr
+                      key={session.id}
+                      className="hover:bg-muted/30 transition-colors"
+                    >
                       <td className="px-4 py-3 font-medium">
                         {session.session_date}
                         <span className="text-xs text-muted-foreground block">
-                          {session.start_time.slice(0, 5)} - {session.end_time.slice(0, 5)}
+                          {session.start_time.slice(0, 5)} -{" "}
+                          {session.end_time.slice(0, 5)}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-medium">{session.programs?.name}</span>
-                        <span className="text-muted-foreground text-xs block">{session.bimbel_types?.name}</span>
+                        <span className="font-medium">
+                          {session.programs?.name}
+                        </span>
+                        <span className="text-muted-foreground text-xs block">
+                          {session.bimbel_types?.name}
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-foreground">
                         {session.tutors?.profiles?.full_name || "Tutor"}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        <span className="font-medium text-foreground">{studentCount}</span> murid
+                        <span className="font-medium text-foreground">
+                          {studentCount}
+                        </span>{" "}
+                        murid
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={session.status} />

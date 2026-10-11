@@ -15,7 +15,13 @@ import {
   BookMarked,
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,20 +38,32 @@ interface LearningRecordsPageProps {
   initialRecords?: LearningRecordWithDetails[];
 }
 
-export default function LearningRecordsPage({ initialRecords = [] }: LearningRecordsPageProps) {
+export default function LearningRecordsPage({
+  initialRecords = [],
+}: LearningRecordsPageProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeRecord, setActiveRecord] = useState<LearningRecordWithDetails | null>(null);
+  const [activeRecord, setActiveRecord] =
+    useState<LearningRecordWithDetails | null>(null);
 
   const filteredRecords = useMemo(() => {
     return initialRecords.filter((rec) => {
       const matchSearch =
         searchTerm === "" ||
         rec.material.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (rec.notes && rec.notes.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (rec.homework && rec.homework.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (rec.students?.name && rec.students.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (rec.students?.student_code && rec.students.student_code.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (rec.tutors?.profiles?.full_name && rec.tutors.profiles.full_name.toLowerCase().includes(searchTerm.toLowerCase()));
+        (rec.notes &&
+          rec.notes.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (rec.homework &&
+          rec.homework.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (rec.students?.name &&
+          rec.students.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (rec.students?.student_code &&
+          rec.students.student_code
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())) ||
+        (rec.tutors?.profiles?.full_name &&
+          rec.tutors.profiles.full_name
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()));
 
       return matchSearch;
     });
@@ -72,7 +90,8 @@ export default function LearningRecordsPage({ initialRecords = [] }: LearningRec
               />
             </div>
             <div className="text-xs text-muted-foreground self-start sm:self-center">
-              Total <strong>{filteredRecords.length}</strong> catatan pembelajaran
+              Total <strong>{filteredRecords.length}</strong> catatan
+              pembelajaran
             </div>
           </div>
         </CardContent>
@@ -86,15 +105,21 @@ export default function LearningRecordsPage({ initialRecords = [] }: LearningRec
             Daftar Jurnal Materi Pembelajaran
           </CardTitle>
           <CardDescription className="text-xs">
-            Dicatat langsung oleh tutor saat pengisian absensi dan bukti mengajar di kelas.
+            Dicatat langsung oleh tutor saat pengisian absensi dan bukti
+            mengajar di kelas.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {filteredRecords.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground space-y-2">
               <BookOpen className="w-8 h-8 mx-auto text-muted-foreground/60" />
-              <p className="text-sm font-medium">Belum ada catatan materi pembelajaran.</p>
-              <p className="text-xs">Jurnal akan terisi otomatis saat tutor menyelesaikan sesi dan menginput materi.</p>
+              <p className="text-sm font-medium">
+                Belum ada catatan materi pembelajaran.
+              </p>
+              <p className="text-xs">
+                Jurnal akan terisi otomatis saat tutor menyelesaikan sesi dan
+                menginput materi.
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -112,10 +137,14 @@ export default function LearningRecordsPage({ initialRecords = [] }: LearningRec
                 <tbody className="divide-y divide-border">
                   {filteredRecords.map((rec) => {
                     const session = rec.attendance?.sessions;
-                    const dateStr = session?.session_date || rec.created_at.split("T")[0];
+                    const dateStr =
+                      session?.session_date || rec.created_at.split("T")[0];
 
                     return (
-                      <tr key={rec.id} className="hover:bg-muted/30 transition-colors">
+                      <tr
+                        key={rec.id}
+                        className="hover:bg-muted/30 transition-colors"
+                      >
                         <td className="px-4 py-2.5 font-medium whitespace-nowrap">
                           {dateStr}
                           {session?.programs && (
@@ -129,7 +158,8 @@ export default function LearningRecordsPage({ initialRecords = [] }: LearningRec
                             {rec.students?.name || "Murid"}
                           </span>
                           <span className="text-[11px] text-muted-foreground block">
-                            {rec.students?.student_code || "-"} · {rec.students?.grade || ""}
+                            {rec.students?.student_code || "-"} ·{" "}
+                            {rec.students?.grade || ""}
                           </span>
                         </td>
                         <td className="px-4 py-2.5 text-xs text-foreground">
@@ -176,7 +206,10 @@ export default function LearningRecordsPage({ initialRecords = [] }: LearningRec
       </Card>
 
       {/* Detail Jurnal Modal */}
-      <Dialog open={!!activeRecord} onOpenChange={(open) => !open && setActiveRecord(null)}>
+      <Dialog
+        open={!!activeRecord}
+        onOpenChange={(open) => !open && setActiveRecord(null)}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-base flex items-center gap-2">
@@ -184,7 +217,8 @@ export default function LearningRecordsPage({ initialRecords = [] }: LearningRec
               Detail Jurnal Pembelajaran
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Tanggal Sesi: {activeRecord?.attendance?.sessions?.session_date || "-"}
+              Tanggal Sesi:{" "}
+              {activeRecord?.attendance?.sessions?.session_date || "-"}
             </DialogDescription>
           </DialogHeader>
 
@@ -192,25 +226,34 @@ export default function LearningRecordsPage({ initialRecords = [] }: LearningRec
             <div className="space-y-4 py-2 text-xs">
               <div className="grid grid-cols-2 gap-2.5 p-3 rounded-lg border bg-muted/30">
                 <div>
-                  <span className="text-muted-foreground block text-[11px]">Murid:</span>
-                  <strong className="text-foreground text-xs">{activeRecord.students?.name}</strong>
+                  <span className="text-muted-foreground block text-[11px]">
+                    Murid:
+                  </span>
+                  <strong className="text-foreground text-xs">
+                    {activeRecord.students?.name}
+                  </strong>
                   <span className="text-muted-foreground block text-[11px]">
                     NIS: {activeRecord.students?.student_code}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-[11px]">Tutor Pengajar:</span>
+                  <span className="text-muted-foreground block text-[11px]">
+                    Tutor Pengajar:
+                  </span>
                   <strong className="text-foreground text-xs">
                     {activeRecord.tutors?.profiles?.full_name || "Tutor"}
                   </strong>
                   <span className="text-muted-foreground block text-[11px]">
-                    {activeRecord.attendance?.sessions?.programs?.name || "Bimbel"}
+                    {activeRecord.attendance?.sessions?.programs?.name ||
+                      "Bimbel"}
                   </span>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <span className="font-semibold text-foreground block">Materi Pembelajaran:</span>
+                <span className="font-semibold text-foreground block">
+                  Materi Pembelajaran:
+                </span>
                 <p className="p-2.5 bg-muted/50 rounded border text-xs text-foreground leading-relaxed whitespace-pre-wrap">
                   {activeRecord.material}
                 </p>
@@ -218,7 +261,9 @@ export default function LearningRecordsPage({ initialRecords = [] }: LearningRec
 
               {activeRecord.notes && (
                 <div className="space-y-1">
-                  <span className="font-semibold text-foreground block">Catatan Perkembangan:</span>
+                  <span className="font-semibold text-foreground block">
+                    Catatan Perkembangan:
+                  </span>
                   <p className="p-2.5 bg-muted/50 rounded border text-xs text-muted-foreground leading-relaxed">
                     {activeRecord.notes}
                   </p>
@@ -227,7 +272,9 @@ export default function LearningRecordsPage({ initialRecords = [] }: LearningRec
 
               {activeRecord.homework && (
                 <div className="space-y-1">
-                  <span className="font-semibold text-foreground block">PR / Tugas Rumah:</span>
+                  <span className="font-semibold text-foreground block">
+                    PR / Tugas Rumah:
+                  </span>
                   <p className="p-2.5 bg-primary/5 rounded border border-primary/20 text-xs text-foreground font-mono">
                     {activeRecord.homework}
                   </p>

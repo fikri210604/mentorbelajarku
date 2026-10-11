@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   Camera,
   CalendarDays,
+  AlertCircle,
   ArrowRight,
   KeyRound,
   Clock,
@@ -26,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatDate } from "@/lib/utils";
+import { scheduleOccursOnDay } from "@/lib/utils/recurrence";
 
 interface DashboardStudent {
   id: string;
@@ -49,6 +51,7 @@ interface DashboardSession {
 interface DashboardSchedule {
   id: string;
   day_of_week: number;
+  days_of_week?: number[] | null;
   start_time: string;
   end_time: string;
   status: string;
@@ -58,6 +61,14 @@ interface DashboardSchedule {
   duration_minutes?: number;
 }
 
+export interface TutorCorrectionRequest {
+  id: string;
+  sessionId: string;
+  studentName?: string;
+  sessionDate?: string;
+  notes?: string;
+}
+
 interface TutorDashboardPageProps {
   mustChangePassword?: boolean;
   tutorName?: string;
@@ -65,10 +76,12 @@ interface TutorDashboardPageProps {
   schedules?: DashboardSchedule[];
   /** Estimasi honor bulan berjalan, dihitung server-side (null = tarif belum diatur / gagal kalkulasi). */
   estMonthlyPayroll?: number | null;
+  correctionRequests?: TutorCorrectionRequest[];
 }
 
 function formatCompactIDR(n: number) {
-  if (n >= 1_000_000) return `Rp ${(n / 1_000_000).toFixed(1).replace(".", ",")}jt`;
+  if (n >= 1_000_000)
+    return `Rp ${(n / 1_000_000).toFixed(1).replace(".", ",")}jt`;
   if (n >= 1_000) return `Rp ${Math.round(n / 1_000)}rb`;
   return `Rp ${n}`;
 }
@@ -79,6 +92,7 @@ export default function TutorDashboardPage({
   sessions = [],
   schedules = [],
   estMonthlyPayroll = null,
+  correctionRequests = [],
 }: TutorDashboardPageProps) {
   const [activeTab, setActiveTab] = useState<"today" | "all">("today");
   const [showAllSessions, setShowAllSessions] = useState(false);
@@ -95,13 +109,19 @@ export default function TutorDashboardPage({
   const todayDayOfWeek = new Date().getDay();
 
   // Sesi hari ini
-  const actualTodaySessions = sessions.filter((s) => s.session_date === todayStr);
+  const actualTodaySessions = sessions.filter(
+    (s) => s.session_date === todayStr,
+  );
 
   const todaySessions =
     actualTodaySessions.length > 0
       ? actualTodaySessions
       : schedules
-          .filter((sch) => sch.day_of_week === todayDayOfWeek && sch.status === "active")
+          .filter(
+            (sch) =>
+              scheduleOccursOnDay(sch, todayDayOfWeek) &&
+              sch.status === "active",
+          )
           .map((sch) => ({
             id: `sch-${sch.id}`,
             session_date: todayStr,
@@ -119,18 +139,26 @@ export default function TutorDashboardPage({
   const pendingSession =
     todaySessions.find((s) => s.status === "scheduled") || todaySessions[0];
   const allTodayCompleted =
-    todaySessions.length > 0 && todaySessions.every((s) => s.status === "completed");
+    todaySessions.length > 0 &&
+    todaySessions.every((s) => s.status === "completed");
 
-  const completedTodayCount = todaySessions.filter((s) => s.status === "completed").length;
-  const remainingTodayCount = Math.max(0, todaySessions.length - completedTodayCount);
+  const completedTodayCount = todaySessions.filter(
+    (s) => s.status === "completed",
+  ).length;
+  const remainingTodayCount = Math.max(
+    0,
+    todaySessions.length - completedTodayCount,
+  );
 
   // Metrik bulan berjalan
   const totalMonthSessions = Math.max(sessions.length, schedules.length * 4, 1);
-  const completedMonthSessions = sessions.filter((s) => s.status === "completed").length;
+  const completedMonthSessions = sessions.filter(
+    (s) => s.status === "completed",
+  ).length;
   const targetMonthSessions = Math.max(totalMonthSessions, 16);
   const progressPercent = Math.min(
     100,
-    Math.round((completedMonthSessions / targetMonthSessions) * 100)
+    Math.round((completedMonthSessions / targetMonthSessions) * 100),
   );
 
   // Tingkat kehadiran (attendance rate)
@@ -138,8 +166,8 @@ export default function TutorDashboardPage({
     todaySessions.length > 0
       ? Math.round((completedTodayCount / todaySessions.length) * 100)
       : completedMonthSessions > 0
-      ? 96
-      : 100;
+        ? 96
+        : 100;
 
   // Aktivitas 7 hari (Senin - Minggu)
   const dayNames = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
@@ -152,19 +180,22 @@ export default function TutorDashboardPage({
       const d = new Date(s.session_date);
       return d.getDay() === jsDay;
     }).length;
-    const countInSchedules = schedules.filter((sch) => sch.day_of_week === jsDay).length;
+    const countInSchedules = schedules.filter((sch) =>
+      scheduleOccursOnDay(sch, jsDay),
+    ).length;
     return Math.max(countInSessions, countInSchedules);
   });
 
   const maxWeeklyCount = Math.max(...weeklyActivityCounts, 3);
 
   // Inisial tutor untuk Avatar
-  const tutorInitials = tutorName
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "TU";
+  const tutorInitials =
+    tutorName
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "TU";
 
   // Semi-circle gauge calculation
   // Radius = 36. Panjang busur setengah lingkaran = PI * 36 ≈ 113.1
@@ -239,6 +270,45 @@ export default function TutorDashboardPage({
         </Alert>
       )}
 
+      {/* Peringatan Foto Presensi Diminta Koreksi oleh Manajemen */}
+      {correctionRequests && correctionRequests.length > 0 && (
+        <Alert
+          variant="destructive"
+          className="rounded-2xl border-destructive/40 bg-destructive/10 text-destructive shadow-2xs"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="size-4 text-destructive shrink-0" />
+                <AlertTitle className="font-semibold text-xs sm:text-sm">
+                  {correctionRequests.length} Bukti Foto Presensi Perlu
+                  Diperbaiki
+                </AlertTitle>
+              </div>
+              <AlertDescription className="text-xs text-destructive/90 space-y-0.5">
+                <p>
+                  Manajemen meminta Anda mengunggah ulang bukti foto presensi
+                  (misal: foto buram atau tidak tampak kegiatan belajar).
+                </p>
+                {correctionRequests[0]?.notes && (
+                  <p className="italic text-[11px] font-medium opacity-90">
+                    &ldquo;{correctionRequests[0].notes}&rdquo;
+                  </p>
+                )}
+              </AlertDescription>
+            </div>
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="rounded-full text-xs h-7 self-start sm:self-center border-destructive/40 hover:bg-destructive/10"
+            >
+              <Link href="/tutor/attendance">Perbaiki Sekarang</Link>
+            </Button>
+          </div>
+        </Alert>
+      )}
+
       {/* Layout Grid: Pada mobile 1 kolom proporsional, pada desktop terbagi 2 sisi */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* KOLOM KIRI (MOBILE-FIRST CARD STACK) */}
@@ -256,7 +326,8 @@ export default function TutorDashboardPage({
                 <Clock className="size-3 text-primary" />
                 {pendingSession ? (
                   <span>
-                    Jadwal: {pendingSession.start_time?.slice(0, 5)} - {pendingSession.end_time?.slice(0, 5)} WIB
+                    Jadwal: {pendingSession.start_time?.slice(0, 5)} -{" "}
+                    {pendingSession.end_time?.slice(0, 5)} WIB
                   </span>
                 ) : (
                   <span>Tidak ada jadwal aktif saat ini</span>
@@ -269,7 +340,9 @@ export default function TutorDashboardPage({
               {/* Kolom 1: Jam Mulai */}
               <div className="space-y-1">
                 <p className="text-xs sm:text-sm font-bold font-mono text-foreground">
-                  {pendingSession?.start_time ? pendingSession.start_time.slice(0, 5) : "--:--"}
+                  {pendingSession?.start_time
+                    ? pendingSession.start_time.slice(0, 5)
+                    : "--:--"}
                 </p>
                 <p className="text-[10px] text-muted-foreground uppercase font-medium tracking-tight">
                   Jam Mulai
@@ -279,7 +352,9 @@ export default function TutorDashboardPage({
               {/* Kolom 2: Jam Selesai */}
               <div className="space-y-1 border-x border-border/60">
                 <p className="text-xs sm:text-sm font-bold font-mono text-foreground">
-                  {pendingSession?.end_time ? pendingSession.end_time.slice(0, 5) : "--:--"}
+                  {pendingSession?.end_time
+                    ? pendingSession.end_time.slice(0, 5)
+                    : "--:--"}
                 </p>
                 <p className="text-[10px] text-muted-foreground uppercase font-medium tracking-tight">
                   Jam Selesai
@@ -289,10 +364,13 @@ export default function TutorDashboardPage({
               {/* Kolom 3: Durasi / Siswa */}
               <div className="space-y-1">
                 <p className="text-xs sm:text-sm font-bold font-mono text-foreground">
-                  {pendingSession?.duration_minutes ? `${pendingSession.duration_minutes}m` : "60m"}
+                  {pendingSession?.duration_minutes
+                    ? `${pendingSession.duration_minutes}m`
+                    : "60m"}
                 </p>
                 <p className="text-[10px] text-muted-foreground uppercase font-medium tracking-tight">
-                  {pendingSession?.students && pendingSession.students.length > 1
+                  {pendingSession?.students &&
+                  pendingSession.students.length > 1
                     ? `${pendingSession.students.length} Siswa`
                     : "1 Siswa"}
                 </p>
@@ -372,7 +450,9 @@ export default function TutorDashboardPage({
                   </div>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold text-foreground">Sesi Selesai</p>
+                  <p className="text-[11px] font-semibold text-foreground">
+                    Sesi Selesai
+                  </p>
                   <p className="text-[10px] text-muted-foreground">
                     {todaySessions.length} total sesi hari ini
                   </p>
@@ -399,10 +479,14 @@ export default function TutorDashboardPage({
                 </div>
                 <div>
                   <p className="text-[11px] font-semibold text-foreground truncate">
-                    {estMonthlyPayroll !== null ? "Estimasi Honor" : "Belum Diabsen"}
+                    {estMonthlyPayroll !== null
+                      ? "Estimasi Honor"
+                      : "Belum Diabsen"}
                   </p>
                   <p className="text-[10px] text-muted-foreground truncate">
-                    {estMonthlyPayroll !== null ? "Bulan berjalan" : "Menunggu presensi"}
+                    {estMonthlyPayroll !== null
+                      ? "Bulan berjalan"
+                      : "Menunggu presensi"}
                   </p>
                 </div>
               </Card>
@@ -422,7 +506,10 @@ export default function TutorDashboardPage({
               <Card className="rounded-2xl border border-border/80 bg-card p-3.5 flex flex-col items-center justify-between text-center shadow-2xs">
                 {/* SVG Semi-Circle Meter */}
                 <div className="relative w-28 h-16 flex items-end justify-center">
-                  <svg viewBox="0 0 100 60" className="w-full h-full overflow-visible">
+                  <svg
+                    viewBox="0 0 100 60"
+                    className="w-full h-full overflow-visible"
+                  >
                     {/* Background Arc */}
                     <path
                       d="M 14,50 A 36,36 0 0,1 86,50"
@@ -458,7 +545,8 @@ export default function TutorDashboardPage({
                 <div className="space-y-1">
                   <div className="text-right">
                     <span className="text-[10px] font-bold text-muted-foreground">
-                      {completedMonthSessions} Selesai / {targetMonthSessions} Target
+                      {completedMonthSessions} Selesai / {targetMonthSessions}{" "}
+                      Target
                     </span>
                   </div>
 
@@ -481,18 +569,24 @@ export default function TutorDashboardPage({
                 <div className="h-14 flex items-end justify-between gap-1 px-1 pt-1">
                   {dayNames.map((day, idx) => {
                     const count = weeklyActivityCounts[idx];
-                    const heightPercent = Math.min(100, Math.max(18, Math.round((count / maxWeeklyCount) * 100)));
+                    const heightPercent = Math.min(
+                      100,
+                      Math.max(18, Math.round((count / maxWeeklyCount) * 100)),
+                    );
                     const isToday = idx === todayDayIndex;
 
                     return (
-                      <div key={day} className="flex-1 flex flex-col items-center gap-1">
+                      <div
+                        key={day}
+                        className="flex-1 flex flex-col items-center gap-1"
+                      >
                         <div
                           className={`w-full max-w-[8px] rounded-full transition-all duration-500 ${
                             isToday
                               ? "bg-primary shadow-xs"
                               : count > 0
-                              ? "bg-primary/30 dark:bg-primary/40"
-                              : "bg-muted-foreground/15"
+                                ? "bg-primary/30 dark:bg-primary/40"
+                                : "bg-muted-foreground/15"
                           }`}
                           style={{ height: `${heightPercent}%` }}
                           title={`${day}: ${count} sesi`}
@@ -585,7 +679,8 @@ export default function TutorDashboardPage({
           {/* List Kartu Sesi (Gaya Minimalis & Rapi Sesuai Referensi Layar Tengah) */}
           <div className="space-y-2.5">
             {(() => {
-              const activeSessionList = activeTab === "today" ? todaySessions : sessions;
+              const activeSessionList =
+                activeTab === "today" ? todaySessions : sessions;
               const displayedSessions = showAllSessions
                 ? activeSessionList
                 : activeSessionList.slice(0, 3);
@@ -606,7 +701,12 @@ export default function TutorDashboardPage({
                           : "Belum ada riwayat sesi mengajar di sistem."}
                       </p>
                     </div>
-                    <Button asChild size="sm" variant="outline" className="rounded-full text-xs h-8">
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full text-xs h-8"
+                    >
                       <Link href="/tutor/schedules">Buka Kalender Jadwal</Link>
                     </Button>
                   </Card>
@@ -632,10 +732,12 @@ export default function TutorDashboardPage({
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-mono text-xs font-bold text-foreground flex items-center gap-1">
                                 <Clock className="size-3 text-muted-foreground" />
-                                {session.start_time?.slice(0, 5)} - {session.end_time?.slice(0, 5)} WIB
+                                {session.start_time?.slice(0, 5)} -{" "}
+                                {session.end_time?.slice(0, 5)} WIB
                               </span>
                               <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-muted/60 text-muted-foreground border border-border/60">
-                                {session.bimbel_type_name || "Reguler"} ({session.duration_minutes || 60}m)
+                                {session.bimbel_type_name || "Reguler"} (
+                                {session.duration_minutes || 60}m)
                               </span>
                             </div>
 
@@ -648,8 +750,8 @@ export default function TutorDashboardPage({
                               {session.students && session.students.length > 1
                                 ? `${session.students.length} Murid: ${session.students.map((s) => s.name).join(", ")}`
                                 : session.student_name
-                                ? `Murid: ${session.student_name}`
-                                : "1 Murid"}
+                                  ? `Murid: ${session.student_name}`
+                                  : "1 Murid"}
                             </p>
                           </div>
 
@@ -663,7 +765,9 @@ export default function TutorDashboardPage({
                         <div className="flex items-center justify-between pt-3 mt-2 border-t border-border/40 text-xs">
                           <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                             <CalendarIcon className="size-3" />
-                            {session.session_date ? formatDate(new Date(session.session_date)) : "Hari Ini"}
+                            {session.session_date
+                              ? formatDate(new Date(session.session_date))
+                              : "Hari Ini"}
                           </span>
 
                           <Button
@@ -678,7 +782,9 @@ export default function TutorDashboardPage({
                           >
                             <Link href="/tutor/attendance">
                               <Camera className="size-3" />
-                              <span>{isCompleted ? "Lihat Presensi" : "Absen"}</span>
+                              <span>
+                                {isCompleted ? "Lihat Presensi" : "Absen"}
+                              </span>
                             </Link>
                           </Button>
                         </div>
@@ -703,7 +809,9 @@ export default function TutorDashboardPage({
                       ) : (
                         <>
                           <ChevronDown className="size-3.5" />
-                          <span>Tampilkan Semua ({activeSessionList.length} Sesi)</span>
+                          <span>
+                            Tampilkan Semua ({activeSessionList.length} Sesi)
+                          </span>
                         </>
                       )}
                     </Button>
@@ -714,7 +822,12 @@ export default function TutorDashboardPage({
 
             {/* Link Navigasi ke Halaman Jadwal Lengkap */}
             <div className="pt-2 text-center">
-              <Button asChild variant="ghost" size="sm" className="rounded-full text-xs text-muted-foreground hover:text-foreground gap-1">
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="rounded-full text-xs text-muted-foreground hover:text-foreground gap-1"
+              >
                 <Link href="/tutor/schedules">
                   <span>Lihat Seluruh Jadwal &amp; Kalender</span>
                   <ArrowRight className="size-3.5" />
